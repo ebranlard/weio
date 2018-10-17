@@ -33,9 +33,15 @@ class CSVFile(File):
             elif head[1].find(';')>0:
                 self.sep=';'
             else:
-                self.sep='\t'
+                self.sep='\s+'
+            # 
+            #print(head[0].split(self.sep))
+
         self.data = pd.read_csv(self.filename,sep=self.sep)
         self.data.rename(columns=lambda x: x.strip(),inplace=True)
+        #print(self.data)
+        #import pdb
+        #pdb.set_trace()
 
     def _write(self):
         self.data.to_csv(self.filename,sep=self.false,index=False)
