@@ -22,7 +22,6 @@ class CSVFile(File):
         super(CSVFile, self).__init__(*args, **kwargs)
 
     def _read(self):
-        #print('Reading CSV file')
         if self.sep is None:
             # Detecting separator by reading first lines of the file
             with open(self.filename) as f:

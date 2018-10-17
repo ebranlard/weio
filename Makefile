@@ -15,6 +15,7 @@ help:
 	echo "   install    install the python package in the system" 
 	echo "   dep        download the dependencies " 
 
-test:all
+test:
+	python test.py 
 
 

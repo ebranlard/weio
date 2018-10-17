@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ebranlard/weio.svg?branch=master)](https://travis-ci.org/ebranlard/weio)
+
 # weio
 
 Library to read and write files, in particular files used by the Wind Energy community

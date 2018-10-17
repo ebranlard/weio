@@ -1,6 +1,6 @@
 import os
 
-class File:
+class File(object):
     def __init__(self,filename=None):
         if filename:
             ### If there is a new filename, replace the object variable
