@@ -4,12 +4,14 @@ from .FileFormats import FileFormat
 from .FASTInFile import FASTInFile
 from .FASTOutFile import FASTOutFile
 from .CSVFile import CSVFile
+from .HAWC2PcFile import HAWC2PcFile
 import os
 
 def fileFormats():
     formats = []
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
+    formats.append(FileFormat(HAWC2PcFile))
     formats.append(FileFormat(CSVFile))
     return formats
 

@@ -6,7 +6,9 @@ def tests():
     # for now only weio tests
     nError=0
     #f=weio.FASTInFile('_tests/FASTAirfoil.dat')
-    f=weio.FASTOutFile('_tests/FASTOutBin.outb')
+    #f=weio.FASTOutFile('_tests/FASTOutBin.outb')
+    #f=weio.HAWC2PcFile('_tests/NOT_YET/DTU_10MW_RWT_pc.dat')
+    #df=f.toDataFrame()
 
     for f in glob.glob('_tests/*.*'):
         try:
