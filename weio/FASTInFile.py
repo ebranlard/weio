@@ -1,7 +1,10 @@
+from __future__ import absolute_import
 from .File import File
 import numpy as np
 import re
 import pandas as pd
+
+# from .dtuwetb import fast_io
 
 
 NUMTAB_FROM_VAL_DETECT   = ['HtFract' ,'TwrElev'  ,'BlFract' ,'Genspd_TLU','BlSpn'   ,'WndSpeed']
@@ -30,42 +33,10 @@ TABTYPE_NUM_WITH_HEADERCOM = 2
 TABTYPE_FIL                = 3
 TABTYPE_FMT                = 9999 # TODO
 
-
-
-
-
-
-# --------------------------------------------------------------------------------}
-# --- OUT FILE 
-# --------------------------------------------------------------------------------{
-class FastOutASCIIFile(File):
-
-    @staticmethod
-    def defaultExtensions():
-        return ['.out']
-
-    @staticmethod
-    def formatName():
-        return 'FAST ASCII output file (.out)'
-
-    def _read(self):
-        # Read with panda
-        self.data=pd.read_csv(self.filename, sep='\t', skiprows=[0,1,2,3,4,5,7])
-        self.data.rename(columns=lambda x: x.strip(),inplace=True)
-
-    #def _write(self): # TODO
-    #    pass
-
-    def _toDataFrame(self):
-        return self.data
-
-
-
-
 # --------------------------------------------------------------------------------}
 # --- INPUT FILE 
 # --------------------------------------------------------------------------------{
-class FastFile(File):
+class FASTInFile(File):
 
     @staticmethod
     def defaultExtensions():
@@ -97,6 +68,11 @@ class FastFile(File):
         try: 
             with open(self.filename) as f:
                 lines = f.read().splitlines()
+
+            # Fast files start with ! or -
+            if lines[0][0]!='!' and lines[0][0]!='-':
+                raise Exception('Fast file do not start with ! or -, is it the right format?')
+
             # Parsing line by line, storing each line into a disctionary
             self.data =[]
             i=0    
@@ -386,5 +362,11 @@ def parseFASTFilTable(lines,n,iStart):
     except Exception as e:    
         raise Exception('Line {}: '.format(iStart+i+1)+e.args[0])
     return Tab
+
+
+if __name__ == "__main__":
+    pass
+    #B=FASTIn('Turbine.outb')
+
 
 

@@ -1,26 +1,23 @@
-from .File import *
-from .FileFormats import *
+from .File import File
+from .FileFormats import FileFormat
 # User defined formats
-from .Fast import *
-from .CSV import *
+from .FASTInFile import FASTInFile
+from .FASTOutFile import FASTOutFile
+from .CSVFile import CSVFile
+import os
 
 def fileFormats():
     formats = []
-    formats.append(FileFormat(FastFile))
-    formats.append(FileFormat(FastOutASCIIFile))
+    formats.append(FileFormat(FASTInFile))
+    formats.append(FileFormat(FASTOutFile))
     formats.append(FileFormat(CSVFile))
     return formats
 
 
 def detectFormat(filename):
     formats=fileFormats()
-
     ext = os.path.splitext(filename.lower())[1]
-    with open(filename) as f:
-        head=[next(f).strip() for x in range(2)]
-
     detected = False
-
     i = 0 
     while not detected and i<len(formats):
         myformat = formats[i]
