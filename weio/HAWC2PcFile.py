@@ -3,7 +3,7 @@ import pandas as pd
 
 from .wetb.hawc2.pc_file import PCFile
 
-class HAWC2PcFile(File):
+class HAWC2PCFile(File):
 
     @staticmethod
     def defaultExtensions():
@@ -11,7 +11,7 @@ class HAWC2PcFile(File):
 
     @staticmethod
     def formatName():
-        return 'HAWC2 Pc file (.dat, .pc, .txt)'
+        return 'HAWC2 PC file (.dat, .pc, .txt)'
 
     def _read(self):
         self.data = PCFile(self.filename)
@@ -23,8 +23,13 @@ class HAWC2PcFile(File):
 
     def _toDataFrame(self):
         import pdb
-        # TODO multiData
-        cols=['alpha','Cl','Cd','Cm']
-        vt, vpolar = self.data.pc_sets[1]
-        return pd.DataFrame(data=vpolar[0], columns=cols)
+        cols=['alpha_[deg]','Cl_[-]','Cd_[-]','Cm_[-]']
+
+        dfs = {}
+        for iset in self.data.pc_sets.keys():
+            vt, vpolar = self.data.pc_sets[iset]
+            for ipol in range(len(vt)):
+                name='pc_set_{}_t_{}'.format(iset,vt[ipol])
+                dfs[name] = pd.DataFrame(data=vpolar[ipol], columns=cols)
+        return dfs
 

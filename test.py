@@ -7,8 +7,15 @@ def tests():
     nError=0
     #f=weio.FASTInFile('_tests/FASTAirfoil.dat')
     #f=weio.FASTOutFile('_tests/FASTOutBin.outb')
-    #f=weio.HAWC2PcFile('_tests/NOT_YET/DTU_10MW_RWT_pc.dat')
     #df=f.toDataFrame()
+    #f=weio.HAWC2AEFile('_tests/HAWC2_ae.dat')
+    #df=f.toDataFrame()
+    #f=weio.HAWC2PCFile('_tests/HAWC2_pc.dat')
+    #df=f.toDataFrame()
+    #print(df)
+    #import pdb
+    #pdb.set_trace()
+
 
     for f in glob.glob('_tests/*.*'):
         try:
