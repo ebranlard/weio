@@ -49,17 +49,38 @@ def load_ascii_output(filename):
     with open(filename) as f:
         info = {}
         info['name'] = os.path.splitext(os.path.basename(filename))[0]
-        try:
-            header = [f.readline() for _ in range(8)]
-            info['description'] = header[4].strip()
-            info['attribute_names'] = header[6].split()
-            info['attribute_units'] = [unit[1:-1] for unit in header[7].split()]  #removing "()"
-            data = np.array([line.split() for line in f.readlines()]).astype(np.float)
+        # Header is whatever is before the keyword `time`
+        in_header = True
+        header = []
+        while in_header:
+            l = f.readline()
+            if not l:
+                raise Exception('Error finding the end of FAST out file header. Keyword Time missing.')
+            in_header= (l+' dummy').lower().split()[0] != 'time'
+            if in_header:
+                header.append(l)
+            else:
+                info['description'] = header
+                info['attribute_names'] = l.split()
+                info['attribute_units'] = [unit[1:-1] for unit in f.readline().split()]
 
-            return data, info
-        except (ValueError, AssertionError):
+        # Data, up to end of file or empty line (potential comment line at the end)
+        split_lines=[]
+        while True:
+            l = f.readline().strip()
+            if not l or len(l)==0:
+                break
+            split_lines.append(l.split())
+        data = np.array(split_lines).astype(np.float)
 
-            raise
+        # Harcoded 8 line header and 
+        #header = [f.readline() for _ in range(8)]
+        #info['description'] = header[4].strip()
+        #info['attribute_names'] = header[6].split()
+        #info['attribute_units'] = [unit[1:-1] for unit in header[7].split()]  #removing "()"
+        #data = np.array([line.split() for line in f.readlines() if len(line)]).astype(np.float)
+
+        return data, info
 
 
 def load_binary_output(filename):
