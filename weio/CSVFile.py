@@ -43,7 +43,7 @@ class CSVFile(File):
         #pdb.set_trace()
 
     def _write(self):
-        self.data.to_csv(self.filename,sep=self.false,index=False)
+        self.data.to_csv(self.filename,sep=self.sep,index=False)
 
     def _toDataFrame(self):
         return self.data

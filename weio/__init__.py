@@ -3,6 +3,7 @@ from .FileFormats import FileFormat
 # User defined formats
 from .FASTInFile import FASTInFile
 from .FASTOutFile import FASTOutFile
+from .FASTWndFile import FASTWndFile
 from .CSVFile import CSVFile
 from .HAWC2PCFile import HAWC2PCFile
 from .HAWC2AEFile import HAWC2AEFile
@@ -12,6 +13,7 @@ def fileFormats():
     formats = []
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
+    formats.append(FileFormat(FASTWndFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
     formats.append(FileFormat(CSVFile))
