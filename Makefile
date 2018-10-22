@@ -1,6 +1,5 @@
 
-all:
-	python weio\__init__.py
+all: test
 
 install:
 	python setup.py install

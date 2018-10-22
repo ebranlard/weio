@@ -13,14 +13,41 @@ def tests():
     #f=weio.HAWC2PCFile('_tests/HAWC2_pc.dat')
     #df=f.toDataFrame()
     #print(df)
+    #f=weio.CSVFile('_tests/CSVComma.csv')
+    #f=weio.CSVFile('_tests/FASTWnd.wnd',commentChar='!',colNamesLine=-2)
+    #f=weio.FASTWndFile('_tests/FASTWnd.wnd')
+    #print(f.toDataFrame())
+    #f.test_ascii()
+    #return
+    #f=weio.CSVFile('_tests/CSVNoHeader.csv')
+    #print(f.toDataFrame())
+    #f=weio.CSVFile('_tests/CSVDateNaN.csv')
+    #print(f.toDataFrame())
+    #f=weio.CSVFile('_tests/CSVSemi.csv')
+    #print(f.toDataFrame())
+    #f=weio.CSVFile('_tests/CSVSemi.csv',commentLines=[0])
+    #print(f.toDataFrame())
+    #f=weio.CSVFile('_tests/CSVColInHeader.csv')
+    #f=weio.CSVFile('_tests/CSVColInHeader.csv',commentChar='!',colNamesLine=-2)
+    #print(f.toDataFrame())
+    #f=weio.CSVFile('_tests/CSVColInHeader2.csv',commentChar='!',colNamesLine=-1)
+    #print(f.toDataFrame())
+#     f.read()
+#     print(f.toDataFrame())
+#     f=weio.CSVFile('_tests/CSVSpace_ExtraCol.csv')
+#     print(f.toDataFrame())
+#     f=weio.CSVFile('_tests/CSVTab.csv')
+#     print(f.toDataFrame())
     #import pdb
     #pdb.set_trace()
 
 
     for f in glob.glob('_tests/*.*'):
+        fileformat=None
         try:
             fileformat = weio.detectFormat(f)
-            weio.read(f,fileformat)
+            fr=weio.read(f,fileformat)
+            #print(fr.toDataFrame())
             print('[ OK ] '+f + ' read as {}'.format(fileformat))
         except:
             nError += 1

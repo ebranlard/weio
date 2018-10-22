@@ -42,4 +42,4 @@ def read(filename,fileformat=None):
     if fileformat is None:
         fileformat = detectFormat(filename)
     # Reading the file with the appropriate class
-    return fileformat.constructor(filename)
+    return fileformat.constructor(filename=filename)
