@@ -21,6 +21,9 @@ def fileFormats():
 
 
 def detectFormat(filename):
+    """ Detect the file formats by looping through the known list. 
+        The method may simply try to open the file, if that's the case
+        the read file is returned. """
     formats=fileFormats()
     ext = os.path.splitext(filename.lower())[1]
     detected = False
@@ -28,10 +31,11 @@ def detectFormat(filename):
     while not detected and i<len(formats):
         myformat = formats[i]
         if ext in myformat.extensions:
-            if myformat.isValid(filename):
-                detected=True
+            valid, F = myformat.isValid(filename)
+            if valid:
                 #print('File detected as :',myformat)
-                return myformat
+                detected=True
+                return myformat,F
 
         i += 1
 
@@ -39,7 +43,11 @@ def detectFormat(filename):
         raise Exception('The file was not detected by detectFormat():'+filename)
 
 def read(filename,fileformat=None):
+    F = None
+    # Detecting format if necessary
     if fileformat is None:
-        fileformat = detectFormat(filename)
-    # Reading the file with the appropriate class
-    return fileformat.constructor(filename=filename)
+        fileformat,F = detectFormat(filename)
+    # Reading the file with the appropriate class if necessary
+    if not isinstance(F,fileformat.constructor):
+        F=fileformat.constructor(filename=filename)
+    return F

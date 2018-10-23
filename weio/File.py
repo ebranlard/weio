@@ -8,7 +8,7 @@ class File(object):
             ### If the filename is provided, read the file
             self.read()
         else:
-            print('No Filename')
+            self.filename = None
 
 
     def read(self, filename=None):
@@ -56,13 +56,14 @@ class File(object):
 
     @classmethod
     def isRightFormat(cls,filename):
+        """ Tries to open a file, return true and the file if it succeeds """
         #raise NotImplementedError("Method must be implemented in the subclass")
         try:
             F=cls(filename=filename)
-            return True
+            return True,F
         except:
             #raise
-            return False
+            return False,None
 
 
 

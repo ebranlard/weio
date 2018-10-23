@@ -45,7 +45,7 @@ def tests():
     for f in glob.glob('_tests/*.*'):
         fileformat=None
         try:
-            fileformat = weio.detectFormat(f)
+            fileformat,F = weio.detectFormat(f)
             fr=weio.read(f,fileformat)
             #print(fr.toDataFrame())
             print('[ OK ] '+f + ' read as {}'.format(fileformat))

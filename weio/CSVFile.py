@@ -11,10 +11,6 @@ class CSVFile(File):
     def formatName():
         return 'CSV file (.csv)'
 
-#    @classmethod
-#    def isRightFormat(cls, filename):
-
-
     def __init__(self, filename=None, sep=None, colNames=[], commentChar=None, commentLines=[],\
                        colNamesLine=None, **kwargs):
         self.sep          = sep
