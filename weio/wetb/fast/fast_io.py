@@ -161,10 +161,15 @@ def load_binary_output(filename):
 
 
     data = np.array(PackedData).reshape(NT, NumOutChans)
+    del PackedData # freeing memory
+    import gc
+    gc.collect()
+
     data = (data - ColOff) / ColScl
 
     if FileID == FileFmtID_WithTime:
         time = (np.array(PackedTime) - TimeOff) / TimeScl;
+        del PackedTime # freeing memory
     else:
         time = TimeOut1 + TimeIncr * np.arange(NT)
 

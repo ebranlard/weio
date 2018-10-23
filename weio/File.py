@@ -61,6 +61,8 @@ class File(object):
         try:
             F=cls(filename=filename)
             return True,F
+        except MemoryError:
+            raise
         except:
             #raise
             return False,None
