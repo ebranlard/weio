@@ -83,8 +83,9 @@ def load_ascii_output(filename):
         return data, info
 
 
-def load_binary_output(filename):
+def load_binary_output(filename,use_buffer=False):
     """Ported from ReadFASTbinary.m by Mads M Pedersen, DTU Wind
+    Buffered version by E. Branlard, NREL
     Info about ReadFASTbinary.m:
     % Author: Bonnie Jonkman, National Renewable Energy Laboratory
     % (c) 2012, National Renewable Energy Laboratory
@@ -94,6 +95,23 @@ def load_binary_output(filename):
     def fread(fid, n, type):
         fmt, nbytes = {'uint8': ('B', 1), 'int16':('h', 2), 'int32':('i', 4), 'float32':('f', 4), 'float64':('d', 8)}[type]
         return struct.unpack(fmt * n, fid.read(nbytes * n))
+
+    def freadBuffered(fid, n, type):
+        fmt, nbytes = {'uint8': ('B', 1), 'int16':('h', 2), 'int32':('i', 4), 'float32':('f', 4), 'float64':('d', 8)}[type]
+        data = np.zeros((1,n),dtype='float32') # NOTE: loss of precision
+        BufferSize=4096*40
+        nBuff = int(n/BufferSize)
+        try:
+            nRead=0
+            while nRead<n:
+                nToRead = min(nPts-nRead, BufferSize)
+                I = struct.unpack(fmt * nToRead, fid.read(nbytes * nToRead))
+                data[0,nRead:(nRead+nToRead)] = I
+                nRead=nRead+nToRead
+            return data
+        except:
+            raise Exception('Read only %d of %d values in file:' % (nRead, n, filename, nRead, n))
+
 
     FileFmtID_WithTime = 1  #% File identifiers used in FAST
     FileFmtID_WithoutTime = 2
@@ -149,30 +167,35 @@ def load_binary_output(filename):
             cnt = len(PackedTime)
             if cnt < NT:
                 raise Exception('Could not read entire %s file: read %d of %d time values' % (filename, cnt, NT))
-        PackedData = fread(fid, nPts, 'int16')  #; % read the channel data
-        cnt = len(PackedData)
-        if cnt < nPts:
-            raise Exception('Could not read entire %s file: read %d of %d values' % (filename, cnt, nPts))
+
+        if use_buffer:
+            data = freadBuffered(fid, nPts, 'int16') #; % read the channel data
+            data = data.reshape(NT, NumOutChans)
+        else:
+            PackedData = fread(fid, nPts, 'int16')  #; % read the channel data
+            cnt = len(PackedData)
+            if cnt < nPts:
+                raise Exception('Could not read entire %s file: read %d of %d values' % (filename, cnt, nPts))
+            data = np.array(PackedData).reshape(NT, NumOutChans)
+            del PackedData
 
     #    %-------------------------
     #    % Scale the packed binary to real data
     #    %-------------------------
-    #
-
-
-    data = np.array(PackedData).reshape(NT, NumOutChans)
-    del PackedData # freeing memory
-    import gc
-    gc.collect()
-
-    data = (data - ColOff) / ColScl
+    
+    if use_buffer:
+        for iCol in range(NumOutChans):
+            data[:,iCol] = (data[:,iCol] - ColOff[iCol]) / ColScl[iCol]
+    else:
+        data = (data - ColOff) / ColScl
+        print(data.dtype)
 
     if FileID == FileFmtID_WithTime:
         time = (np.array(PackedTime) - TimeOff) / TimeScl;
-        del PackedTime # freeing memory
     else:
         time = TimeOut1 + TimeIncr * np.arange(NT)
 
+    # TODO, better memory management below
     data = np.concatenate([time.reshape(NT, 1), data], 1)
 
     info = {'name': os.path.splitext(os.path.basename(filename))[0],

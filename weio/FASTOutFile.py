@@ -9,6 +9,7 @@ import re
 from .wetb.fast import fast_io
 
 
+
 # --------------------------------------------------------------------------------}
 # --- OUT FILE 
 # --------------------------------------------------------------------------------{
@@ -16,7 +17,7 @@ class FASTOutFile(File):
 
     @staticmethod
     def defaultExtensions():
-        return ['.out','.outb']
+        return ['.out','.outb','.outb2']
 
     @staticmethod
     def formatName():
@@ -27,7 +28,9 @@ class FASTOutFile(File):
         if ext=='.out':
             self.data, self.info = fast_io.load_ascii_output(self.filename)
         elif ext=='.outb':
-            self.data, self.info = fast_io.load_binary_output(self.filename)
+            self.data, self.info = fast_io.load_binary_output(self.filename,use_buffer=False)
+        elif ext=='.outb2':
+            self.data, self.info = fast_io.load_binary_output(self.filename,use_buffer=True)
         else:
             self.data, self.info = fast_io.load_output(self.filename)
 
