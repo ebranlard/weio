@@ -3,44 +3,16 @@ import weio
 import glob
 
 def tests():
-    # for now only weio tests
     nError=0
-    #f=weio.FASTInFile('_tests/FASTAirfoil.dat')
-    #f=weio.FASTOutFile('_tests/FASTOutBin.outb')
-    #df=f.toDataFrame()
-    #f=weio.HAWC2AEFile('_tests/HAWC2_ae.dat')
-    #df=f.toDataFrame()
-    #f=weio.HAWC2PCFile('_tests/HAWC2_pc.dat')
-    #df=f.toDataFrame()
-    #print(df)
-    #f=weio.CSVFile('_tests/CSVComma.csv')
-    #f=weio.CSVFile('_tests/FASTWnd.wnd',commentChar='!',colNamesLine=-2)
-    #f=weio.FASTWndFile('_tests/FASTWnd.wnd')
-    #print(f.toDataFrame())
-    #f.test_ascii()
-    #return
-    #f=weio.CSVFile('_tests/CSVNoHeader.csv')
-    #print(f.toDataFrame())
-    #f=weio.CSVFile('_tests/CSVDateNaN.csv')
-    #print(f.toDataFrame())
-    #f=weio.CSVFile('_tests/CSVSemi.csv')
-    #print(f.toDataFrame())
-    #f=weio.CSVFile('_tests/CSVSemi.csv',commentLines=[0])
-    #print(f.toDataFrame())
-    #f=weio.CSVFile('_tests/CSVColInHeader.csv')
-    #f=weio.CSVFile('_tests/CSVColInHeader.csv',commentChar='!',colNamesLine=-2)
-    #print(f.toDataFrame())
-    #f=weio.CSVFile('_tests/CSVColInHeader2.csv',commentChar='!',colNamesLine=-1)
-    #print(f.toDataFrame())
-#     f.read()
-#     print(f.toDataFrame())
-#     f=weio.CSVFile('_tests/CSVSpace_ExtraCol.csv')
-#     print(f.toDataFrame())
-#     f=weio.CSVFile('_tests/CSVTab.csv')
-#     print(f.toDataFrame())
-    #import pdb
-    #pdb.set_trace()
 
+    #F = myFastBintest('../Test.outb')
+    #F = myFastBintest('../DLC1.1_StepSweepHuge.outb')
+    #F=weio.FASTOutFile('../Test.outb');
+    #F=weio.FASTOutFile('../Test.outb');
+    #F=weio.wetb.fast.fast_io.load_ascii_output('_tests/FASTOut_Hydro.out')
+    #F=weio.FASTOutFile('../DLC1.1_StepSweepHuge.outb')
+
+    #return
 
     for f in glob.glob('_tests/*.*'):
         fileformat=None

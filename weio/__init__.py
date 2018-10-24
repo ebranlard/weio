@@ -9,6 +9,9 @@ from .HAWC2PCFile import HAWC2PCFile
 from .HAWC2AEFile import HAWC2AEFile
 import os
 
+class FormatNotDetectedError(Exception):
+    pass
+
 def fileFormats():
     formats = []
     formats.append(FileFormat(FASTInFile))
@@ -40,7 +43,7 @@ def detectFormat(filename):
         i += 1
 
     if not detected:
-        raise Exception('The file was not detected by detectFormat():'+filename)
+        raise FormatNotDetectedError('The file format was not detected.')
 
 def read(filename,fileformat=None):
     F = None
