@@ -1,25 +1,24 @@
-from .File import File
+from .File import File, WrongFormatError
 from .FileFormats import FileFormat
 # User defined formats
-from .FASTInFile import FASTInFile
+from .FASTInFile  import FASTInFile
 from .FASTOutFile import FASTOutFile
 from .FASTWndFile import FASTWndFile
-from .CSVFile import CSVFile
+from .CSVFile     import CSVFile
 from .HAWC2PCFile import HAWC2PCFile
 from .HAWC2AEFile import HAWC2AEFile
-import os
 
 class FormatNotDetectedError(Exception):
     pass
 
 def fileFormats():
     formats = []
+    formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
     formats.append(FileFormat(FASTWndFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
-    formats.append(FileFormat(CSVFile))
     return formats
 
 
@@ -27,6 +26,7 @@ def detectFormat(filename):
     """ Detect the file formats by looping through the known list. 
         The method may simply try to open the file, if that's the case
         the read file is returned. """
+    import os
     formats=fileFormats()
     ext = os.path.splitext(filename.lower())[1]
     detected = False

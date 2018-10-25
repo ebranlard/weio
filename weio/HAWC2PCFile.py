@@ -1,4 +1,4 @@
-from .File import File
+from .File import File, WrongFormatError
 import pandas as pd
 
 from .wetb.hawc2.pc_file import PCFile
@@ -14,9 +14,10 @@ class HAWC2PCFile(File):
         return 'HAWC2 PC file (.dat, .pc, .txt)'
 
     def _read(self):
-        self.data = PCFile(self.filename)
-        #self.data = pd.read_csv(self.filename,sep=self.sep)
-        #self.data.rename(columns=lambda x: x.strip(),inplace=True)
+        try:
+            self.data = PCFile(self.filename)
+        except Exception as e:    
+            raise WrongFormatError('PC File {}: '.format(self.filename)+e.args[0])
 
     #def _write(self):
         #self.data.to_csv(self.filename,sep=self.false,index=False)

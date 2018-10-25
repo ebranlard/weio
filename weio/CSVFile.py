@@ -1,11 +1,11 @@
-from .File import File
+from .File import File, WrongFormatError
 import pandas as pd
 
 class CSVFile(File):
 
     @staticmethod
     def defaultExtensions():
-        return ['.csv']
+        return ['.csv','.txt']
 
     @staticmethod
     def formatName():
@@ -113,7 +113,11 @@ class CSVFile(File):
         # --- Reading data
         #print(self)
         skiprows = range(iStartLine)
-        self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None)
+        try:
+            self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None)
+        except pd.errors.ParserError as e:
+            raise WrongFormatError('CSV File {}: '.format(self.filename)+e.args[0])
+
         if (len(self.colNames)==0) or (len(self.colNames)!=len(self.data.columns)):
             self.colNames=['C{}'.format(i) for i in range(len(self.data.columns))]
         self.data.columns = self.colNames;

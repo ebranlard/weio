@@ -5,25 +5,43 @@ import glob
 def tests():
     nError=0
 
-    #F = myFastBintest('../Test.outb')
     #F = myFastBintest('../DLC1.1_StepSweepHuge.outb')
-    #F=weio.FASTOutFile('../Test.outb');
-    #F=weio.FASTOutFile('../Test.outb');
-    #F=weio.wetb.fast.fast_io.load_ascii_output('_tests/FASTOut_Hydro.out')
-    #F=weio.FASTOutFile('../DLC1.1_StepSweepHuge.outb')
-
+    #F=weio.FASTInFile('_tests/FASTAirfoil.dat')
+    #F=weio.FASTInFile('_tests/HAWC2_ae.dat')
+    #fileformat,F = weio.detectFormat('_tests/FASTIn_AD15_bld.dat')
+    #print(fileformat)
+    #F=weio.CSVFile('_tests/FASTIn_AD15_bld.dat')
+    #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
+    #print(F.toDataFrame())
+    #return
     #return
 
     for f in glob.glob('_tests/*.*'):
-        fileformat=None
         try:
+            fileformat=None
             fileformat,F = weio.detectFormat(f)
-            fr=weio.read(f,fileformat)
+            #fr=weio.read(f,fileformat)
+            dfs = F.toDataFrame()
+            # 
+            if not isinstance(dfs,dict):
+                if dfs is None:
+                    n = 0
+                elif len(dfs)==0:
+                    n = 0
+                else:
+                    n = 1
+            else:
+                n=len(dfs)
             #print(fr.toDataFrame())
-            print('[ OK ] '+f + ' read as {}'.format(fileformat))
+            s=fileformat.name
+            s=s[:s.find('(')].replace('file','')[:20]
+            print('[ OK ] {:30s}\t{:20s}\t{}'.format(f[:30],s,n))
+        except weio.FormatNotDetectedError:
+            nError += 1
+            print('[FAIL] {:30s}\tFormat not detected'.format(f[:30]))
         except:
             nError += 1
-            print('[FAIL] '+f + ' read as {}'.format(fileformat))
+            print('[FAIL] {:30s}\tException occured'.format(f[:30]))
             raise 
 
     if nError>0:

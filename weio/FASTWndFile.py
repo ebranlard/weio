@@ -12,8 +12,10 @@ class FASTWndFile(CSVFile):
         return 'FAST determ. wind file (.wnd)'
 
     def __init__(self, *args, **kwargs):
-        colNames=['Time','WindSpeed','WindDir','VertSpeed','HorizShear','VertShear','LinVShead','GustSpeed']
-        super(FASTWndFile, self).__init__(sep=' ',commentChar='!',colNames=colNames,*args, **kwargs)
+        self.colNames=['Time','WindSpeed','WindDir','VertSpeed','HorizShear','VertShear','LinVShear','GustSpeed']
+        self.units=['[s]','[m/s]','[deg]','[m/s]','[-]','[-]','[-]','[m/s]']
+        Cols=['{}_{}'.format(c,u) for c,u in zip(self.colNames,self.units)]
+        super(FASTWndFile, self).__init__(sep=' ',commentChar='!',colNames=Cols,*args, **kwargs)
 
     def _toDataFrame(self):
         return self.data

@@ -1,5 +1,8 @@
 import os
 
+class WrongFormatError(Exception):
+    pass
+
 class File(object):
     def __init__(self,filename=None):
         if filename:
@@ -63,9 +66,10 @@ class File(object):
             return True,F
         except MemoryError:
             raise
-        except:
-            #raise
+        except WrongFormatError:
             return False,None
+        except:
+            raise
 
 
 

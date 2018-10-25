@@ -1,4 +1,4 @@
-from .File import File
+from .File import File, WrongFormatError
 import pandas as pd
 
 from .wetb.hawc2.ae_file import AEFile
@@ -14,9 +14,10 @@ class HAWC2AEFile(File):
         return 'HAWC2 AE file (.dat, .ae, .txt)'
 
     def _read(self):
-        self.data = AEFile(self.filename)
-        #self.data = pd.read_csv(self.filename,sep=self.sep)
-        #self.data.rename(columns=lambda x: x.strip(),inplace=True)
+        try:
+            self.data = AEFile(self.filename)
+        except Exception as e:    
+            raise WrongFormatError('AE File {}: '.format(self.filename)+e.args[0])
 
     #def _write(self):
         #self.data.to_csv(self.filename,sep=self.false,index=False)

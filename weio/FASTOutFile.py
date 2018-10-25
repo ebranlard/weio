@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from .File import File
+from .File import File, WrongFormatError
 import numpy as np
 import pandas as pd
 import struct
@@ -25,12 +25,15 @@ class FASTOutFile(File):
 
     def _read(self):
         ext = os.path.splitext(self.filename.lower())[1]
-        if ext=='.out':
-            self.data, self.info = fast_io.load_ascii_output(self.filename)
-        elif ext=='.outb':
-            self.data, self.info = fast_io.load_binary_output(self.filename)
-        else:
-            self.data, self.info = fast_io.load_output(self.filename)
+        try:
+            if ext=='.out':
+                self.data, self.info = fast_io.load_ascii_output(self.filename)
+            elif ext=='.outb':
+                self.data, self.info = fast_io.load_binary_output(self.filename)
+            else:
+                self.data, self.info = fast_io.load_output(self.filename)
+        except Exception as e:    
+            raise WrongFormatError('FAST Out File {}: '.format(self.filename)+e.args[0])
 
         self.info['attribute_units'] = [re.sub('[()\[\]]','',u) for u in self.info['attribute_units']]
 
