@@ -25,6 +25,7 @@ FILTAB_FROM_LAB_DETECT_L = [s.lower() for s in FILTAB_FROM_LAB_DETECT]
 TABTYPE_NOT_A_TAB          = 0
 TABTYPE_NUM_WITH_HEADER    = 1
 TABTYPE_NUM_WITH_HEADERCOM = 2
+TABTYPE_NUM_NO_HEADER      = 4
 TABTYPE_FIL                = 3
 TABTYPE_FMT                = 9999 # TODO
 
@@ -61,29 +62,62 @@ class FASTInFile(File):
 
     def _read(self):
         try: 
+            self.data =[]
             with open(self.filename) as f:
                 lines = f.read().splitlines()
 
             # Fast files start with ! or -
             #if lines[0][0]!='!' and lines[0][0]!='-':
             #    raise Exception('Fast file do not start with ! or -, is it the right format?')
+            
+            # Special case Old AirfoilData
+            # TODO make a separate function
+            if len(lines)>14:
+                KW1=lines[12].strip().split()
+                KW2=lines[13].strip().split()
+                if len(KW1)>1 and len(KW2)>1:
+                    if KW1[1].lower()=='angle' and KW2[1].lower()=='minimum':
+                        d = getDict(); d['isComment'] = True; d['value'] = lines[0]; self.data.append(d);
+                        d = getDict(); d['isComment'] = True; d['value'] = lines[1]; self.data.append(d);
+                        for i in range(2,14):
+                            splits = lines[i].split()
+                            #print(splits)
+                            d = getDict()
+                            d['label'] = ' '.join(splits[1:]) # TODO
+                            d['descr'] = ' '.join(splits[1:]) # TODO
+                            d['value'] = float(splits[0])
+                            self.data.append(d)
+                        #pass
+                        #for i in range(2,14):
+                        nTabLines=0
+                        while 14+nTabLines<len(lines) and  len(lines[14+nTabLines].strip())>0 :
+                            nTabLines +=1
+                        #data = np.array([lines[i].strip().split() for i in range(14,len(lines)) if len(lines[i])>0]).astype(np.float)
+                        #data = np.array([lines[i].strip().split() for i in takewhile(lambda x: len(lines[i].strip())>0, range(14,len(lines)-1))]).astype(np.float)
+                        data = np.array([lines[i].strip().split() for i in range(14,nTabLines+14)]).astype(np.float)
+                        d = getDict()
+                        d['label']     = 'Polar'
+                        d['tabDimVar'] = nTabLines
+                        d['tabType']   = TABTYPE_NUM_NO_HEADER
+                        d['value']     = data
+                        d['tabColumnNames'] = ['Alpha','Cl','Cd','Cm']
+                        d['tabUnits'] = ['(deg)','(-)','(-)','(-)']
+                        self.data.append(d)
+                        return
 
             # Parsing line by line, storing each line into a disctionary
-            self.data =[]
             i=0    
             nComments  = 0
             nWrongLabels = 0
             while i<len(lines):
-                # Each "line" or "meaningful piece of information" is stored in a dictionary
-                d = {'value':None, 'label':'', 'isComment':False, 'descr':''}
-
                 line = lines[i]
                 # OUTLIST Exceptions
                 if line.upper().find('ADDITIONAL OUTPUTS')>0 \
                 or line.upper().find('MESH-BASED OUTPUTS')>0 \
                 or line.upper().find('OUTPUT CHANNELS'   )>0:
-                    # TODO, lazy implementation so far
+                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     OutList,i = parseFASTOutList(lines,i+1)
+                    d = getDict()
                     d['label']   = 'OutList'   # TODO
                     d['tabType'] = TABTYPE_FIL # TODO
                     d['value']   = OutList
@@ -91,12 +125,13 @@ class FASTInFile(File):
                     if i>=len(lines):
                         break
                 elif line.upper().find('ADDITIONAL STIFFNESS')>0:
-                    # TODO, lazy implementation so far
+                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     i +=1
                     KDAdd = []
                     for _ in range(19):
                         KDAdd.append(lines[i])
                         i +=1
+                    d = getDict()
                     d['label']   = 'KDAdd'   # TODO
                     d['tabType'] = TABTYPE_FIL # TODO
                     d['value']   = KDAdd
@@ -106,7 +141,54 @@ class FASTInFile(File):
 
                 # --- Parsing of standard lines: value(s) key comment
                 line = lines[i]
-                d = parseFASTInputLine(d,line,i)
+                d = parseFASTInputLine(line,i)
+
+
+                # --- Handling of special files
+                if d['label'].lower()=='numcoords':
+                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                    self.data.append(d); i+=1;
+                    if isStr(d['value']):
+                        if d['value'][0]=='@':
+                            # it's a ref to the airfoil coord file
+                            pass
+                    else:
+                        if not strIsInt(d['value']): 
+                            raise WrongFormatError('Wrong value of NumCoords')
+                        if int(d['value'])<0:
+                            break
+                        else:
+                            # 3 comment lines
+                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                            splits=cleanAfterChar(cleanLine(lines[i]),'!').split()
+                            # Airfoil ref point
+                            try:
+                                pos=[float(splits[0]), float(splits[1])]
+                            except:
+                                raise WrongFormatError('Wrong format while reading coordinates of airfoil reference')
+                            i+=1
+                            d = getDict()
+                            d['label'] = 'AirfoilRefPoint'
+                            d['value'] = pos
+                            self.data.append(d)
+                            # 2 comment lines
+                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                            # Table of coordinats itself
+                            d = getDict()
+                            d['label']     = 'AirfoilCoord'
+                            d['tabDimVar'] = 'NumCoords'
+                            d['tabType']   = TABTYPE_NUM_WITH_HEADERCOM
+                            nTabLines = self[d['tabDimVar']]-1  # SOMEHOW ONE DATA POINT LESS
+                            d['value'], d['tabColumnNames'],_  = parseFASTNumTable(lines[i:i+nTabLines+1],nTabLines,i,1)
+                            d['tabUnits'] = ['(-)','(-)']
+                            self.data.append(d)
+                            break
+
+
+
                     
                 # --- Handling of tables
                 if isStr(d['value']) and d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L:
@@ -154,8 +236,8 @@ class FASTInFile(File):
                     #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
                     d['value'] = parseFASTFilTable(lines[i:i+nTabLines],nTabLines,i)
                     i += nTabLines-1
-                else:
-                    d['tabType'] = TABTYPE_NOT_A_TAB
+
+
 
                 self.data.append(d)
                 i += 1
@@ -179,9 +261,9 @@ class FASTInFile(File):
                     raise WrongFormatError('Too many lines with wrong labels, probably not a FAST Input File')
                  
         except WrongFormatError as e:    
-            raise WrongFormatError('Fast File {}: '.format(self.filename)+e.args[0])
+            raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
         except Exception as e:    
-            raise Exception('Fast File {}: '.format(self.filename)+e.args[0])
+            raise Exception('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
 
             
 
@@ -221,8 +303,7 @@ class FASTInFile(File):
         dfs={}
         for i in range(len(self.data)): 
             d=self.data[i]
-            isATab = d['tabType']==TABTYPE_NUM_WITH_HEADER or d['tabType']==TABTYPE_NUM_WITH_HEADERCOM
-            if isATab:
+            if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER]:
                 Val= d['value']
                 if d['tabUnits'] is None:
                     Cols=d['tabColumnNames']
@@ -281,8 +362,12 @@ def cleanAfterChar(l,c):
     else:
         return l
 
+def getDict():
+    return {'value':None, 'label':'', 'isComment':False, 'descr':'', 'tabType':TABTYPE_NOT_A_TAB}
 
-def parseFASTInputLine(d,line_raw,i):
+
+def parseFASTInputLine(line_raw,i):
+    d = getDict()
     try:
         # preliminary cleaning (Note: loss of formatting)
         line = cleanLine(line_raw)
@@ -388,6 +473,34 @@ def parseFASTOutList(lines,iStart):
     return OutList,i
 
 
+def extractWithinParenthesis(s):
+    mo = re.search(r'\((.*)\)', s)
+    if mo:
+        return mo.group(1)
+    return ''
+
+def extractWithinBrackets(s):
+    mo = re.search(r'\((.*)\)', s)
+    if mo:
+        return mo.group(1)
+    return ''
+
+def detectUnits(s,nRef):
+    nPOpen=s.count('(')
+    nPClos=s.count(')')
+    nBOpen=s.count('[')
+    nBClos=s.count(']')
+
+    sep='!#@#!'
+    if (nPOpen == nPClos) and (nPOpen>=nRef):
+        #that's pretty good
+        Units=s.replace('(','').replace(')',sep).split(sep)[:-1]
+    elif (nBOpen == nBClos) and (nBOpen>=nRef):
+        Units=s.replace('[','').replace(']',sep).split(sep)[:-1]
+    else:
+        Units=s.split()
+    return Units
+
 
 def parseFASTNumTable(lines,n,iStart,nHeaders=2):
     Tab = None
@@ -395,7 +508,7 @@ def parseFASTNumTable(lines,n,iStart,nHeaders=2):
     Units = None
 
     if len(lines)!=n+nHeaders:
-        raise Exception('Not enough lines in table: {} lines instead of {}'.format(len(lines)-nHeaders,n))
+        raise WrongFormatError('Not enough lines in table: {} lines instead of {}'.format(len(lines)-nHeaders,n))
 
     if nHeaders<1:
         raise NotImplementedError('Reading FAST tables with no headers not implemented yet')
@@ -415,9 +528,13 @@ def parseFASTNumTable(lines,n,iStart,nHeaders=2):
             sTmp = cleanLine(lines[i])
             if sTmp.startswith('!'):
                 sTmp=sTmp[1:].strip()
-            Units=sTmp.split()
+
+            Units = detectUnits(sTmp,len(ColNames))
+            Units = ['({})'.format(u) for u in Units]
             # Forcing user to match number of units and column names
             if len(ColNames) != len(Units):
+                print(ColNames)
+                print(Units)
                 raise Exception('Number of column names different from number of units in table')
 
         nCols=len(ColNames)
@@ -431,7 +548,7 @@ def parseFASTNumTable(lines,n,iStart,nHeaders=2):
             if len(v) < nCols:
                 raise Exception('Number of data is lower than number of column names')
             # Accounting for TRUE FALSE and converting to float
-            v = [s.replace('true','1').replace('false','0').replace('noprint','0') for s in v]
+            v = [s.replace('true','1').replace('false','0').replace('noprint','0').replace('print','1') for s in v]
             v = [float(s) for s in v[0:nCols]]
             if len(v) < nCols:
                 raise Exception('Number of data is lower than number of column names')
@@ -447,7 +564,7 @@ def parseFASTFilTable(lines,n,iStart):
     try:
         i=0
         if len(lines)!=n:
-            raise Exception('Not enough lines in table: {} lines instead of {}'.format(len(lines),n))
+            raise WrongFormatError('Not enough lines in table: {} lines instead of {}'.format(len(lines),n))
         for i in range(n):
             l = lines[i].split()
             #print(l[0].strip())

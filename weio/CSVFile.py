@@ -68,7 +68,7 @@ class CSVFile(File):
                     if (not l) or (l+'_dummy')[0] != self.commentChar[0]:
                         break
                     self.header.append(l.strip())
-            self.commentLines=range(len(self.header))
+            self.commentLines=list(range(len(self.header)))
         iStartLine = len(self.header)
 
         # --- File separator 
@@ -112,7 +112,13 @@ class CSVFile(File):
             
         # --- Reading data
         #print(self)
-        skiprows = range(iStartLine)
+        skiprows = list(range(iStartLine))
+        if (self.colNamesLine is not None):
+            skiprows.append(self.colNamesLine)
+        if (self.commentLines is not None) and len(self.commentLines)>0:
+            skiprows = skiprows + self.commentLines
+        skiprows =list(sorted(set(skiprows)))
+        #print(skiprows)
         try:
             self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None)
         except pd.errors.ParserError as e:

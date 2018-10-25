@@ -7,11 +7,12 @@ def tests():
 
     #F = myFastBintest('../DLC1.1_StepSweepHuge.outb')
     #F=weio.FASTInFile('_tests/FASTAirfoil.dat')
-    #F=weio.FASTInFile('_tests/HAWC2_ae.dat')
+    #F=weio.FASTInFile('_TODO/FASTIn_AD14_arfl.dat')
     #fileformat,F = weio.detectFormat('_tests/FASTIn_AD15_bld.dat')
     #print(fileformat)
     #F=weio.CSVFile('_tests/FASTIn_AD15_bld.dat')
     #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
+    #F=weio.FASTOutFile('_TODO/OUT.elm')
     #print(F.toDataFrame())
     #return
     #return
