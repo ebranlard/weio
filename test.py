@@ -13,6 +13,7 @@ def tests():
     #F=weio.CSVFile('_tests/FASTIn_AD15_bld.dat')
     #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
     #F=weio.FASTInFile('_tests/FASTIn_ED_twr.dat')
+    #F=weio.FASTOutFile('_tests/FASTOut_HD.elev')
     #print(F.toDataFrame())
     #return
     #return

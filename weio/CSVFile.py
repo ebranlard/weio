@@ -21,7 +21,7 @@ class CSVFile(File):
 
     @staticmethod
     def formatName():
-        return 'CSV file (.csv)'
+        return 'CSV file'
 
     def __init__(self, filename=None, sep=None, colNames=[], commentChar=None, commentLines=[],\
                        colNamesLine=None, **kwargs):

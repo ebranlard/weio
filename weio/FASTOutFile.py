@@ -29,17 +29,17 @@ class FASTOutFile(File):
 
     @staticmethod
     def defaultExtensions():
-        return ['.out','.outb','.elm']
+        return ['.out','.outb','.elm','.elev']
 
     @staticmethod
     def formatName():
-        return 'FAST output file (.out,.outb,.elm)'
+        return 'FAST output file'
 
     def _read(self):
         ext = os.path.splitext(self.filename.lower())[1]
         self.info={}
         try:
-            if ext=='.out':
+            if ext in ['.out','.elev']:
                 self.data, self.info = fast_io.load_ascii_output(self.filename)
             elif ext=='.outb':
                 self.data, self.info = fast_io.load_binary_output(self.filename)

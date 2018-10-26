@@ -22,7 +22,7 @@ class FASTWndFile(CSVFile):
 
     @staticmethod
     def formatName():
-        return 'FAST determ. wind file (.wnd)'
+        return 'FAST determ. wind file'
 
     def __init__(self, *args, **kwargs):
         self.colNames=['Time','WindSpeed','WindDir','VertSpeed','HorizShear','VertShear','LinVShear','GustSpeed']

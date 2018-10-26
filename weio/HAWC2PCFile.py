@@ -23,7 +23,7 @@ class HAWC2PCFile(File):
 
     @staticmethod
     def formatName():
-        return 'HAWC2 PC file (.dat, .pc, .txt)'
+        return 'HAWC2 PC file'
 
     def _read(self):
         try:

@@ -51,7 +51,7 @@ class FASTInFile(File):
 
     @staticmethod
     def formatName():
-        return 'FAST input file (.dat;.fst)'
+        return 'FAST input file'
 
     def getID(self,label):
         # brute force search

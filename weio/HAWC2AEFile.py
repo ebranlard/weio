@@ -23,7 +23,7 @@ class HAWC2AEFile(File):
 
     @staticmethod
     def formatName():
-        return 'HAWC2 AE file (.dat, .ae, .txt)'
+        return 'HAWC2 AE file'
 
     def _read(self):
         try:
