@@ -530,7 +530,7 @@ def parseFASTNumTable(lines,n,iStart,nHeaders=2):
                 sTmp=sTmp[1:].strip()
 
             Units = detectUnits(sTmp,len(ColNames))
-            Units = ['({})'.format(u) for u in Units]
+            Units = ['({})'.format(u.strip()) for u in Units]
             # Forcing user to match number of units and column names
             if len(ColNames) != len(Units):
                 print(ColNames)
