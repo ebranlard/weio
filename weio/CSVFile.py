@@ -64,7 +64,7 @@ class CSVFile(File):
             # we detect the comments lines that start with comment char
             with open(self.filename) as f:
                 while True:
-                    l = f.readline()
+                    l = f.readline().strip()
                     if (not l) or (l+'_dummy')[0] != self.commentChar[0]:
                         break
                     self.header.append(l.strip())
@@ -111,13 +111,13 @@ class CSVFile(File):
                 iStartLine = max(iStartLine,self.colNamesLine+1)
             
         # --- Reading data
-        #print(self)
         skiprows = list(range(iStartLine))
         if (self.colNamesLine is not None):
             skiprows.append(self.colNamesLine)
         if (self.commentLines is not None) and len(self.commentLines)>0:
             skiprows = skiprows + self.commentLines
         skiprows =list(sorted(set(skiprows)))
+        #print(self)
         #print(skiprows)
         try:
             self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None)
@@ -146,7 +146,7 @@ class CSVFile(File):
 
     def __repr__(self):
         s = 'CSVFile: {}\n'.format(self.filename)
-        s += 'sep=`{}` commentChar=`{}` commentLines={} colNamesLine={} '.format(self.sep,self.commentChar,self.commentLines,self.colNamesLine)
+        s += 'sep=`{}` commentChar=`{}`\ncommentLines={}\ncolNamesLine={} '.format(self.sep,self.commentChar,self.commentLines,self.colNamesLine)
         s += 'colNames={}'.format(self.colNames)
         s += '\n'
         if len(self.header)>0:

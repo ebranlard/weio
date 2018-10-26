@@ -110,3 +110,13 @@ class File(object):
             print('[FAIL] '+self.filename)
 
 
+# --------------------------------------------------------------------------------}
+# --- Helper functions
+# --------------------------------------------------------------------------------{
+def isBinary(filename):
+    with open(filename, 'r') as f:
+        try:
+            f.readline()
+            return False
+        except UnicodeDecodeError:
+            return True

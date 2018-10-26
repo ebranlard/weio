@@ -1,4 +1,5 @@
 from .CSVFile import CSVFile
+from .File import isBinary, WrongFormatError
 import pandas as pd
 
 class FASTWndFile(CSVFile):
@@ -17,8 +18,14 @@ class FASTWndFile(CSVFile):
         Cols=['{}_{}'.format(c,u) for c,u in zip(self.colNames,self.units)]
         super(FASTWndFile, self).__init__(sep=' ',commentChar='!',colNames=Cols,*args, **kwargs)
 
+    def _read(self, *args, **kwargs):
+        if isBinary(self.filename):
+            raise WrongFormatError('This is a binary file (turbulence file?) not a FAST ascii determinisctic wind file')
+        super(FASTWndFile, self)._read(*args, **kwargs)
+
     def _toDataFrame(self):
         return self.data
+
 
 # --------------------------------------------------------------------------------}
 # --- Functions specific to file type  
