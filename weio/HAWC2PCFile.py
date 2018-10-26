@@ -24,7 +24,7 @@ class HAWC2PCFile(File):
 
     def _toDataFrame(self):
         import pdb
-        cols=['alpha_[deg]','Cl_[-]','Cd_[-]','Cm_[-]']
+        cols=['Alpha_[deg]','Cl_[-]','Cd_[-]','Cm_[-]']
 
         dfs = {}
         for iset in self.data.pc_sets.keys():

@@ -1,4 +1,8 @@
+from __future__ import print_function
 from __future__ import absolute_import
+from io import open
+from builtins import str
+
 from .File import File, WrongFormatError
 import numpy as np
 import re
@@ -63,9 +67,8 @@ class FASTInFile(File):
     def _read(self):
         try: 
             self.data =[]
-            with open(self.filename) as f:
+            with open(self.filename, 'r', errors="surrogateescape") as f:
                 lines = f.read().splitlines()
-
             # Fast files start with ! or -
             #if lines[0][0]!='!' and lines[0][0]!='-':
             #    raise Exception('Fast file do not start with ! or -, is it the right format?')
@@ -188,6 +191,11 @@ class FASTInFile(File):
                             break
 
 
+                #print('label>',d['label'],'<',type(d['label']));
+                #print('value>',d['value'],'<',type(d['value']));
+                #print(isStr(d['value']))
+                #if isStr(d['value']):
+                #    print(d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L)
 
                     
                 # --- Handling of tables
@@ -241,7 +249,6 @@ class FASTInFile(File):
 
                 self.data.append(d)
                 i += 1
-
                 # --- Safety checks
                 if d['isComment']:
                     #print(line)
@@ -318,12 +325,14 @@ class FASTInFile(File):
 # --- Helper functions 
 # --------------------------------------------------------------------------------{
 def isStr(s):
+    # NOTE: all this avoided since we import str from builtins
     # Python 2 and 3 compatible
-    try: 
-       basestring # python 2
-    except NameError:
-       basestring=str #python 3
-    return isinstance(s, basestring)
+#     try: 
+#        basestring # python 2
+#        return isinstance(s, basestring) or isinstance(s,unicode)
+#     except NameError:
+#    basestring=str #python 3
+   return isinstance(s, str)
 
 def strIsFloat(s):
     #return s.replace('.',',1').isdigit()

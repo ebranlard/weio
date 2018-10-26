@@ -12,7 +12,7 @@ def tests():
     #print(fileformat)
     #F=weio.CSVFile('_tests/FASTIn_AD15_bld.dat')
     #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
-    #F=weio.FASTOutFile('_TODO/OUT.elm')
+    #F=weio.FASTInFile('_tests/FASTIn_ED_twr.dat')
     #print(F.toDataFrame())
     #return
     #return
