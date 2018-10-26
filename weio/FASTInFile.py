@@ -325,13 +325,26 @@ class FASTInFile(File):
 # --- Helper functions 
 # --------------------------------------------------------------------------------{
 def isStr(s):
-    # NOTE: all this avoided since we import str from builtins
     # Python 2 and 3 compatible
-#     try: 
-#        basestring # python 2
-#        return isinstance(s, basestring) or isinstance(s,unicode)
-#     except NameError:
-#    basestring=str #python 3
+    # Two options below
+    # NOTE: all this avoided since we import str from builtins
+    # --- Version 2
+    #     isString = False;
+    #     if(isinstance(s, str)):
+    #         isString = True;
+    #     try:
+    #         if(isinstance(s, basestring)): # todo unicode as well
+    #             isString = True;
+    #     except NameError:
+    #         pass; 
+    #     return isString
+    # --- Version 1
+    #     try: 
+    #        basestring # python 2
+    #        return isinstance(s, basestring) or isinstance(s,unicode)
+    #     except NameError:
+    #          basestring=str #python 3
+    #     return isinstance(s, str)
    return isinstance(s, str)
 
 def strIsFloat(s):
