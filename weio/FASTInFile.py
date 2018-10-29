@@ -98,38 +98,7 @@ class FASTInFile(File):
             #    raise Exception('Fast file do not start with ! or -, is it the right format?')
             
             # Special case Old AirfoilData
-            # TODO make a separate function
-            if len(lines)>14:
-                KW1=lines[12].strip().split()
-                KW2=lines[13].strip().split()
-                if len(KW1)>1 and len(KW2)>1:
-                    if KW1[1].lower()=='angle' and KW2[1].lower()=='minimum':
-                        d = getDict(); d['isComment'] = True; d['value'] = lines[0]; self.data.append(d);
-                        d = getDict(); d['isComment'] = True; d['value'] = lines[1]; self.data.append(d);
-                        for i in range(2,14):
-                            splits = lines[i].split()
-                            #print(splits)
-                            d = getDict()
-                            d['label'] = ' '.join(splits[1:]) # TODO
-                            d['descr'] = ' '.join(splits[1:]) # TODO
-                            d['value'] = float(splits[0])
-                            self.data.append(d)
-                        #pass
-                        #for i in range(2,14):
-                        nTabLines=0
-                        while 14+nTabLines<len(lines) and  len(lines[14+nTabLines].strip())>0 :
-                            nTabLines +=1
-                        #data = np.array([lines[i].strip().split() for i in range(14,len(lines)) if len(lines[i])>0]).astype(np.float)
-                        #data = np.array([lines[i].strip().split() for i in takewhile(lambda x: len(lines[i].strip())>0, range(14,len(lines)-1))]).astype(np.float)
-                        data = np.array([lines[i].strip().split() for i in range(14,nTabLines+14)]).astype(np.float)
-                        d = getDict()
-                        d['label']     = 'Polar'
-                        d['tabDimVar'] = nTabLines
-                        d['tabType']   = TABTYPE_NUM_NO_HEADER
-                        d['value']     = data
-                        d['tabColumnNames'] = ['Alpha','Cl','Cd','Cm']
-                        d['tabUnits'] = ['(deg)','(-)','(-)','(-)']
-                        self.data.append(d)
+            if self.detectAndReadAirfoil(lines):
                         return
 
             # Parsing line by line, storing each line into a disctionary
@@ -182,8 +151,8 @@ class FASTInFile(File):
                     else:
                         if not strIsInt(d['value']): 
                             raise WrongFormatError('Wrong value of NumCoords')
-                        if int(d['value'])<0:
-                            break
+                        if int(d['value'])<=0:
+                            pass
                         else:
                             # 3 comment lines
                             self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
@@ -281,7 +250,8 @@ class FASTInFile(File):
                     if hasSpecialChars(d['label']):
                         nWrongLabels +=1
                         #print('label>',d['label'],'<',type(d['label']),line);
-                        raise WrongFormatError('Special Character found in Label.')
+                        if i>3: # first few lines may be comments, we allow it
+                            raise WrongFormatError('Special Character found in Label.')
                     if len(d['label'])==0:
                         nWrongLabels +=1
                 if nComments>len(lines)*0.35:
@@ -340,10 +310,71 @@ class FASTInFile(File):
                     Cols=d['tabColumnNames']
                 else:
                     Cols=['{}_{}'.format(c,u.replace('(','[').replace(')',']')) for c,u in zip(d['tabColumnNames'],d['tabUnits'])]
+                #print(Val)
+                #print(Cols)
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=Val,columns=Cols)
         return dfs
 
+# --------------------------------------------------------------------------------}
+# --- SubReaders /detectors
+# --------------------------------------------------------------------------------{
+    def detectAndReadAirfoil(self,lines):
+        if len(lines)<14:
+            return False
+        # Reading number of tables
+        L3 = lines[2].strip().split()
+        if len(L3)<=0:
+            return False
+        if not strIsInt(L3[0]):
+            return False
+        nTables=int(L3[0])
+        # Reading table ID
+        L4 = lines[3].strip().split()
+        if len(L4)<=nTables:
+            return False
+        TableID=L4[:nTables]
+        if nTables==1:
+            TableID=['']
+        # Keywords for file format
+        KW1=lines[12].strip().split()
+        KW2=lines[13].strip().split()
+        if len(KW1)>nTables and len(KW2)>nTables:
+            if KW1[nTables].lower()=='angle' and KW2[nTables].lower()=='minimum':
+                d = getDict(); d['isComment'] = True; d['value'] = lines[0]; self.data.append(d);
+                d = getDict(); d['isComment'] = True; d['value'] = lines[1]; self.data.append(d);
+                for i in range(2,14):
+                    splits = lines[i].split()
+                    #print(splits)
+                    d = getDict()
+                    d['label'] = ' '.join(splits[1:]) # TODO
+                    d['descr'] = ' '.join(splits[1:]) # TODO
+                    d['value'] = float(splits[0])
+                    self.data.append(d)
+                #pass
+                #for i in range(2,14):
+                nTabLines=0
+                while 14+nTabLines<len(lines) and  len(lines[14+nTabLines].strip())>0 :
+                    nTabLines +=1
+                #data = np.array([lines[i].strip().split() for i in range(14,len(lines)) if len(lines[i])>0]).astype(np.float)
+                #data = np.array([lines[i].strip().split() for i in takewhile(lambda x: len(lines[i].strip())>0, range(14,len(lines)-1))]).astype(np.float)
+                data = np.array([lines[i].strip().split() for i in range(14,nTabLines+14)]).astype(np.float)
+                #print(data)
+                d = getDict()
+                d['label']     = 'Polar'
+                d['tabDimVar'] = nTabLines
+                d['tabType']   = TABTYPE_NUM_NO_HEADER
+                d['value']     = data
+                if np.size(data,1)==1+nTables*3:
+                    d['tabColumnNames'] = ['Alpha']+[n+l for l in TableID for n in ['Cl','Cd','Cm']]
+                    d['tabUnits']       = ['(deg)']+['(-)' , '(-)' , '(-)']*nTables
+                elif np.size(data,1)==1+nTables*2:
+                    d['tabColumnNames'] = ['Alpha']+[n+l for l in TableID for n in ['Cl','Cd']]
+                    d['tabUnits']       = ['(deg)']+['(-)' , '(-)']*nTables
+                else:
+                    d['tabColumnNames'] = ['col{}'.format(j) for j in range(np.size(data,1))]
+                self.data.append(d)
+                return True
 
 # --------------------------------------------------------------------------------}
 # --- Helper functions 
