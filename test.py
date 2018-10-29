@@ -14,6 +14,7 @@ def tests():
     #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
     #F=weio.FASTInFile('_tests/FASTIn_ED_twr.dat')
     #F=weio.FASTOutFile('_tests/FASTOut_HD.elev')
+    #F=weio.CSVFile('_TODO/template_YYYYMMDD_wtg_response_steady_state.txt')
     #print(F.toDataFrame())
     #return
     #return
@@ -36,7 +37,7 @@ def tests():
                 n=len(dfs)
             #print(fr.toDataFrame())
             s=fileformat.name
-            s=s[:s.find('(')].replace('file','')[:20]
+            s=s.replace('file','')[:20]
             print('[ OK ] {:30s}\t{:20s}\t{}'.format(f[:30],s,n))
         except weio.FormatNotDetectedError:
             nError += 1

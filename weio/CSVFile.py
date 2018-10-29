@@ -81,6 +81,19 @@ class CSVFile(File):
                         break
                     self.header.append(l.strip())
             self.commentLines=list(range(len(self.header)))
+        else:
+            # We still beleive that some characters are comments
+            line=readline(iStartLine).strip()
+            if len(line)>0 and line[0] in ['#','!',';']:
+                self.commentChar=line[0]
+                # Nasty copy paste from above
+                with open(self.filename) as f:
+                    while True:
+                        l = f.readline().strip()
+                        if (not l) or (l+'_dummy')[0] != self.commentChar[0]:
+                            break
+                        self.header.append(l.strip())
+
         iStartLine = len(self.header)
 
         # --- File separator 
