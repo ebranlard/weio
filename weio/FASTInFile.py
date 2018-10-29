@@ -17,10 +17,10 @@ import pandas as pd
 
 # from .dtuwetb import fast_io
 # TODO members for  BeamDyn with mutliple key point
-NUMTAB_FROM_VAL_DETECT   = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'    , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID' , 'PropSetID'         , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes' ,'kp_xr']
-NUMTAB_FROM_VAL_DIM_VAR  = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds' , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints' , 'NPropSets'         , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes','kp_total']
-NUMTAB_FROM_VAL_VARNAME  = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'  , 'MemberSectionProp' , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldNodes','MemberGeom']
-NUMTAB_FROM_VAL_NHEADER  = [2          , 2           , 2          , 2            , 2          , 2          , 2          , 2          , 2         , 2                   , 2           , 2             , 2           , 2          , 1, 2]
+NUMTAB_FROM_VAL_DETECT  = ['HtFract' ,'TwrElev'  ,'BlFract' ,'Genspd_TLU','BlSpn'       ,'WndSpeed','HvCoefID','AxCoefID','JointID','PropSetID'        ,'Dpth'     ,'FillNumM'   ,'MGDpth'   ,'SimplCd' ,'RNodes'      ,'kp_xr']
+NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt','NumTwrNds','NBlInpSt','DLL_NumTrq','NumBlNds'    ,'NumCases','NHvCoef' ,'NAxCoef' ,'NJoints','NPropSets'        ,'NCoefDpth','NFillGroups','NMGDepths',1         ,'BldNodes'    ,'kp_total']
+NUMTAB_FROM_VAL_VARNAME = ['TowProp' ,'TowProp'  ,'BldProp' ,'DLLProp'   ,'BldAeroNodes','Cases'   ,'HvCoefs' ,'AxCoefs' ,'Joints' ,'MemberSectionProp','DpthProp' ,'FillGroups' ,'MGProp'   ,'SmplProp','BldAeroNodes','MemberGeom']
+NUMTAB_FROM_VAL_NHEADER = [2         ,2          ,2         ,2           ,2             ,2         ,2         ,2         ,2        ,2                  ,2          ,2            ,2          ,2         ,1             ,2]
 NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
 NUMTAB_FROM_LAB_DETECT   = ['NumAlf' ,'F_X'      ,'MemberCd1'    ,'MJointID1','NOutLoc']
@@ -61,6 +61,19 @@ class FASTInFile(File):
                 return i
         raise KeyError('Variable '+ label+' not found')
 
+    # Making object an iterator
+    def __iter__(self):
+        self.iCurrent=-1
+        self.iMax=len(self.data)-1
+        return self
+
+    def __next__(self): # Python 2: def next(self)
+        if self.iCurrent > self.iMax:
+            raise StopIteration
+        else:
+            self.iCurrent += 1
+            return self.data[self.iCurrent]
+
     # Making it behave like a dictionary
     def __setitem__(self,key,item):
         i = self.getID(key)
@@ -69,6 +82,10 @@ class FASTInFile(File):
     def __getitem__(self,key):
         i = self.getID(key)
         return self.data[i]['value']
+
+    def __repr__(self):
+        s ='Fast input file: {}\n'.format(self.filename)
+        return s+'\n'.join(['{:15s}: {}'.format(d['label'],d['value']) for i,d in enumerate(self.data)])
 
 
     def _read(self):
