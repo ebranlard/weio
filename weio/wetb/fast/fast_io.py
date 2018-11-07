@@ -200,7 +200,10 @@ def load_binary_output(filename, use_buffer=True):
     if use_buffer:
         # Scaling Data
         for iCol in range(NumOutChans):
-            data[:,iCol+1] = (data[:,iCol+1] - ColOff[iCol]) / ColScl[iCol]
+            if np.isnan(ColScl[iCol]) and np.isnan(ColOff[iCol]):
+                data[:,iCol+1] = 0 # probably due to a division by zero in Fortran
+            else:
+                data[:,iCol+1] = (data[:,iCol+1] - ColOff[iCol]) / ColScl[iCol]
         # Adding time column
         data[:,0] = time
     else:
