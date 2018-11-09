@@ -30,7 +30,7 @@ NUMTAB_FROM_LAB_DETECT_L = [s.lower() for s in NUMTAB_FROM_LAB_DETECT]
 
 FILTAB_FROM_LAB_DETECT   = ['FoilNm' ,'AFNames']
 FILTAB_FROM_LAB_DIM_VAR  = ['NumFoil','NumAFfiles']
-FILTAB_FROM_LAB_VARNAME  = ['FoilNm' ,'FoilNm']
+FILTAB_FROM_LAB_VARNAME  = ['FoilNm' ,'AFNames']
 FILTAB_FROM_LAB_DETECT_L = [s.lower() for s in FILTAB_FROM_LAB_DETECT]
 
 TABTYPE_NOT_A_TAB          = 0
@@ -112,11 +112,16 @@ class FASTInFile(File):
                 or line.upper().find('MESH-BASED OUTPUTS')>0 \
                 or line.upper().find('OUTPUT CHANNELS'   )>0:
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                    firstword = re.match(r'^\W*\w+', line)[0]
+                    remainer  = re.sub(r'^\W*\w+\W*', '', line)
+                    print(firstword)
+                    print(remainer)
                     OutList,i = parseFASTOutList(lines,i+1)
                     d = getDict()
-                    d['label']   = 'OutList'   # TODO
+                    d['label']   = firstword
+                    d['descr']   = remainer
                     d['tabType'] = TABTYPE_FIL # TODO
-                    d['value']   = OutList
+                    d['value']   = ['']+OutList
                     self.data.append(d)
                     if i>=len(lines):
                         break
@@ -293,7 +298,8 @@ class FASTInFile(File):
                     f.write('! {}\n'.format(' '.join(d['tabUnits'])))
                     f.write('\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value']))
                 elif d['tabType']==TABTYPE_FIL:
-                    f.write('{} {} {}\n'.format(d['value'][0],d['tabDetect'],d['descr']))
+                    #f.write('{} {} {}\n'.format(d['value'][0],d['tabDetect'],d['descr']))
+                    f.write('{} {} {}\n'.format(d['value'][0],d['label'],d['descr'])) # TODO?
                     f.write('\n'.join(fil for fil in d['value'][1:]))
                 else:
                     raise Exception('Unknown table type for variable {}',d)
@@ -464,6 +470,7 @@ def parseFASTInputLine(line_raw,i):
             # Splitting based on comma and looping while it's numbers of booleans
             ii=0
             s=csplits[ii]
+            print(csplits)
             while strIsFloat(s) or strIsBool(s) and ii<len(csplits):
                 if strIsInt(s):
                     List.append(int(s))
@@ -473,7 +480,7 @@ def parseFASTInputLine(line_raw,i):
                     List.append(bool(s))
                 else:
                     raise WrongFormatError('Lists of strings not supported.')
-                ii =ii+2
+                ii =ii+1
                 if ii>=len(csplits):
                     raise WrongFormatError('Wrong number of list values')
                 s = csplits[ii]
@@ -546,8 +553,8 @@ def parseFASTOutList(lines,iStart):
             raise Exception('More that 200 lines found in outlist')
         if i>=len(lines):
             print('[WARN] End of file reached while reading Outlist')
-    i=min(i+1,len(lines))
-    return OutList,i
+    #i=min(i+1,len(lines))
+    return OutList,iStart+len(OutList)
 
 
 def extractWithinParenthesis(s):
