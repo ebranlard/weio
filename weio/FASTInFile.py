@@ -143,7 +143,6 @@ class FASTInFile(File):
                 # --- Handling of special files
                 if d['label'].lower()=='numcoords':
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
-                    self.data.append(d); i+=1;
                     if isStr(d['value']):
                         if d['value'][0]=='@':
                             # it's a ref to the airfoil coord file
@@ -154,6 +153,7 @@ class FASTInFile(File):
                         if int(d['value'])<=0:
                             pass
                         else:
+                            self.data.append(d); i+=1;
                             # 3 comment lines
                             self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
                             self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
