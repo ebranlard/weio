@@ -114,8 +114,8 @@ class FASTInFile(File):
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     firstword = re.match(r'^\W*\w+', line)[0]
                     remainer  = re.sub(r'^\W*\w+\W*', '', line)
-                    print(firstword)
-                    print(remainer)
+                    #print(firstword)
+                    #print(remainer)
                     OutList,i = parseFASTOutList(lines,i+1)
                     d = getDict()
                     d['label']   = firstword
@@ -470,7 +470,7 @@ def parseFASTInputLine(line_raw,i):
             # Splitting based on comma and looping while it's numbers of booleans
             ii=0
             s=csplits[ii]
-            print(csplits)
+            #print(csplits)
             while strIsFloat(s) or strIsBool(s) and ii<len(csplits):
                 if strIsInt(s):
                     List.append(int(s))

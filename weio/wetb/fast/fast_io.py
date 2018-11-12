@@ -125,8 +125,8 @@ def load_binary_output(filename, use_buffer=True):
     LenUnit = 10  #;  % number of characters per unit name
 
     with open(filename, 'rb') as fid:
-        FileID = fread(fid, 1, 'int16')  #;             % FAST output file format, INT(2)
-        if FileID[0] not in [FileFmtID_WithTime, FileFmtID_WithoutTime]:
+        FileID = fread(fid, 1, 'int16')[0]  #;             % FAST output file format, INT(2)
+        if FileID not in [FileFmtID_WithTime, FileFmtID_WithoutTime]:
             raise Exception('FileID not supported {}. Is it a FAST binary file?'.format(FileID))
 
         NumOutChans = fread(fid, 1, 'int32')[0]  #;             % The number of output channels, INT(4)
@@ -169,6 +169,8 @@ def load_binary_output(filename, use_buffer=True):
         #    %-------------------------
 
         nPts = NT * NumOutChans  #;           % number of data points in the file
+        #print('NT',NT)
+        #print('NumOutChans',NumOutChans)
 
 
         if FileID == FileFmtID_WithTime:
@@ -193,6 +195,9 @@ def load_binary_output(filename, use_buffer=True):
         time = (np.array(PackedTime) - TimeOff) / TimeScl;
     else:
         time = TimeOut1 + TimeIncr * np.arange(NT)
+
+    #import pdb
+    #pdb.set_trace()
 
     #    %-------------------------
     #    % Scale the packed binary to real data
