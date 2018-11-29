@@ -15,7 +15,11 @@ def tests():
     #F=weio.FASTInFile('_tests/FASTIn_AD15_arfl.dat')
     #F=weio.FASTOutFile('_tests/FASTOut_HD.elev')
     #F=weio.CSVFile('_TODO/template_YYYYMMDD_wtg_response_steady_state.txt')
-    #print(F.toDataFrame())
+#     F=weio.HAWC2DatFile('_TODO/Hawc2ascii.dat')
+    #F=weio.HAWC2DatFile('_tests/HAWC2_out_bin.dat')
+    #F=weio.HAWC2DatFile('_TODO/FLEX_wetb/test.int')
+    #F=weio.HAWC2DatFile('_TODO/hawc2bin_chantest_2.sel')
+    #print(F.toDataFrame().mean())
     #return
     #return
 
