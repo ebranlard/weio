@@ -5,22 +5,12 @@ import glob
 def tests():
     nError=0
 
-    #F = myFastBintest('../DLC1.1_StepSweepHuge.outb')
-    #F=weio.FASTInFile('_tests/FASTAirfoil.dat')
-    #F=weio.FASTInFile('_TODO/FASTIn_AD14_arfl.dat')
     #fileformat,F = weio.detectFormat('_tests/FASTIn_AD15_bld.dat')
     #print(fileformat)
-    #F=weio.CSVFile('_tests/FASTIn_AD15_bld.dat')
-    #F=weio.HAWC2AEFile('_tests/FASTIn_BD.dat')
-    #F=weio.FASTInFile('_tests/FASTIn_AD15_arfl.dat')
-    #F=weio.FASTOutFile('_tests/FASTOut_HD.elev')
-    #F=weio.CSVFile('_TODO/template_YYYYMMDD_wtg_response_steady_state.txt')
-#     F=weio.HAWC2DatFile('_TODO/Hawc2ascii.dat')
     #F=weio.HAWC2DatFile('_tests/HAWC2_out_bin.dat')
-    #F=weio.HAWC2DatFile('_TODO/FLEX_wetb/test.int')
-    #F=weio.HAWC2DatFile('_TODO/hawc2bin_chantest_2.sel')
+    #F=weio.FLEXOutFile('_tests/FLEXOutBinV3.res');
     #print(F.toDataFrame().mean())
-    #return
+    #print(F)
     #return
 
     for f in glob.glob('_tests/*.*'):

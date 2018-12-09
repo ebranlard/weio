@@ -3,6 +3,9 @@ import os
 class WrongFormatError(Exception):
     pass
 
+class BrokenFormatError(Exception):
+    pass
+
 class File(object):
     def __init__(self,filename=None):
         if filename:

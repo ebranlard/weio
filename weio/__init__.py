@@ -1,4 +1,4 @@
-from .File import File, WrongFormatError
+from .File import File, WrongFormatError, BrokenFormatError
 from .FileFormats import FileFormat
 # User defined formats
 from .FASTInFile   import FASTInFile
@@ -8,6 +8,7 @@ from .CSVFile      import CSVFile
 from .HAWC2PCFile  import HAWC2PCFile
 from .HAWC2AEFile  import HAWC2AEFile
 from .HAWC2DatFile import HAWC2DatFile
+from .FLEXOutFile  import FLEXOutFile
 
 class FormatNotDetectedError(Exception):
     pass
@@ -21,6 +22,7 @@ def fileFormats():
     formats.append(FileFormat(HAWC2DatFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
+    formats.append(FileFormat(FLEXOutFile))
     return formats
 
 

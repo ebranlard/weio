@@ -44,7 +44,8 @@ class HAWC2DatFile(File):
 
     def _toDataFrame(self):
         if self.info['attribute_units'] is not None:
-            cols=[n+'_['+u+']' for n,u in zip(self.info['attribute_names'],self.info['attribute_units'])]
+            units = [u.replace('(','').replace(')','').replace('[','').replace(']','') for u in self.info['attribute_units']]
+            cols=[n+'_['+u+']' for n,u in zip(self.info['attribute_names'],units)]
         else:
             cols=self.info['attribute_names']
         return pd.DataFrame(data=self.data,columns=cols)

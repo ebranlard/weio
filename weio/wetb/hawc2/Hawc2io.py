@@ -111,7 +111,7 @@ class ReadHawc2(object):
 # read sensor file for FLEX format
     def _ReadSensorFile(self):
         # read sensor file used if results are saved in FLEX format
-        DirName = os.path.dirname(self.FileName + ".int")
+        DirName = os.path.dirname(self.FileName)
         try:
             fid = opent(DirName + "\sensor ", 'r')
         except IOError:
@@ -132,11 +132,12 @@ class ReadHawc2(object):
             temp = str(Lines[i][53:]); Description.append(temp.strip())
         self.ChInfo = [Name, Unit, Description]
         # read general info from *.int file
-        fid = open(self.FileName + ".int", 'rb')
+        fid = open(self.FileName, 'rb')
         fid.seek(4 * 19)
         if not np.fromfile(fid, 'int32', 1) == self.NrCh:
             print ("number of sensors in sensor file and data file are not consisten")
-        fid.seek(4 * (self.NrCh) + 8, 1)
+        fid.seek(4 * (self.NrCh) + 4, 1)
+        self.Version = np.fromfile(fid, 'int32',1)[0]
         temp = np.fromfile(fid, 'f', 2)
         self.Freq = 1 / temp[1];
         self.ScaleFactor = np.fromfile(fid, 'f', self.NrCh)
@@ -157,8 +158,15 @@ class ReadHawc2(object):
         elif FileName.lower().endswith('.dat') and os.path.isfile(os.path.splitext(FileName)[0] + ".sel"):
              self.FileName = os.path.splitext(FileName)[0]
              self._ReadSelFile()
-        elif FileName.lower().endswith('.int') or os.path.isfile(self.FileName + ".int"):
-             self.FileName = os.path.splitext(FileName)[0]
+        elif FileName.lower().endswith('.int') or FileName.lower().endswith('.res'):
+             self.FileFormat = 'FLEX'
+             self._ReadSensorFile()
+        elif os.path.isfile(self.FileName + ".int"):
+             self.FileName = self.FileName + ".int"
+             self.FileFormat = 'FLEX'
+             self._ReadSensorFile()
+        elif os.path.isfile(self.FileName + ".res"):
+             self.FileName = self.FileName + ".res"
              self.FileFormat = 'FLEX'
              self._ReadSensorFile()
         elif FileName.lower().endswith('.hdf5') or os.path.isfile(self.FileName + ".hdf5"):
@@ -190,10 +198,13 @@ class ReadHawc2(object):
     def ReadFLEX(self, ChVec=[]):
         if not ChVec:
             ChVec = range(1, self.NrCh)
-        fid = open(self.FileName + ".int", 'rb')
+        fid = open(self.FileName, 'rb')
         fid.seek(2 * 4 * self.NrCh + 48 * 2)
         temp = np.fromfile(fid, 'int16')
-        temp = temp.reshape(self.NrSc, self.NrCh)
+        if self.Version==3:
+            temp = temp.reshape(self.NrCh, self.NrSc).transpose()
+        else:
+            temp = temp.reshape(self.NrSc, self.NrCh)
         fid.close()
         return np.dot(temp[:, ChVec], np.diag(self.ScaleFactor[ChVec]))
 ################################################################################
