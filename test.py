@@ -5,7 +5,10 @@ import glob
 def tests():
     nError=0
 
-    #fileformat,F = weio.detectFormat('_tests/FASTIn_AD15_bld.dat')
+    #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
+    #F = weio.FASTInFile('_tests/FASTIn_ED_bld.dat')
+    #F = weio.FASTInFile('_tests/FASTIn_ED_twr.dat')
+    #print(F.toDataFrame())
     #print(fileformat)
     #F=weio.HAWC2DatFile('_tests/HAWC2_out_bin.dat')
     #F=weio.FLEXOutFile('_tests/FLEXOutBinV3.res');

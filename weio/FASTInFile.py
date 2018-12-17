@@ -54,12 +54,19 @@ class FASTInFile(File):
         return 'FAST input file'
 
     def getID(self,label):
+        i=self.getIDSafe(label)
+        if i<0:
+            raise KeyError('Variable '+ label+' not found')
+        else:
+            return i
+
+    def getIDSafe(self,label):
         # brute force search
         for i in range(len(self.data)):
             d = self.data[i]
-            if d['label']==label:
+            if d['label'].lower()==label.lower():
                 return i
-        raise KeyError('Variable '+ label+' not found')
+        return -1
 
     # Making object an iterator
     def __iter__(self):
@@ -318,6 +325,55 @@ class FASTInFile(File):
                     Cols=['{}_{}'.format(c,u.replace('(','[').replace(')',']')) for c,u in zip(d['tabColumnNames'],d['tabUnits'])]
                 #print(Val)
                 #print(Cols)
+                if self.getIDSafe('BldFl1Sh(2)')>0:
+                    # Hack for blade files, we add the modes
+                    x=Val[:,0]
+                    Modes=np.zeros((x.shape[0],3))
+                    Modes[:,0] = x**2 * self['BldFl1Sh(2)'] \
+                               + x**3 * self['BldFl1Sh(3)'] \
+                               + x**4 * self['BldFl1Sh(4)'] \
+                               + x**5 * self['BldFl1Sh(5)'] \
+                               + x**6 * self['BldFl1Sh(6)'] 
+                    Modes[:,1] = x**2 * self['BldFl2Sh(2)'] \
+                               + x**3 * self['BldFl2Sh(3)'] \
+                               + x**4 * self['BldFl2Sh(4)'] \
+                               + x**5 * self['BldFl2Sh(5)'] \
+                               + x**6 * self['BldFl2Sh(6)'] 
+                    Modes[:,2] = x**2 * self['BldEdgSh(2)'] \
+                               + x**3 * self['BldEdgSh(3)'] \
+                               + x**4 * self['BldEdgSh(4)'] \
+                               + x**5 * self['BldEdgSh(5)'] \
+                               + x**6 * self['BldEdgSh(6)'] 
+                    Val = np.hstack((Val,Modes))
+                    Cols = Cols + ['ShapeFlap1_[-]','ShapeFlap2_[-]','ShapeEdge1_[-]']
+                  
+                elif self.getIDSafe('TwFAM1Sh(2)')>0:
+                    # Hack for tower files, we add the modes
+                    x=Val[:,0]
+                    Modes=np.zeros((x.shape[0],4))
+                    Modes[:,0] = x**2 * self['TwFAM1Sh(2)'] \
+                               + x**3 * self['TwFAM1Sh(3)'] \
+                               + x**4 * self['TwFAM1Sh(4)'] \
+                               + x**5 * self['TwFAM1Sh(5)'] \
+                               + x**6 * self['TwFAM1Sh(6)'] 
+                    Modes[:,1] = x**2 * self['TwFAM2Sh(2)'] \
+                               + x**3 * self['TwFAM2Sh(3)'] \
+                               + x**4 * self['TwFAM2Sh(4)'] \
+                               + x**5 * self['TwFAM2Sh(5)'] \
+                               + x**6 * self['TwFAM2Sh(6)'] 
+                    Modes[:,2] = x**2 * self['TwSSM1Sh(2)'] \
+                               + x**3 * self['TwSSM1Sh(3)'] \
+                               + x**4 * self['TwSSM1Sh(4)'] \
+                               + x**5 * self['TwSSM1Sh(5)'] \
+                               + x**6 * self['TwSSM1Sh(6)'] 
+                    Modes[:,3] = x**2 * self['TwSSM2Sh(2)'] \
+                               + x**3 * self['TwSSM2Sh(3)'] \
+                               + x**4 * self['TwSSM2Sh(4)'] \
+                               + x**5 * self['TwSSM2Sh(5)'] \
+                               + x**6 * self['TwSSM2Sh(6)'] 
+                    Val = np.hstack((Val,Modes))
+                    Cols = Cols + ['ShapeForeAft1_[-]','ShapeForeAft2_[-]','ShapeSideSide1_[-]','ShapeSideSide2_[-]']
+
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=Val,columns=Cols)
         return dfs
