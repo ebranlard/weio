@@ -10,17 +10,17 @@ from builtins import str
 from future import standard_library
 standard_library.install_aliases()
 
-from .File import File, WrongFormatError
+from .File import File, WrongFormatError, BrokenFormatError
 import numpy as np
 import re
 import pandas as pd
 
 # from .dtuwetb import fast_io
 # TODO members for  BeamDyn with mutliple key point
-NUMTAB_FROM_VAL_DETECT  = ['HtFract' ,'TwrElev'  ,'BlFract' ,'Genspd_TLU','BlSpn'       ,'WndSpeed','HvCoefID','AxCoefID','JointID','PropSetID'        ,'Dpth'     ,'FillNumM'   ,'MGDpth'   ,'SimplCd' ,'RNodes'      ,'kp_xr']
-NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt','NumTwrNds','NBlInpSt','DLL_NumTrq','NumBlNds'    ,'NumCases','NHvCoef' ,'NAxCoef' ,'NJoints','NPropSets'        ,'NCoefDpth','NFillGroups','NMGDepths',1         ,'BldNodes'    ,'kp_total']
-NUMTAB_FROM_VAL_VARNAME = ['TowProp' ,'TowProp'  ,'BldProp' ,'DLLProp'   ,'BldAeroNodes','Cases'   ,'HvCoefs' ,'AxCoefs' ,'Joints' ,'MemberSectionProp','DpthProp' ,'FillGroups' ,'MGProp'   ,'SmplProp','BldAeroNodes','MemberGeom']
-NUMTAB_FROM_VAL_NHEADER = [2         ,2          ,2         ,2           ,2             ,2         ,2         ,2         ,2        ,2                  ,2          ,2            ,2          ,2         ,1             ,2]
+NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID' , 'PropSetID'         , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      ,'mu1']
+NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints' , 'NPropSets'         , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   ,1]
+NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'  , 'MemberSectionProp' , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' ,'DampingCoeffs']
+NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2         , 2                   , 2           , 2             , 2           , 2          , 1              , 2            ,2]
 NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
 NUMTAB_FROM_LAB_DETECT   = ['NumAlf' ,'F_X'      ,'MemberCd1'    ,'MJointID1','NOutLoc']
@@ -37,6 +37,7 @@ TABTYPE_NOT_A_TAB          = 0
 TABTYPE_NUM_WITH_HEADER    = 1
 TABTYPE_NUM_WITH_HEADERCOM = 2
 TABTYPE_NUM_NO_HEADER      = 4
+TABTYPE_NUM_BEAMDYN        = 5
 TABTYPE_FIL                = 3
 TABTYPE_FMT                = 9999 # TODO
 
@@ -104,11 +105,11 @@ class FASTInFile(File):
             #if lines[0][0]!='!' and lines[0][0]!='-':
             #    raise Exception('Fast file do not start with ! or -, is it the right format?')
             
-            # Special case Old AirfoilData
+            # Special filetypes
             if self.detectAndReadAirfoil(lines):
-                        return
+                return
 
-            # Parsing line by line, storing each line into a disctionary
+            # Parsing line by line, storing each line into a dictionary
             i=0    
             nComments  = 0
             nWrongLabels = 0
@@ -146,6 +147,10 @@ class FASTInFile(File):
                     self.data.append(d)
                     if i>=len(lines):
                         break
+                elif line.upper().find('DISTRIBUTED PROPERTIES')>0:
+                    d = parseFASTInputLine(line,i); i+=1;
+                    self.readBeamDynProps(lines,i)
+                    return
 
                 # --- Parsing of standard lines: value(s) key comment
                 line = lines[i]
@@ -194,6 +199,7 @@ class FASTInFile(File):
                             d['tabUnits'] = ['(-)','(-)']
                             self.data.append(d)
                             break
+
 
 
                 #print('label>',d['label'],'<',type(d['label']));
@@ -376,6 +382,19 @@ class FASTInFile(File):
 
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=Val,columns=Cols)
+            elif d['tabType'] in [TABTYPE_NUM_BEAMDYN]:
+                data = d['value']
+                Cols =['Span'] 
+                Cols+=['K{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
+                Cols+=['M{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
+                # Putting the main terms first
+                IAll = range(1+36+36)
+                IMain= [0] + [i*6+i+1 for i in range(6)] + [i*6+i+37 for i in range(6)]
+                IOrg = IMain + [i for i in range(1+36+36) if i not in IMain]
+                Cols = [Cols[i] for i in IOrg]
+                data = data[:,IOrg]
+                name=d['label']
+                dfs[name]=pd.DataFrame(data=data,columns=Cols)
         return dfs
 
 # --------------------------------------------------------------------------------}
@@ -437,6 +456,27 @@ class FASTInFile(File):
                     d['tabColumnNames'] = ['col{}'.format(j) for j in range(np.size(data,1))]
                 self.data.append(d)
                 return True
+
+    def readBeamDynProps(self,lines,iStart):
+        nStations=self['station_total']
+        M=np.zeros((nStations,1+36+36))
+        i=iStart;
+        try:
+            for j in range(nStations):
+                M[j,0]=float(lines[i]); i+=1;
+                M[j,1:37]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
+                i+=7
+                M[j,37:]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
+                i+=7
+        except: 
+            raise WrongFormatError('An error occured while reading section {}/{}'.format(j+1,nStations))
+        d = getDict()
+        d['label']   = 'BeamProperties'
+        d['descr']   = ''
+        d['tabType'] = TABTYPE_NUM_BEAMDYN
+        d['value']   = M
+        self.data.append(d)
+
 
 # --------------------------------------------------------------------------------}
 # --- Helper functions 
