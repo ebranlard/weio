@@ -97,10 +97,15 @@ class FASTInFile(File):
 
 
     def _read(self):
-        try: 
+#         try: 
+        if True:
             self.data =[]
+            #with open(self.filename, 'r', errors="surrogateescape") as f:
             with open(self.filename, 'r', errors="surrogateescape") as f:
-                lines = f.read().splitlines()
+                lines=f.read().splitlines()
+            # IF NEEDED> DO THE FOLLOWING FORMATTING:
+                #lines = [str(l).encode('utf-8').decode('ascii','ignore') for l in f.read().splitlines()]
+
             # Fast files start with ! or -
             #if lines[0][0]!='!' and lines[0][0]!='-':
             #    raise Exception('Fast file do not start with ! or -, is it the right format?')
@@ -120,7 +125,11 @@ class FASTInFile(File):
                 or line.upper().find('MESH-BASED OUTPUTS')>0 \
                 or line.upper().find('OUTPUT CHANNELS'   )>0:
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
-                    firstword = re.match(r'^\W*\w+', line)[0]
+                    parts = re.match(r'^\W*\w+', line)
+                    if parts:
+                        firstword = parts.group(0)[:-1]
+                    else:
+                        raise NotImplementedError
                     remainer  = re.sub(r'^\W*\w+\W*', '', line)
                     #print(firstword)
                     #print(remainer)
@@ -279,10 +288,12 @@ class FASTInFile(File):
                     #print('Label fail',nWrongLabels,len(lines),self.filename)
                     raise WrongFormatError('Too many lines with wrong labels, probably not a FAST Input File')
                  
-        except WrongFormatError as e:    
-            raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
-        except Exception as e:    
-            raise Exception('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
+#         except WrongFormatError as e:    
+#             raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
+#         except Exception as e:    
+#             raise e
+# #             print(e)
+#             raise Exception('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
 
             
 
@@ -547,6 +558,7 @@ def getDict():
 
 def parseFASTInputLine(line_raw,i):
     d = getDict()
+    #print(line_raw)
     try:
         # preliminary cleaning (Note: loss of formatting)
         line = cleanLine(line_raw)

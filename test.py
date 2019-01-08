@@ -6,7 +6,7 @@ def tests():
     nError=0
 
     #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
-    #F = weio.FASTInFile('_tests/FASTIn_BD_bld.dat')
+    #F = weio.FASTInFile('_tests/FASTIn_AD15.dat')
     #F.toDataFrame()
     #print(fileformat)
     #print(F.toDataFrame())

@@ -10,7 +10,7 @@ from builtins import str
 from future import standard_library
 standard_library.install_aliases()
 
-from .File import File, WrongFormatError
+from .File import File, WrongFormatError, FileNotFoundError
 import pandas as pd
 
 from .wetb.hawc2.Hawc2io import ReadHawc2
@@ -26,6 +26,7 @@ class HAWC2DatFile(File):
         return 'HAWC2 dat file'
 
     def _read(self):
+
         try:
             res_file  = ReadHawc2(self.filename)
             self.data = res_file.ReadAll()

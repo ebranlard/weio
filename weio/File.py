@@ -6,6 +6,11 @@ class WrongFormatError(Exception):
 class BrokenFormatError(Exception):
     pass
 
+try: #Python3
+    FileNotFoundError=FileNotFoundError
+except NameError: # Python2
+    FileNotFoundError = IOError
+
 class File(object):
     def __init__(self,filename=None):
         if filename:
