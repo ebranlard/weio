@@ -5,7 +5,7 @@ install:
 	python setup.py install
 
 dep:
-	pip install numpy pandas
+	python -m pip install -r requirements.txt
 
 
 help:

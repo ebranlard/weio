@@ -10,11 +10,12 @@ This library is for instance used by the GUI tool [pyDatView](https://github.com
 - FAST input and output files
 - Main HAWC2 input and output files (still some missing)
 - FLEX output files
+- NetCDF files (partial support for 1D and 2D data for now)
 
 ## Python package usage
 ```python
 import weio 
-f=weio.CSVFile('file.csv')
+f=weio.read('file.csv')
 print(f.toDataFrame())
 f.write('out.csv')
 ```
@@ -22,11 +23,11 @@ f.write('out.csv')
 
 ## Requirements
 The library is compatible python 2.7 and python 3.
-The script relies on the following python packages: `numpy` and `pandas`
+The script relies on the following python packages: `numpy`, `pandas`, `xarray`
 
 If you have pip installed on your system, you can install them by typing in a terminal: 
 ```bash
-pip install numpy pandas
+pip install -r requirements
 ```
 or type `make dep` from the main directory.
 
