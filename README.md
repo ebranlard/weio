@@ -2,7 +2,14 @@
 
 # weio
 
-Library to read and write files, in particular files used by the Wind Energy community
+Library to read and write files, in particular files used by the Wind Energy community. 
+This library is for instance used by the GUI tool [pyDatView](https://github.com/ebranlard/pydatview/) to plot, export and compare these different files. 
+
+## Typical file formats supported
+- Various CSV and delimited files
+- FAST input and output files
+- Main HAWC2 input and output files (still some missing)
+- FLEX output files
 
 ## Python package usage
 ```python
