@@ -3,6 +3,9 @@ import os
 class WrongFormatError(Exception):
     pass
 
+class EmptyFileError(Exception):
+    pass
+
 class BrokenFormatError(Exception):
     pass
 
@@ -29,6 +32,8 @@ class File(object):
         if self.filename:
             if not os.path.isfile(self.filename):
                 raise OSError(2,'File not found:',self.filename)
+            if os.stat(self.filename).st_size == 0:
+                raise EmptyFileError('File is empty:',self.filename)
             # Calling children function
             self._read()
         else:  

@@ -48,6 +48,8 @@ class CSVFile(File):
                     elif i>iLine:
                         break
         def split(s):
+            if s is None:
+                return []
             if self.sep=='\s+':
                 return s.strip().split()
             else:
@@ -83,7 +85,8 @@ class CSVFile(File):
             self.commentLines=list(range(len(self.header)))
         else:
             # We still beleive that some characters are comments
-            line=readline(iStartLine).strip()
+            line=readline(iStartLine)
+            line=str(line).strip()
             if len(line)>0 and line[0] in ['#','!',';']:
                 self.commentChar=line[0]
                 # Nasty copy paste from above
@@ -99,16 +102,20 @@ class CSVFile(File):
         # --- File separator 
         if self.sep is None:
             # Detecting separator by reading first lines of the file
-            with open(self.filename) as f:
-                dummy=[next(f).strip() for x in range(iStartLine)]
-                head=[next(f).strip() for x in range(2)]
-            # comma, semi columns or tab
-            if head[1].find(',')>0:
-                self.sep=','
-            elif head[1].find(';')>0:
-                self.sep=';'
-            else:
-                self.sep='\s+'
+            try:
+                with open(self.filename) as f:
+                    dummy=[next(f).strip() for x in range(iStartLine)]
+                    head=[next(f).strip() for x in range(2)]
+                # comma, semi columns or tab
+                if head[1].find(',')>0:
+                    self.sep=','
+                elif head[1].find(';')>0:
+                    self.sep=';'
+                else:
+                    self.sep='\s+'
+            except:
+                # most likely an empty file
+                pass
 
         # --- ColumnNames
         if self.colNamesLine is not None:

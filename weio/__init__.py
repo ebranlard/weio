@@ -1,4 +1,4 @@
-from .File import File, WrongFormatError, BrokenFormatError
+from .File import File, WrongFormatError, BrokenFormatError, FileNotFoundError, EmptyFileError
 from .FileFormats import FileFormat
 # User defined formats
 from .FASTInFile   import FASTInFile
