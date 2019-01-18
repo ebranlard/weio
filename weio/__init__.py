@@ -9,7 +9,7 @@ from .HAWC2PCFile  import HAWC2PCFile
 from .HAWC2AEFile  import HAWC2AEFile
 from .HAWC2DatFile import HAWC2DatFile
 from .FLEXOutFile  import FLEXOutFile
-from .NetCDFFile   import NetCDFFile
+#from .NetCDFFile   import NetCDFFile
 
 class FormatNotDetectedError(Exception):
     pass
@@ -24,7 +24,7 @@ def fileFormats():
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
     formats.append(FileFormat(FLEXOutFile))
-    formats.append(FileFormat(NetCDFFile))
+    #formats.append(FileFormat(NetCDFFile))
     return formats
 
 

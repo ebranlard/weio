@@ -13,10 +13,7 @@ standard_library.install_aliases()
 from .File import File, WrongFormatError
 import pandas as pd
 
-try:
-    import xarray as xr
-except:
-    raise Exception('Python module `xarray` not installed')
+#import xarray as xr  # 
 
 class NetCDFFile(File):
 
@@ -29,6 +26,11 @@ class NetCDFFile(File):
         return 'NetCDF file (<=2D)'
 
     def _read(self):
+        try:
+            import xarray as xr
+        except:
+            raise Exception('Python module `xarray` not installed')
+
         self.data=xr.open_dataset(self.filename)
 
     def _write(self):
