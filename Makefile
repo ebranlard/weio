@@ -15,6 +15,6 @@ help:
 	echo "   dep        download the dependencies " 
 
 test:
-	python test.py 
+	python -m unittest discover -s _tests
 
 
