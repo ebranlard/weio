@@ -1,10 +1,8 @@
 import unittest
-
-
 import glob
 import weio
 import os
-#sys.path.insert(0, os.path.dirname(__file__))
+MyDir=os.path.dirname(__file__)
 
 class Test(unittest.TestCase):
 
@@ -18,7 +16,7 @@ class Test(unittest.TestCase):
         #return
         DEBUG=False
         nError=0
-        for f in glob.glob('_tests/*.*'):
+        for f in glob.glob(os.path.join(MyDir,'*.*')):
             if os.path.splitext(f)[-1] in ['.py','.pyc']:
                 continue
             try:
@@ -56,12 +54,12 @@ class Test(unittest.TestCase):
 
 
     def test_FASTOut(self):
-        F=weio.read('_tests/FASTOut.out')
+        F=weio.read(os.path.join(MyDir,'FASTOut.out'))
         M=F.toDataFrame()
         self.assertEqual(M.values[-1,1],1036)
 
     def test_FASTOutBin(self):
-        F=weio.read('_tests/FASTOutBin.outb')
+        F=weio.read(os.path.join(MyDir,'FASTOutBin.outb'))
         M=F.toDataFrame()
         self.assertAlmostEqual(M['GenPwr_[kW]'].values[-1],40.57663190807828)
  
