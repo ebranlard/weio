@@ -17,10 +17,10 @@ import pandas as pd
 
 # from .dtuwetb import fast_io
 # TODO members for  BeamDyn with mutliple key point
-NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID' , 'PropSetID'         , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      ,'mu1']
-NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints' , 'NPropSets'         , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   ,1]
-NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'  , 'MemberSectionProp' , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' ,'DampingCoeffs']
-NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2         , 2                   , 2           , 2             , 2           , 2          , 1              , 2            ,2]
+NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID' , 'PropSetID'         , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      ,'mu1'           ,'TwrHtFr'  ,'TwrRe']
+NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints' , 'NPropSets'         , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   ,1               ,'NTwrHt'   ,'NTwrRe']
+NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'  , 'MemberSectionProp' , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' ,'DampingCoeffs' ,'TowerProp','TowerRe']
+NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2         , 2                   , 2           , 2             , 2           , 2          , 1              , 2            ,2               , 1         , 1      ]
 NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
 NUMTAB_FROM_LAB_DETECT   = ['NumAlf' ,'F_X'      ,'MemberCd1'    ,'MJointID1','NOutLoc']
@@ -204,7 +204,7 @@ class FASTInFile(File):
                             d['tabDimVar'] = 'NumCoords'
                             d['tabType']   = TABTYPE_NUM_WITH_HEADERCOM
                             nTabLines = self[d['tabDimVar']]-1  # SOMEHOW ONE DATA POINT LESS
-                            d['value'], d['tabColumnNames'],_  = parseFASTNumTable(lines[i:i+nTabLines+1],nTabLines,i,1)
+                            d['value'], d['tabColumnNames'],_  = parseFASTNumTable(self.filename,lines[i:i+nTabLines+1],nTabLines,i,1)
                             d['tabUnits'] = ['(-)','(-)']
                             self.data.append(d)
                             break
@@ -232,7 +232,7 @@ class FASTInFile(File):
                         nTabLines = d['tabDimVar']
                     else:
                         nTabLines = self[d['tabDimVar']]
-                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders)
+                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders)
                     i += nTabLines+nHeaders-1
 
                 elif isStr(d['label']) and d['label'].lower() in NUMTAB_FROM_LAB_DETECT_L:
@@ -252,7 +252,7 @@ class FASTInFile(File):
                         d['tabType']   = TABTYPE_NUM_WITH_HEADER
                     nTabLines = self[d['tabDimVar']]
                     #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
-                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(lines[i:i+nTabLines+2],nTabLines,i,2)
+                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+2],nTabLines,i,2)
                     i += nTabLines+1
 
                 elif isStr(d['label']) and d['label'].lower() in FILTAB_FROM_LAB_DETECT_L:
@@ -694,13 +694,13 @@ def detectUnits(s,nRef):
     return Units
 
 
-def parseFASTNumTable(lines,n,iStart,nHeaders=2):
+def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2):
     Tab = None
     ColNames = None
     Units = None
 
     if len(lines)!=n+nHeaders:
-        raise WrongFormatError('Not enough lines in table: {} lines instead of {}'.format(len(lines)-nHeaders,n))
+        raise BrokenFormatError('Not enough lines in table: {} lines instead of {}\nFile:{}'.format(len(lines)-nHeaders,n,filename))
 
     if nHeaders<1:
         raise NotImplementedError('Reading FAST tables with no headers not implemented yet')
@@ -747,7 +747,7 @@ def parseFASTNumTable(lines,n,iStart,nHeaders=2):
             Tab[i-nHeaders,:] = v
             
     except Exception as e:    
-        raise Exception('Line {}: '.format(iStart+i+1)+e.args[0])
+        raise BrokenFormatError('Line {}: {}'.format(iStart+i+1,e.args[0]))
     return Tab, ColNames, Units
 
 
