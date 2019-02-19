@@ -40,6 +40,7 @@ class CSVFile(File):
         super(CSVFile, self).__init__(filename=filename,**kwargs)
 
     def _read(self):
+        COMMENT_CHAR=['#','!',';']
         def readline(iLine):
             with open(self.filename) as f:
                 for i, line in enumerate(f):
@@ -84,10 +85,10 @@ class CSVFile(File):
                     self.header.append(l.strip())
             self.commentLines=list(range(len(self.header)))
         else:
-            # We still beleive that some characters are comments
+            # We still believe that some characters are comments
             line=readline(iStartLine)
             line=str(line).strip()
-            if len(line)>0 and line[0] in ['#','!',';']:
+            if len(line)>0 and line[0] in COMMENT_CHAR:
                 self.commentChar=line[0]
                 # Nasty copy paste from above
                 with open(self.filename) as f:
@@ -140,7 +141,39 @@ class CSVFile(File):
             if nFloat <= len(colNames)-1:
                 self.colNames=colNames
                 self.colNamesLine = iStartLine
-                iStartLine = max(iStartLine,self.colNamesLine+1)
+                iStartLine = iStartLine+1
+                #  --- Now, maybe the user has put some units below
+                first_line = readline(iStartLine)
+                #print('>>> first line',first_line)
+                first_cols = split(first_line)
+                nFloat = sum([strIsFloat(s) for s in first_cols])
+                nPa    = first_line.count('(')+first_line.count('[')
+                #print('>>> nFloat',nFloat)
+                if nFloat == 0 or nPa>len(self.colNames)/2:
+                    # that's definitely some units
+                    if len(first_cols)==len(self.colNames):
+                        self.colNames=[c.strip()+'_'+u.strip() for c,u in zip(self.colNames, first_cols)]
+                    iStartLine = iStartLine+1
+            elif len(self.header)>0:
+                # Maybe the columns names are in the header
+                if self.sep is not None:
+                    first_line = readline(iStartLine)
+                    first_cols = split(first_line)
+                    #print('CommentChar:',self.commentChar)
+                    #print('First line:',first_line)
+                    #print('First col :',first_cols)
+                    for l in self.header:
+                        if self.commentChar is not None:
+                            if len(self.commentChar)>0:
+                                l=l[len(self.commentChar):]
+                        cols=split(l)
+                        nFloat = sum([strIsFloat(s) for s in cols])
+                        if len(cols)==len(first_cols) and nFloat <= len(colNames)-1:
+                            self.colNames = cols
+                            break
+                #print('Sep>',self.sep,'<')
+                #print('Col in HEADER???',self.header)
+                #print('Col in HEADER???',self.colNames)
             
         # --- Reading data
         skiprows = list(range(iStartLine))
