@@ -127,12 +127,10 @@ class FASTInFile(File):
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     parts = re.match(r'^\W*\w+', line)
                     if parts:
-                        firstword = parts.group(0)[:-1]
+                        firstword = parts.group(0).strip()
                     else:
                         raise NotImplementedError
                     remainer  = re.sub(r'^\W*\w+\W*', '', line)
-                    #print(firstword)
-                    #print(remainer)
                     OutList,i = parseFASTOutList(lines,i+1)
                     d = getDict()
                     d['label']   = firstword
