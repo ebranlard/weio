@@ -140,6 +140,7 @@ class FASTInFile(File):
                     self.data.append(d)
                     if i>=len(lines):
                         break
+                    return
                 elif line.upper().find('ADDITIONAL STIFFNESS')>0:
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     i +=1
