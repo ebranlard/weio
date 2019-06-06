@@ -54,6 +54,16 @@ class FASTInFile(File):
     def formatName():
         return 'FAST input file'
 
+    def __init__(self, filename=None, **kwargs):
+        super(FASTInFile, self).__init__(filename=filename,**kwargs)
+        # set up "keys" (like dict)
+        self.labels = [
+            d['label'] for d in self.data if not d['isComment']
+        ]
+
+    def keys(self):
+        return self.labels
+
     def getID(self,label):
         i=self.getIDSafe(label)
         if i<0:
