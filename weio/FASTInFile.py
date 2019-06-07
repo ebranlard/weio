@@ -11,6 +11,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 from .File import File, WrongFormatError, BrokenFormatError
+import os
 import numpy as np
 import re
 import pandas as pd
@@ -53,6 +54,16 @@ class FASTInFile(File):
     @staticmethod
     def formatName():
         return 'FAST input file'
+
+    def __init__(self, filename=None, **kwargs):
+        super(FASTInFile, self).__init__(filename=filename,**kwargs)
+        # set up "keys" (like dict)
+        self.labels = [
+            d['label'] for d in self.data if not d['isComment']
+        ]
+
+    def keys(self):
+        return self.labels
 
     def getID(self,label):
         i=self.getIDSafe(label)
@@ -486,6 +497,39 @@ class FASTInFile(File):
         d['tabType'] = TABTYPE_NUM_BEAMDYN
         d['value']   = M
         self.data.append(d)
+
+
+# --------------------------------------------------------------------------------}
+# --- Full FAST input deck
+# --------------------------------------------------------------------------------{
+class FASTInputDeck(object):
+    """Container for input files that make up a FAST input deck"""
+
+    def __init__(self,fstfile):
+        """Read FAST master file and read inputs for FAST modules that
+        are used
+        """
+        self.filename = fstfile
+        self.modeldir = os.path.split(fstfile)[0]
+        self.inputfiles = {}
+        # read master file
+        self.fst = FASTInFile(fstfile)
+        print('Read',fstfile)
+        # read additional input files (note: this will _not_ recursively read
+        #   all input files)
+        filekeys = [ key for key in self.fst.keys() if key.endswith('File') ]
+        for key in filekeys:
+            fpath = os.path.join(self.modeldir, self.fst[key].strip('"'))
+            if os.path.isfile(fpath):
+                name = key[:-4]
+                self.inputfiles[name] = fpath
+                try:
+                    modinput = FASTInFile(fpath)
+                except:
+                    print('Problem reading',fpath)
+                else:
+                    setattr(self, name, modinput)
+                    print('Read',fpath,'as',name)
 
 
 # --------------------------------------------------------------------------------}
