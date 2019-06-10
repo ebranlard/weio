@@ -9,7 +9,9 @@ class Test(unittest.TestCase):
     def test_read_all(self):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
-        #F = weio.FLEXBladeFile('_TODO/.bla')
+        #F = weio.read('_tests/FASTIn_ED.dat')
+        #print(F.toString())
+        #return
         #F.toDataFrame()
         #print(F)
         #print(fileformat)

@@ -142,7 +142,8 @@ class FASTInFile(File):
                     else:
                         raise NotImplementedError
                     remainer  = re.sub(r'^\W*\w+\W*', '', line)
-                    OutList,i = parseFASTOutList(lines,i+1)
+                    # Parsing outlist, and then we continue at a new "i" (to read END etc.)
+                    OutList,i = parseFASTOutList(lines,i+1) 
                     d = getDict()
                     d['label']   = firstword
                     d['descr']   = remainer
@@ -151,7 +152,15 @@ class FASTInFile(File):
                     self.data.append(d)
                     if i>=len(lines):
                         break
-                    return
+
+                    # --- Here we cheat and force an exit of the input file
+                    # The reason for this is that some files have a lot of things after the END, which will result in the file being intepreted as a wrong format due to too many comments
+                    d = parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line',i+1)
+                    self.data.append(d)
+                    d = parseFASTInputLine('---------------------------------------------------------------------------------------',i+2)
+                    self.data.append(d)
+                    break
+                    
                 elif line.upper().find('ADDITIONAL STIFFNESS')>0:
                     # TODO, lazy implementation so far, MAKE SUB FUNCTION
                     i +=1
@@ -306,39 +315,43 @@ class FASTInFile(File):
 #             raise Exception('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
 
             
+    def toString(self):
+        s=''
+        for i in range(len(self.data)):
+            d=self.data[i]
+            if d['isComment']:
+                s+='{}'.format(d['value'])
+            elif d['tabType']==TABTYPE_NOT_A_TAB:
+                if isinstance(d['value'], list):
+                    sList=', '.join([str(x) for x in d['value']])
+                    s+='{} {} {}'.format(sList,d['label'],d['descr'])
+                else:
+                    s+='{} {} {}'.format(d['value'],d['label'],d['descr'])
+            elif d['tabType']==TABTYPE_NUM_WITH_HEADER:
+                s+='{}'.format(' '.join(d['tabColumnNames']))
+                if d['tabUnits'] is not None:
+                    s+='\n'
+                    s+='{}'.format(' '.join(d['tabUnits']))
+                if np.size(d['value'],0) > 0 :
+                    s+='\n'
+                    s+='\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value'])
+            elif d['tabType']==TABTYPE_NUM_WITH_HEADERCOM:
+                s+='! {}\n'.format(' '.join(d['tabColumnNames']))
+                s+='! {}\n'.format(' '.join(d['tabUnits']))
+                s+='\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value'])
+            elif d['tabType']==TABTYPE_FIL:
+                #f.write('{} {} {}\n'.format(d['value'][0],d['tabDetect'],d['descr']))
+                s+='{} {} {}\n'.format(d['value'][0],d['label'],d['descr']) # TODO?
+                s+='\n'.join(fil for fil in d['value'][1:])
+            else:
+                raise Exception('Unknown table type for variable {}',d)
+            if i<len(self.data)-1:
+                s+='\n'
+        return s
 
     def _write(self):
         with open(self.filename,'w') as f:
-            for i in range(len(self.data)):
-                d=self.data[i]
-                if d['isComment']:
-                    f.write('{}'.format(d['value']))
-                elif d['tabType']==TABTYPE_NOT_A_TAB:
-                    if isinstance(d['value'], list):
-                        sList=', '.join([str(x) for x in d['value']])
-                        f.write('{} {} {}'.format(sList,d['label'],d['descr']))
-                    else:
-                        f.write('{} {} {}'.format(d['value'],d['label'],d['descr']))
-                elif d['tabType']==TABTYPE_NUM_WITH_HEADER:
-                    f.write('{}'.format(' '.join(d['tabColumnNames'])))
-                    if d['tabUnits'] is not None:
-                        f.write('\n')
-                        f.write('{}'.format(' '.join(d['tabUnits'])))
-                    if np.size(d['value'],0) > 0 :
-                        f.write('\n')
-                        f.write('\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value']))
-                elif d['tabType']==TABTYPE_NUM_WITH_HEADERCOM:
-                    f.write('! {}\n'.format(' '.join(d['tabColumnNames'])))
-                    f.write('! {}\n'.format(' '.join(d['tabUnits'])))
-                    f.write('\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value']))
-                elif d['tabType']==TABTYPE_FIL:
-                    #f.write('{} {} {}\n'.format(d['value'][0],d['tabDetect'],d['descr']))
-                    f.write('{} {} {}\n'.format(d['value'][0],d['label'],d['descr'])) # TODO?
-                    f.write('\n'.join(fil for fil in d['value'][1:]))
-                else:
-                    raise Exception('Unknown table type for variable {}',d)
-                if i<len(self.data)-1:
-                    f.write('\n')
+            f.write(self.toString())
 
     def _toDataFrame(self):
         dfs={}
