@@ -9,7 +9,7 @@ class Test(unittest.TestCase):
     def test_read_all(self):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
-        #F = weio.FLEXProfileFile('_tests/FlexBladeProfile.pro')
+        #F = weio.FLEXBladeFile('_TODO/.bla')
         #F.toDataFrame()
         #print(F)
         #print(fileformat)
@@ -96,5 +96,9 @@ class Test(unittest.TestCase):
  
     def test_FLEX(self):
         self.assertAlmostEqual(self.DF('FLEXProfile.pro')['pc_set_2_t_57.0'].values[2,2],0.22711022)
+        Bld=self.DF('FLEXBlade002.bld')
+        self.assertAlmostEqual(Bld['r_[m]'].values[-1],61.5)
+        self.assertAlmostEqual(Bld['Mass_[kg/m]'].values[-1],10.9)
+        self.assertAlmostEqual(Bld['Chord_[m]'].values[3],3.979815059)
 if __name__ == '__main__':
     unittest.main()
