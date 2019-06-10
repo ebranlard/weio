@@ -505,7 +505,7 @@ class FASTInFile(File):
 class FASTInputDeck(object):
     """Container for input files that make up a FAST input deck"""
 
-    def __init__(self,fstfile):
+    def __init__(self,fstfile,readlist=['ED','Aero']):
         """Read FAST master file and read inputs for FAST modules that
         are used
         """
@@ -515,21 +515,86 @@ class FASTInputDeck(object):
         # read master file
         self.fst = FASTInFile(fstfile)
         print('Read',fstfile)
+
+        def sub_read(file_obj,store_obj,expected_keys,names):
+            """ read sub files from object """
+            for key,name in zip(expected_keys,names):
+                # NOTE: fast input files are relative to their module file
+                modeldir = os.path.split(file_obj.filename)[0]
+                try:
+                    keyval=file_obj[key]
+                except:
+                    print('Key not found',key)
+                    continue
+                if type(keyval) is list:
+                    setattr(store_obj, name, [])
+                    bFileList = True
+                else:
+                    bFileList = False
+                    keyval=[keyval]
+                for i,keyv in enumerate(keyval):
+                    fpath = os.path.join(modeldir, keyv.strip('"'))
+                    if os.path.isfile(fpath):
+                        self.inputfiles[name] = fpath
+                        try:
+                            modinput = FASTInFile(fpath)
+                        except:
+                            print('Problem reading',fpath)
+                        else:
+                            if bFileList:
+                                getattr(store_obj,name).append(modinput)
+                                print('Read',fpath,'as{}[{}]'.format(name,i))
+                            else:
+                                setattr(store_obj, name, modinput)
+                                print('Read',fpath,'as',name)
+
+        filekeys = [ key for key in self.fst.keys() if key.endswith('File') ]
+        names    = [key[:-4] for key in filekeys]
+        sub_read(self.fst,self,filekeys,names)
+
+        if hasattr(self,'ED') and 'ED' in readlist:
+            filekeys = ['BldFile(1)' , 'BldFile(2)' , 'BldFile(3)' , 'TwrFile']
+            names    = ['Bld1'       , 'Bld2'       , 'Bld3'       , 'Twr']
+            sub_read(self.ED,self.ED,filekeys,names)
+        if hasattr(self,'Aero') and 'Aero' in readlist:
+            # NOTE airfoils are not read
+            filekeys = ['ADBlFile(1)' , 'ADBlFile(2)' , 'ADBlFile(3)', 'AFNames']
+            names    = ['Bld1'     , 'Bld2'     , 'Bld3'    , 'AF']
+            sub_read(self.Aero,self.Aero,filekeys,names)
+
+
+
+#         EDFile      
+#         BDBldFile(1)
+#         BDBldFile(2)
+#         BDBldFile(3)
+#         InflowFile  
+#         AeroFile    
+#         ServoFile   
+#         HydroFile   
+#         SubFile     
+#         MooringFile 
+#         IceFile     
+
         # read additional input files (note: this will _not_ recursively read
         #   all input files)
-        filekeys = [ key for key in self.fst.keys() if key.endswith('File') ]
-        for key in filekeys:
-            fpath = os.path.join(self.modeldir, self.fst[key].strip('"'))
-            if os.path.isfile(fpath):
-                name = key[:-4]
-                self.inputfiles[name] = fpath
-                try:
-                    modinput = FASTInFile(fpath)
-                except:
-                    print('Problem reading',fpath)
-                else:
-                    setattr(self, name, modinput)
-                    print('Read',fpath,'as',name)
+        #    fpath = os.path.join(self.modeldir, self.fst[key].strip('"'))
+        #filekeys = [ key for key in self.fst.keys() if key.endswith('File') ]
+        #for key in filekeys:
+        #    fpath = os.path.join(self.modeldir, self.fst[key].strip('"'))
+        #    if os.path.isfile(fpath):
+        #        name = key[:-4]
+        #        self.inputfiles[name] = fpath
+        #        try:
+        #            modinput = FASTInFile(fpath)
+        #        except:
+        #            print('Problem reading',fpath)
+        #        else:
+        #            setattr(self, name, modinput)
+        #            print('Read',fpath,'as',name)
+        #            # Harcoding subfiles
+#                     if name=='ED':
+#                         self.ED['TwrFile']
 
 
 # --------------------------------------------------------------------------------}

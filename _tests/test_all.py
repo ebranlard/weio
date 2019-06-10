@@ -9,6 +9,7 @@ class Test(unittest.TestCase):
     def test_read_all(self):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
+        #F = weio.FLEXProfileFile('_tests/FlexBladeProfile.pro')
         #F.toDataFrame()
         #print(F)
         #print(fileformat)
@@ -37,7 +38,7 @@ class Test(unittest.TestCase):
                 s=fileformat.name
                 s=s.replace('file','')[:20]
                 if DEBUG:
-                    print('[ OK ] {:30s}\t{:20s}\t{}'.format(f[:30],s,n))
+                    print('[ OK ] {:30s}\t{:20s}\t{}'.format(os.path.basename(f)[:30],s,n))
             except weio.FormatNotDetectedError:
                 nError += 1
                 if DEBUG:
@@ -52,6 +53,7 @@ class Test(unittest.TestCase):
             raise Exception('Some tests failed')
 
     def DF(self,FN):
+        """ Reads a file with weio and return a dataframe """ 
         return weio.read(os.path.join(MyDir,FN)).toDataFrame()
  
     def test_CSV(self):
@@ -92,5 +94,7 @@ class Test(unittest.TestCase):
         M=F.toDataFrame()
         self.assertAlmostEqual(M['GenPwr_[kW]'].values[-1],40.57663190807828)
  
+    def test_FLEX(self):
+        self.assertAlmostEqual(self.DF('FLEXProfile.pro')['pc_set_2_t_57.0'].values[2,2],0.22711022)
 if __name__ == '__main__':
     unittest.main()

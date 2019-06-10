@@ -1,7 +1,7 @@
 from .File import File, WrongFormatError, BrokenFormatError, FileNotFoundError, EmptyFileError
 from .FileFormats import FileFormat
 # User defined formats
-from .FASTInFile   import FASTInFile
+from .FASTInFile   import FASTInFile, FASTInputDeck
 from .FASTOutFile  import FASTOutFile
 from .FASTWndFile  import FASTWndFile
 from .CSVFile      import CSVFile
@@ -9,6 +9,7 @@ from .HAWC2PCFile  import HAWC2PCFile
 from .HAWC2AEFile  import HAWC2AEFile
 from .HAWC2DatFile import HAWC2DatFile
 from .FLEXOutFile  import FLEXOutFile
+from .FLEXProfileFile  import FLEXProfileFile
 #from .NetCDFFile   import NetCDFFile
 
 class FormatNotDetectedError(Exception):
@@ -24,6 +25,7 @@ def fileFormats():
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
     formats.append(FileFormat(FLEXOutFile))
+    formats.append(FileFormat(FLEXProfileFile))
     #formats.append(FileFormat(NetCDFFile))
     return formats
 
