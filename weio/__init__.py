@@ -11,6 +11,7 @@ from .HAWC2DatFile import HAWC2DatFile
 from .FLEXBladeFile  import FLEXBladeFile
 from .FLEXProfileFile  import FLEXProfileFile
 from .FLEXOutFile  import FLEXOutFile
+from .ExcelFile  import ExcelFile
 #from .NetCDFFile   import NetCDFFile
 
 class FormatNotDetectedError(Exception):
@@ -19,6 +20,7 @@ class FormatNotDetectedError(Exception):
 def fileFormats():
     formats = []
     formats.append(FileFormat(CSVFile))
+    formats.append(FileFormat(ExcelFile))
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
     formats.append(FileFormat(FASTWndFile))
