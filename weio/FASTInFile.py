@@ -57,10 +57,6 @@ class FASTInFile(File):
 
     def __init__(self, filename=None, **kwargs):
         super(FASTInFile, self).__init__(filename=filename,**kwargs)
-        # set up "keys" (like dict)
-        self.labels = [
-            d['label'] for d in self.data if not d['isComment']
-        ]
 
     def keys(self):
         return self.labels
@@ -68,7 +64,7 @@ class FASTInFile(File):
     def getID(self,label):
         i=self.getIDSafe(label)
         if i<0:
-            raise KeyError('Variable '+ label+' not found')
+            raise KeyError('Variable `'+ label+'` not found in FAST file:'+self.filename)
         else:
             return i
 
@@ -108,204 +104,214 @@ class FASTInFile(File):
 
 
     def _read(self):
-#         try: 
-        if True:
-            self.data =[]
-            #with open(self.filename, 'r', errors="surrogateescape") as f:
-            with open(self.filename, 'r', errors="surrogateescape") as f:
-                lines=f.read().splitlines()
-            # IF NEEDED> DO THE FOLLOWING FORMATTING:
-                #lines = [str(l).encode('utf-8').decode('ascii','ignore') for l in f.read().splitlines()]
+        self.data =[]
+        #with open(self.filename, 'r', errors="surrogateescape") as f:
+        with open(self.filename, 'r', errors="surrogateescape") as f:
+            lines=f.read().splitlines()
+        # IF NEEDED> DO THE FOLLOWING FORMATTING:
+            #lines = [str(l).encode('utf-8').decode('ascii','ignore') for l in f.read().splitlines()]
 
-            # Fast files start with ! or -
-            #if lines[0][0]!='!' and lines[0][0]!='-':
-            #    raise Exception('Fast file do not start with ! or -, is it the right format?')
-            
-            # Special filetypes
-            if self.detectAndReadAirfoil(lines):
+        # Fast files start with ! or -
+        #if lines[0][0]!='!' and lines[0][0]!='-':
+        #    raise Exception('Fast file do not start with ! or -, is it the right format?')
+        
+        # Special filetypes
+        if self.detectAndReadAirfoil(lines):
+            return
+
+        # Parsing line by line, storing each line into a dictionary
+        i=0    
+        nComments  = 0
+        nWrongLabels = 0
+        while i<len(lines):
+            line = lines[i]
+            # OUTLIST Exceptions
+            if line.upper().find('ADDITIONAL OUTPUTS')>0 \
+            or line.upper().find('MESH-BASED OUTPUTS')>0 \
+            or line.upper().find('OUTPUT CHANNELS'   )>0:
+                # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                parts = re.match(r'^\W*\w+', line)
+                if parts:
+                    firstword = parts.group(0).strip()
+                else:
+                    raise NotImplementedError
+                remainer  = re.sub(r'^\W*\w+\W*', '', line)
+                # Parsing outlist, and then we continue at a new "i" (to read END etc.)
+                OutList,i = parseFASTOutList(lines,i+1) 
+                d = getDict()
+                d['label']   = firstword
+                d['descr']   = remainer
+                d['tabType'] = TABTYPE_FIL # TODO
+                d['value']   = ['']+OutList
+                self.data.append(d)
+                if i>=len(lines):
+                    break
+
+                # --- Here we cheat and force an exit of the input file
+                # The reason for this is that some files have a lot of things after the END, which will result in the file being intepreted as a wrong format due to too many comments
+                d = parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1)
+                self.data.append(d)
+                d = parseFASTInputLine('---------------------------------------------------------------------------------------',i+2)
+                self.data.append(d)
+                break
+                
+            elif line.upper().find('ADDITIONAL STIFFNESS')>0:
+                # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                i +=1
+                KDAdd = []
+                for _ in range(19):
+                    KDAdd.append(lines[i])
+                    i +=1
+                d = getDict()
+                d['label']   = 'KDAdd'   # TODO
+                d['tabType'] = TABTYPE_FIL # TODO
+                d['value']   = KDAdd
+                self.data.append(d)
+                if i>=len(lines):
+                    break
+            elif line.upper().find('DISTRIBUTED PROPERTIES')>0:
+                d = parseFASTInputLine(line,i); i+=1;
+                self.readBeamDynProps(lines,i)
                 return
 
-            # Parsing line by line, storing each line into a dictionary
-            i=0    
-            nComments  = 0
-            nWrongLabels = 0
-            while i<len(lines):
-                line = lines[i]
-                # OUTLIST Exceptions
-                if line.upper().find('ADDITIONAL OUTPUTS')>0 \
-                or line.upper().find('MESH-BASED OUTPUTS')>0 \
-                or line.upper().find('OUTPUT CHANNELS'   )>0:
-                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
-                    parts = re.match(r'^\W*\w+', line)
-                    if parts:
-                        firstword = parts.group(0).strip()
-                    else:
-                        raise NotImplementedError
-                    remainer  = re.sub(r'^\W*\w+\W*', '', line)
-                    # Parsing outlist, and then we continue at a new "i" (to read END etc.)
-                    OutList,i = parseFASTOutList(lines,i+1) 
-                    d = getDict()
-                    d['label']   = firstword
-                    d['descr']   = remainer
-                    d['tabType'] = TABTYPE_FIL # TODO
-                    d['value']   = ['']+OutList
-                    self.data.append(d)
-                    if i>=len(lines):
-                        break
-
-                    # --- Here we cheat and force an exit of the input file
-                    # The reason for this is that some files have a lot of things after the END, which will result in the file being intepreted as a wrong format due to too many comments
-                    d = parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line',i+1)
-                    self.data.append(d)
-                    d = parseFASTInputLine('---------------------------------------------------------------------------------------',i+2)
-                    self.data.append(d)
-                    break
-                    
-                elif line.upper().find('ADDITIONAL STIFFNESS')>0:
-                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
-                    i +=1
-                    KDAdd = []
-                    for _ in range(19):
-                        KDAdd.append(lines[i])
-                        i +=1
-                    d = getDict()
-                    d['label']   = 'KDAdd'   # TODO
-                    d['tabType'] = TABTYPE_FIL # TODO
-                    d['value']   = KDAdd
-                    self.data.append(d)
-                    if i>=len(lines):
-                        break
-                elif line.upper().find('DISTRIBUTED PROPERTIES')>0:
-                    d = parseFASTInputLine(line,i); i+=1;
-                    self.readBeamDynProps(lines,i)
-                    return
-
-                # --- Parsing of standard lines: value(s) key comment
-                line = lines[i]
-                d = parseFASTInputLine(line,i)
+            # --- Parsing of standard lines: value(s) key comment
+            line = lines[i]
+            d = parseFASTInputLine(line,i)
 
 
-                # --- Handling of special files
-                if d['label'].lower()=='numcoords':
-                    # TODO, lazy implementation so far, MAKE SUB FUNCTION
-                    if isStr(d['value']):
-                        if d['value'][0]=='@':
-                            # it's a ref to the airfoil coord file
-                            pass
-                    else:
-                        if not strIsInt(d['value']): 
-                            raise WrongFormatError('Wrong value of NumCoords')
-                        if int(d['value'])<=0:
-                            pass
-                        else:
-                            self.data.append(d); i+=1;
-                            # 3 comment lines
-                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
-                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
-                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
-                            splits=cleanAfterChar(cleanLine(lines[i]),'!').split()
-                            # Airfoil ref point
-                            try:
-                                pos=[float(splits[0]), float(splits[1])]
-                            except:
-                                raise WrongFormatError('Wrong format while reading coordinates of airfoil reference')
-                            i+=1
-                            d = getDict()
-                            d['label'] = 'AirfoilRefPoint'
-                            d['value'] = pos
-                            self.data.append(d)
-                            # 2 comment lines
-                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
-                            self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
-                            # Table of coordinats itself
-                            d = getDict()
-                            d['label']     = 'AirfoilCoord'
-                            d['tabDimVar'] = 'NumCoords'
-                            d['tabType']   = TABTYPE_NUM_WITH_HEADERCOM
-                            nTabLines = self[d['tabDimVar']]-1  # SOMEHOW ONE DATA POINT LESS
-                            d['value'], d['tabColumnNames'],_  = parseFASTNumTable(self.filename,lines[i:i+nTabLines+1],nTabLines,i,1)
-                            d['tabUnits'] = ['(-)','(-)']
-                            self.data.append(d)
-                            break
-
-
-
-                #print('label>',d['label'],'<',type(d['label']));
-                #print('value>',d['value'],'<',type(d['value']));
-                #print(isStr(d['value']))
-                #if isStr(d['value']):
-                #    print(d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L)
-
-                    
-                # --- Handling of tables
-                if isStr(d['value']) and d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L:
-                    # Table with numerical values, 
-                    ii             = NUMTAB_FROM_VAL_DETECT_L.index(d['value'].lower())
-                    d['label']     = NUMTAB_FROM_VAL_VARNAME[ii]
-                    d['tabDimVar'] = NUMTAB_FROM_VAL_DIM_VAR[ii]
-                    d['tabType']   = TABTYPE_NUM_WITH_HEADER
-                    nHeaders       = NUMTAB_FROM_VAL_NHEADER[ii]
-                    nTabLines=0
-                    #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
-                    if isinstance(d['tabDimVar'],int):
-                        nTabLines = d['tabDimVar']
-                    else:
-                        nTabLines = self[d['tabDimVar']]
-                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders)
-                    i += nTabLines+nHeaders-1
-
-                elif isStr(d['label']) and d['label'].lower() in NUMTAB_FROM_LAB_DETECT_L:
-                    ii      = NUMTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
-                    # Special case for airfoil data, the table follows NumAlf, so we add d first
-                    if d['label'].lower()=='numalf':
-                        d['tabType']=TABTYPE_NOT_A_TAB
-                        self.data.append(d)
-                        # Creating a new dictionary for the table
-                        d = {'value':None, 'label':'NumAlf', 'isComment':False, 'descr':'', 'tabType':None}
-                        i += 1
-                    d['label']     = NUMTAB_FROM_LAB_VARNAME[ii]
-                    d['tabDimVar'] = NUMTAB_FROM_LAB_DIM_VAR[ii]
-                    if d['label'].lower()=='afcoeff' :
-                        d['tabType']        = TABTYPE_NUM_WITH_HEADERCOM
-                    else:
-                        d['tabType']   = TABTYPE_NUM_WITH_HEADER
-                    nTabLines = self[d['tabDimVar']]
-                    #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
-                    d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+2],nTabLines,i,2)
-                    i += nTabLines+1
-
-                elif isStr(d['label']) and d['label'].lower() in FILTAB_FROM_LAB_DETECT_L:
-                    ii             = FILTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
-                    d['label']     = FILTAB_FROM_LAB_VARNAME[ii]
-                    d['tabDimVar'] = FILTAB_FROM_LAB_DIM_VAR[ii]
-                    d['tabType']   = TABTYPE_FIL
-                    nTabLines = self[d['tabDimVar']]
-                    #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
-                    d['value'] = parseFASTFilTable(lines[i:i+nTabLines],nTabLines,i)
-                    i += nTabLines-1
-
-
-
-                self.data.append(d)
-                i += 1
-                # --- Safety checks
-                if d['isComment']:
-                    #print(line)
-                    nComments +=1
+            # --- Handling of special files
+            if d['label'].lower()=='numcoords':
+                # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                if isStr(d['value']):
+                    if d['value'][0]=='@':
+                        # it's a ref to the airfoil coord file
+                        pass
                 else:
-                    if hasSpecialChars(d['label']):
-                        nWrongLabels +=1
-                        #print('label>',d['label'],'<',type(d['label']),line);
-                        if i>3: # first few lines may be comments, we allow it
-                            raise WrongFormatError('Special Character found in Label.')
-                    if len(d['label'])==0:
-                        nWrongLabels +=1
-                if nComments>len(lines)*0.35:
-                    #print('Comment fail',nComments,len(lines),self.filename)
-                    raise WrongFormatError('Most lines were read as comments, probably not a FAST Input File')
-                if nWrongLabels>len(lines)*0.10:
-                    #print('Label fail',nWrongLabels,len(lines),self.filename)
-                    raise WrongFormatError('Too many lines with wrong labels, probably not a FAST Input File')
+                    if not strIsInt(d['value']): 
+                        raise WrongFormatError('Wrong value of NumCoords')
+                    if int(d['value'])<=0:
+                        pass
+                    else:
+                        self.data.append(d); i+=1;
+                        # 3 comment lines
+                        self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                        self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                        self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                        splits=cleanAfterChar(cleanLine(lines[i]),'!').split()
+                        # Airfoil ref point
+                        try:
+                            pos=[float(splits[0]), float(splits[1])]
+                        except:
+                            raise WrongFormatError('Wrong format while reading coordinates of airfoil reference')
+                        i+=1
+                        d = getDict()
+                        d['label'] = 'AirfoilRefPoint'
+                        d['value'] = pos
+                        self.data.append(d)
+                        # 2 comment lines
+                        self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                        self.data.append(parseFASTInputLine(lines[i],i)); i+=1;
+                        # Table of coordinats itself
+                        d = getDict()
+                        d['label']     = 'AirfoilCoord'
+                        d['tabDimVar'] = 'NumCoords'
+                        d['tabType']   = TABTYPE_NUM_WITH_HEADERCOM
+                        nTabLines = self[d['tabDimVar']]-1  # SOMEHOW ONE DATA POINT LESS
+                        d['value'], d['tabColumnNames'],_  = parseFASTNumTable(self.filename,lines[i:i+nTabLines+1],nTabLines,i,1)
+                        d['tabUnits'] = ['(-)','(-)']
+                        self.data.append(d)
+                        break
+
+
+
+            #print('label>',d['label'],'<',type(d['label']));
+            #print('value>',d['value'],'<',type(d['value']));
+            #print(isStr(d['value']))
+            #if isStr(d['value']):
+            #    print(d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L)
+
+                
+            # --- Handling of tables
+            if isStr(d['value']) and d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L:
+                # Table with numerical values, 
+                ii             = NUMTAB_FROM_VAL_DETECT_L.index(d['value'].lower())
+                d['label']     = NUMTAB_FROM_VAL_VARNAME[ii]
+                d['tabDimVar'] = NUMTAB_FROM_VAL_DIM_VAR[ii]
+                d['tabType']   = TABTYPE_NUM_WITH_HEADER
+                nHeaders       = NUMTAB_FROM_VAL_NHEADER[ii]
+                nTabLines=0
+                #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
+                if isinstance(d['tabDimVar'],int):
+                    nTabLines = d['tabDimVar']
+                else:
+                    nTabLines = self[d['tabDimVar']]
+                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders)
+                i += nTabLines+nHeaders-1
+
+            elif isStr(d['label']) and d['label'].lower() in NUMTAB_FROM_LAB_DETECT_L:
+                ii      = NUMTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
+                # Special case for airfoil data, the table follows NumAlf, so we add d first
+                if d['label'].lower()=='numalf':
+                    d['tabType']=TABTYPE_NOT_A_TAB
+                    self.data.append(d)
+                    # Creating a new dictionary for the table
+                    d = {'value':None, 'label':'NumAlf', 'isComment':False, 'descr':'', 'tabType':None}
+                    i += 1
+                d['label']     = NUMTAB_FROM_LAB_VARNAME[ii]
+                d['tabDimVar'] = NUMTAB_FROM_LAB_DIM_VAR[ii]
+                if d['label'].lower()=='afcoeff' :
+                    d['tabType']        = TABTYPE_NUM_WITH_HEADERCOM
+                else:
+                    d['tabType']   = TABTYPE_NUM_WITH_HEADER
+                nTabLines = self[d['tabDimVar']]
+                #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
+                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+2],nTabLines,i,2)
+                i += nTabLines+1
+
+            elif isStr(d['label']) and d['label'].lower() in FILTAB_FROM_LAB_DETECT_L:
+                ii             = FILTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
+                d['label']     = FILTAB_FROM_LAB_VARNAME[ii]
+                d['tabDimVar'] = FILTAB_FROM_LAB_DIM_VAR[ii]
+                d['tabType']   = TABTYPE_FIL
+                nTabLines = self[d['tabDimVar']]
+                #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
+                d['value'] = parseFASTFilTable(lines[i:i+nTabLines],nTabLines,i)
+                i += nTabLines-1
+
+
+
+            self.data.append(d)
+            i += 1
+            # --- Safety checks
+            if d['isComment']:
+                #print(line)
+                nComments +=1
+            else:
+                if hasSpecialChars(d['label']):
+                    nWrongLabels +=1
+                    #print('label>',d['label'],'<',type(d['label']),line);
+                    if i>3: # first few lines may be comments, we allow it
+                        raise WrongFormatError('Special Character found in Label.')
+                if len(d['label'])==0:
+                    nWrongLabels +=1
+            if nComments>len(lines)*0.35:
+                #print('Comment fail',nComments,len(lines),self.filename)
+                raise WrongFormatError('Most lines were read as comments, probably not a FAST Input File')
+            if nWrongLabels>len(lines)*0.10:
+                #print('Label fail',nWrongLabels,len(lines),self.filename)
+                raise WrongFormatError('Too many lines with wrong labels, probably not a FAST Input File')
+
+        # --- PostReading checks
+        # set up "keys" (like dict)
+        self.labels = [ d['label'] for d in self.data if not d['isComment'] ]
+        duplicates = set([x for x in self.labels if self.labels.count(x) > 1])
+#         uplicatesseen = set()
+#         uniq = [x for x in a if x not in seen and not seen.add(x)]   
+#         if len(self.labels) !=len(set(self.labels)):
+        if len(duplicates)>0:
+            print('[WARN] Duplicate labels found in file: '+self.filename)
+            print('       Duplicates: '+', '.join(duplicates))
+            print('       It''s strongly recommended to make them unique! ')
                  
 #         except WrongFormatError as e:    
 #             raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
@@ -326,7 +332,13 @@ class FASTInFile(File):
                     sList=', '.join([str(x) for x in d['value']])
                     s+='{} {} {}'.format(sList,d['label'],d['descr'])
                 else:
-                    s+='{} {} {}'.format(d['value'],d['label'],d['descr'])
+                    val='{}'.format(d['value'])
+                    if len(val)<13:
+                        val='{:13s}'.format(val)
+                    lab = '{}'.format(d['label'])
+                    if len(lab)<13:
+                        lab='{:13s}'.format(lab)
+                    s+='{} {} {}'.format(val,lab,d['descr'])
             elif d['tabType']==TABTYPE_NUM_WITH_HEADER:
                 s+='{}'.format(' '.join(d['tabColumnNames']))
                 if d['tabUnits'] is not None:

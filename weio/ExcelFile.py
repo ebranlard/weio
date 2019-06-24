@@ -33,7 +33,7 @@ class ExcelFile(File):
             # Dropping empty rows and cols
             df.dropna(how='all',axis=0,inplace=True)
             df.dropna(how='all',axis=1,inplace=True)
-            print(df.shape)
+            #print(df.shape)
             if df.shape[0]>0:
                 # Setting first row as header
                 df=df.rename(columns=df.iloc[0]).drop(df.index[0]).reset_index(drop=True)
