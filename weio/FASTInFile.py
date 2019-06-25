@@ -15,30 +15,12 @@ import os
 import numpy as np
 import re
 import pandas as pd
-
-# from .dtuwetb import fast_io
-# TODO members for  BeamDyn with mutliple key point
-NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID' , 'PropSetID'         , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      ,'mu1'           ,'TwrHtFr'  ,'TwrRe']
-NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints' , 'NPropSets'         , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   ,1               ,'NTwrHt'   ,'NTwrRe']
-NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'  , 'MemberSectionProp' , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' ,'DampingCoeffs' ,'TowerProp','TowerRe']
-NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2         , 2                   , 2           , 2             , 2           , 2          , 1              , 2            ,2               , 1         , 1      ]
-NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
-
-NUMTAB_FROM_LAB_DETECT   = ['NumAlf' ,'F_X'      ,'MemberCd1'    ,'MJointID1','NOutLoc']
-NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf' ,'NKInpSt'  ,'NCoefMembers','NMembers' ,'NMOutputs']
-NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff','TMDspProp','MemberProp'   ,'Members'  ,'MemberOuts']
-NUMTAB_FROM_LAB_DETECT_L = [s.lower() for s in NUMTAB_FROM_LAB_DETECT]
-
-FILTAB_FROM_LAB_DETECT   = ['FoilNm' ,'AFNames']
-FILTAB_FROM_LAB_DIM_VAR  = ['NumFoil','NumAFfiles']
-FILTAB_FROM_LAB_VARNAME  = ['FoilNm' ,'AFNames']
-FILTAB_FROM_LAB_DETECT_L = [s.lower() for s in FILTAB_FROM_LAB_DETECT]
-
 TABTYPE_NOT_A_TAB          = 0
 TABTYPE_NUM_WITH_HEADER    = 1
 TABTYPE_NUM_WITH_HEADERCOM = 2
 TABTYPE_NUM_NO_HEADER      = 4
 TABTYPE_NUM_BEAMDYN        = 5
+TABTYPE_MIX_WITH_HEADER    = 6
 TABTYPE_FIL                = 3
 TABTYPE_FMT                = 9999 # TODO
 
@@ -104,6 +86,31 @@ class FASTInFile(File):
 
 
     def _read(self):
+
+        # from .dtuwetb import fast_io
+        # TODO members for  BeamDyn with mutliple key point                                                                                                                                                                                                                                                                                                        ####### TODO PropSetID is Duplicate SubDyn and used in HydroDyn
+        NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID'  , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      , 'mu1'           , 'TwrHtFr'   , 'TwrRe'   , 'RJointID'        , 'IJointID'        , 'COSMID'             , 'CMJointID'         ]
+        NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints'  , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   , 1               , 'NTwrHt'    , 'NTwrRe'  , 'NReact'          , 'NInterf'         , 'NCOSMs'             , 'NCmass'            ]
+        NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'   , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' , 'DampingCoeffs' , 'TowerProp' , 'TowerRe' , 'BaseReactJoints' , 'InterfaceJoints' , 'MemberCosineMatrix' , 'ConcentratedMasses']
+        NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2          , 2           , 2             , 2           , 2          , 1              , 2            , 2               , 1           , 1         , 2                 , 2                 , 2                    , 2                   ]
+        NUMTAB_FROM_VAL_TYPE    = ['num'      , 'num'       , 'num'      , 'num'        , 'num'          , 'num'      , 'num'      , 'num'      , 'num'      , 'num'       , 'num'         , 'num'       , 'num'      , 1              , 'num'        , 'num'           , 1           , 1         , 'mix'             , 'num'             , 'num'                , 'num'               ]
+        NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
+
+        # NOTE: MJointID1, used by SubDyn and HydroDyn
+        NUMTAB_FROM_LAB_DETECT   = ['NumAlf'  , 'F_X'       , 'MemberCd1'    , 'MJointID1' , 'NOutLoc'    , 'NOutCnt'    , 'PropD'             , 'YoungE'            , 'YoungE'          ]
+        NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf'  , 'NKInpSt'   , 'NCoefMembers' , 'NMembers'  , 'NMOutputs'  , 'NMOutputs'  , 'NPropSets'         , 'NPropSets'         , 'NXPropSets'         ]
+        NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff' , 'TMDspProp' , 'MemberProp'   , 'Members'   , 'MemberOuts' , 'MemberOuts' , 'MemberSectionProp' , 'MemberSectionProp' , 'MemberSectionProp2' ]
+        NUMTAB_FROM_LAB_TYPE     = ['num'     , 'num'       , 'num'          , 'mix'       , 'num'        , 'num'        , 'num'               , 'num'               , 'num'                    ]
+        NUMTAB_FROM_LAB_DETECT_L = [s.lower() for s in NUMTAB_FROM_LAB_DETECT]                                         
+
+        FILTAB_FROM_LAB_DETECT   = ['FoilNm' ,'AFNames']
+        FILTAB_FROM_LAB_DIM_VAR  = ['NumFoil','NumAFfiles']
+        FILTAB_FROM_LAB_VARNAME  = ['FoilNm' ,'AFNames']
+        FILTAB_FROM_LAB_DETECT_L = [s.lower() for s in FILTAB_FROM_LAB_DETECT]
+
+
+
+
         self.data =[]
         #with open(self.filename, 'r', errors="surrogateescape") as f:
         with open(self.filename, 'r', errors="surrogateescape") as f:
@@ -149,14 +156,28 @@ class FASTInFile(File):
 
                 # --- Here we cheat and force an exit of the input file
                 # The reason for this is that some files have a lot of things after the END, which will result in the file being intepreted as a wrong format due to too many comments
-                d = parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1)
-                self.data.append(d)
-                d = parseFASTInputLine('---------------------------------------------------------------------------------------',i+2)
-                self.data.append(d)
+                self.data.append(parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1))
+                self.data.append(parseFASTInputLine('---------------------------------------------------------------------------------------',i+2))
+                break
+            elif line.upper().find('SSOUTLIST'   )>0:
+                # SUBDYN Outlist doesn not follow regular format
+                self.data.append(parseFASTInputLine(line,i))
+                # OUTLIST Exception for BeamDyn
+                OutList,i = parseFASTOutList(lines,i+1) 
+                # TODO
+                for o in OutList:
+                    d = getDict()
+                    d['isComment'] = True
+                    d['value']=o
+                    self.data.append(d)
+                # --- Here we cheat and force an exit of the input file
+                self.data.append(parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1))
+                self.data.append(parseFASTInputLine('---------------------------------------------------------------------------------------',i+2))
                 break
                 
             elif line.upper().find('ADDITIONAL STIFFNESS')>0:
                 # TODO, lazy implementation so far, MAKE SUB FUNCTION
+                self.data.append(parseFASTInputLine(line,i))
                 i +=1
                 KDAdd = []
                 for _ in range(19):
@@ -170,14 +191,14 @@ class FASTInFile(File):
                 if i>=len(lines):
                     break
             elif line.upper().find('DISTRIBUTED PROPERTIES')>0:
-                d = parseFASTInputLine(line,i); i+=1;
+                self.data.append(parseFASTInputLine(line,i));
+                i+=1;
                 self.readBeamDynProps(lines,i)
                 return
 
             # --- Parsing of standard lines: value(s) key comment
             line = lines[i]
             d = parseFASTInputLine(line,i)
-
 
             # --- Handling of special files
             if d['label'].lower()=='numcoords':
@@ -235,21 +256,35 @@ class FASTInFile(File):
             if isStr(d['value']) and d['value'].lower() in NUMTAB_FROM_VAL_DETECT_L:
                 # Table with numerical values, 
                 ii             = NUMTAB_FROM_VAL_DETECT_L.index(d['value'].lower())
+                tab_type       = NUMTAB_FROM_VAL_TYPE[ii]
+                if tab_type=='num':
+                    d['tabType']   = TABTYPE_NUM_WITH_HEADER
+                else:
+                    d['tabType']   = TABTYPE_MIX_WITH_HEADER
                 d['label']     = NUMTAB_FROM_VAL_VARNAME[ii]
                 d['tabDimVar'] = NUMTAB_FROM_VAL_DIM_VAR[ii]
-                d['tabType']   = TABTYPE_NUM_WITH_HEADER
                 nHeaders       = NUMTAB_FROM_VAL_NHEADER[ii]
                 nTabLines=0
-                #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
                 if isinstance(d['tabDimVar'],int):
                     nTabLines = d['tabDimVar']
                 else:
                     nTabLines = self[d['tabDimVar']]
-                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders)
+                #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
+                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+nHeaders],nTabLines,i,nHeaders,tableType=tab_type)
                 i += nTabLines+nHeaders-1
+
+                # --- Temporary hack for e.g. SubDyn, that has duplicate table, impossible to detect in the current way...
+                # So we remove the element form the list one read
+                del NUMTAB_FROM_VAL_DETECT[ii]  
+                del NUMTAB_FROM_VAL_DIM_VAR[ii] 
+                del NUMTAB_FROM_VAL_VARNAME[ii] 
+                del NUMTAB_FROM_VAL_NHEADER[ii] 
+                del NUMTAB_FROM_VAL_TYPE   [ii] 
+                del NUMTAB_FROM_VAL_DETECT_L[ii]  
 
             elif isStr(d['label']) and d['label'].lower() in NUMTAB_FROM_LAB_DETECT_L:
                 ii      = NUMTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
+                tab_type       = NUMTAB_FROM_LAB_TYPE[ii]
                 # Special case for airfoil data, the table follows NumAlf, so we add d first
                 if d['label'].lower()=='numalf':
                     d['tabType']=TABTYPE_NOT_A_TAB
@@ -262,11 +297,22 @@ class FASTInFile(File):
                 if d['label'].lower()=='afcoeff' :
                     d['tabType']        = TABTYPE_NUM_WITH_HEADERCOM
                 else:
-                    d['tabType']   = TABTYPE_NUM_WITH_HEADER
+                    if tab_type=='num':
+                        d['tabType']   = TABTYPE_NUM_WITH_HEADER
+                    else:
+                        d['tabType']   = TABTYPE_MIX_WITH_HEADER
                 nTabLines = self[d['tabDimVar']]
                 #print('Reading table {} Dimension {} (based on {})'.format(d['label'],nTabLines,d['tabDimVar']));
-                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+2],nTabLines,i,2)
+                d['value'], d['tabColumnNames'], d['tabUnits'] = parseFASTNumTable(self.filename,lines[i:i+nTabLines+2],nTabLines,i,2,tableType=tab_type)
                 i += nTabLines+1
+
+                # --- Temporary hack for e.g. SubDyn, that has duplicate table, impossible to detect in the current way...
+                # So we remove the element form the list one read
+                del NUMTAB_FROM_LAB_DETECT[ii]  
+                del NUMTAB_FROM_LAB_DIM_VAR[ii] 
+                del NUMTAB_FROM_LAB_VARNAME[ii] 
+                del NUMTAB_FROM_LAB_TYPE   [ii] 
+                del NUMTAB_FROM_LAB_DETECT_L[ii]  
 
             elif isStr(d['label']) and d['label'].lower() in FILTAB_FROM_LAB_DETECT_L:
                 ii             = FILTAB_FROM_LAB_DETECT_L.index(d['label'].lower())
@@ -291,6 +337,7 @@ class FASTInFile(File):
                     nWrongLabels +=1
                     #print('label>',d['label'],'<',type(d['label']),line);
                     if i>3: # first few lines may be comments, we allow it
+                        #print('Line',i,'Label:',d['label'])
                         raise WrongFormatError('Special Character found in Label.')
                 if len(d['label'])==0:
                     nWrongLabels +=1
@@ -340,17 +387,26 @@ class FASTInFile(File):
                         lab='{:13s}'.format(lab)
                     s+='{} {} {}'.format(val,lab,d['descr'])
             elif d['tabType']==TABTYPE_NUM_WITH_HEADER:
-                s+='{}'.format(' '.join(d['tabColumnNames']))
+                s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabColumnNames']]))
+                #s+=d['descr'] # Not ready for that
                 if d['tabUnits'] is not None:
                     s+='\n'
-                    s+='{}'.format(' '.join(d['tabUnits']))
+                    s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
                 if np.size(d['value'],0) > 0 :
                     s+='\n'
-                    s+='\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value'])
+                    s+='\n'.join('\t'.join('{:15.8e}'.format(x) for x in y) for y in d['value'])
+            elif d['tabType']==TABTYPE_MIX_WITH_HEADER:
+                s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabColumnNames']]))
+                if d['tabUnits'] is not None:
+                    s+='\n'
+                    s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
+                if np.size(d['value'],0) > 0 :
+                    s+='\n'
+                    s+='\n'.join('\t'.join('{}'.format(x) for x in y) for y in d['value'])
             elif d['tabType']==TABTYPE_NUM_WITH_HEADERCOM:
-                s+='! {}\n'.format(' '.join(d['tabColumnNames']))
-                s+='! {}\n'.format(' '.join(d['tabUnits']))
-                s+='\n'.join('\t'.join('%15.8e' %x for x in y) for y in d['value'])
+                s+='! {}\n'.format(' '.join(['{:15s}'.format(s) for s in d['tabColumnNames']]))
+                s+='! {}\n'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
+                s+='\n'.join('\t'.join('{:15.8e}'.format(x) for x in y) for y in d['value'])
             elif d['tabType']==TABTYPE_FIL:
                 #f.write('{} {} {}\n'.format(d['value'][0],d['tabDetect'],d['descr']))
                 s+='{} {} {}\n'.format(d['value'][0],d['label'],d['descr']) # TODO?
@@ -827,7 +883,7 @@ def detectUnits(s,nRef):
     return Units
 
 
-def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2):
+def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num'):
     Tab = None
     ColNames = None
     Units = None
@@ -864,20 +920,32 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2):
 
         nCols=len(ColNames)
 
-        Tab = np.zeros((n, len(ColNames))) 
-        for i in range(nHeaders,n+nHeaders):
-            l = lines[i].lower()
-            v = l.split()
-            if len(v) > nCols:
-                print('[WARN] Line {}: number of data different from number of column names'.format(iStart+i+1))
-            if len(v) < nCols:
-                raise Exception('Number of data is lower than number of column names')
-            # Accounting for TRUE FALSE and converting to float
-            v = [s.replace('true','1').replace('false','0').replace('noprint','0').replace('print','1') for s in v]
-            v = [float(s) for s in v[0:nCols]]
-            if len(v) < nCols:
-                raise Exception('Number of data is lower than number of column names')
-            Tab[i-nHeaders,:] = v
+        if tableType=='num':
+            Tab = np.zeros((n, nCols))
+            for i in range(nHeaders,n+nHeaders):
+                l = lines[i].lower()
+                v = l.split()
+                if len(v) > nCols:
+                    print('[WARN] Line {}: number of data different from number of column names'.format(iStart+i+1))
+                if len(v) < nCols:
+                    raise Exception('Number of data is lower than number of column names')
+                # Accounting for TRUE FALSE and converting to float
+                v = [s.replace('true','1').replace('false','0').replace('noprint','0').replace('print','1') for s in v]
+                v = [float(s) for s in v[0:nCols]]
+                if len(v) < nCols:
+                    raise Exception('Number of data is lower than number of column names')
+                Tab[i-nHeaders,:] = v
+        elif tableType=='mix':
+            # a mix table contains a mixed of strings and floats
+            # For now, we are being a bit more relaxed about the number of columns
+            Tab = np.zeros((n, nCols)).astype(object)
+            for i in range(nHeaders,n+nHeaders):
+                l = lines[i].lower()
+                v = l.split()
+                if len(v) != nCols:
+                    print('[WARN] Line {}: Number of data is different than number of column names'.format(iStart+1+i))
+                v=v[0:min(len(v),nCols)]
+                Tab[i-nHeaders,0:len(v)] = v
             
     except Exception as e:    
         raise BrokenFormatError('Line {}: {}'.format(iStart+i+1,e.args[0]))

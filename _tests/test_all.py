@@ -23,10 +23,11 @@ class Test(unittest.TestCase):
                 continue
             try:
                 fileformat=None
+                F=None
                 fileformat,F = weio.detectFormat(f)
                 #fr=weio.read(f,fileformat)
                 dfs = F.toDataFrame()
-                # 
+                ## 
                 if not isinstance(dfs,dict):
                     if dfs is None:
                         n = 0
@@ -36,7 +37,7 @@ class Test(unittest.TestCase):
                         n = 1
                 else:
                     n=len(dfs)
-                #print(fr.toDataFrame())
+                ##print(fr.toDataFrame())
                 s=fileformat.name
                 s=s.replace('file','')[:20]
                 if DEBUG:
@@ -44,11 +45,11 @@ class Test(unittest.TestCase):
             except weio.FormatNotDetectedError:
                 nError += 1
                 if DEBUG:
-                    print('[FAIL] {:30s}\tFormat not detected'.format(f[:30]))
+                    print('[FAIL] {:30s}\tFormat not detected'.format(os.path.basename(f)[:30]))
             except:
                 nError += 1
                 if DEBUG:
-                    print('[FAIL] {:30s}\tException occured'.format(f[:30]))
+                    print('[FAIL] {:30s}\tException occurred'.format(os.path.basename(f)[:30]))
                 raise 
 
         if nError>0:
