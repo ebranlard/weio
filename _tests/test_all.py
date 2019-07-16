@@ -9,8 +9,7 @@ class Test(unittest.TestCase):
     def test_read_all(self):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
-        #F = weio.read('_tests/FASTIn_ED.dat')
-        #print(F.toString())
+        #F = weio.FASTInFile('../_tests/FASTIn_ExtPtfm_SubSef.dat')
         #return
         #F.toDataFrame()
         #print(F)

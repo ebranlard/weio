@@ -41,6 +41,7 @@ class FASTInFile(File):
         super(FASTInFile, self).__init__(filename=filename,**kwargs)
 
     def keys(self):
+        self.labels = [ d['label'] for d in self.data if not d['isComment'] ]
         return self.labels
 
     def getID(self,label):
@@ -84,6 +85,13 @@ class FASTInFile(File):
         s ='Fast input file: {}\n'.format(self.filename)
         return s+'\n'.join(['{:15s}: {}'.format(d['label'],d['value']) for i,d in enumerate(self.data)])
 
+    def addKeyVal(self,key,val,descr=None):
+        d=getDict()
+        d['label']=key
+        d['value']=val
+        if descr is not None:
+            d['descr']=descr
+        self.data.append(d)
 
     def _read(self):
 
@@ -111,7 +119,8 @@ class FASTInFile(File):
 
 
 
-        self.data =[]
+        self.data   = []
+        self.module = None
         #with open(self.filename, 'r', errors="surrogateescape") as f:
         with open(self.filename, 'r', errors="surrogateescape") as f:
             lines=f.read().splitlines()
@@ -121,8 +130,10 @@ class FASTInFile(File):
         # Fast files start with ! or -
         #if lines[0][0]!='!' and lines[0][0]!='-':
         #    raise Exception('Fast file do not start with ! or -, is it the right format?')
-        
+
         # Special filetypes
+        if self.detectAndReadExtPtfmSE(lines):
+            return
         if self.detectAndReadAirfoil(lines):
             return
 
@@ -349,17 +360,12 @@ class FASTInFile(File):
                 raise WrongFormatError('Too many lines with wrong labels, probably not a FAST Input File')
 
         # --- PostReading checks
-        # set up "keys" (like dict)
-        self.labels = [ d['label'] for d in self.data if not d['isComment'] ]
-        duplicates = set([x for x in self.labels if self.labels.count(x) > 1])
-#         uplicatesseen = set()
-#         uniq = [x for x in a if x not in seen and not seen.add(x)]   
-#         if len(self.labels) !=len(set(self.labels)):
+        labels = self.keys()
+        duplicates = set([x for x in labels if labels.count(x) > 1])
         if len(duplicates)>0:
             print('[WARN] Duplicate labels found in file: '+self.filename)
             print('       Duplicates: '+', '.join(duplicates))
             print('       It''s strongly recommended to make them unique! ')
-                 
 #         except WrongFormatError as e:    
 #             raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
 #         except Exception as e:    
@@ -370,6 +376,31 @@ class FASTInFile(File):
             
     def toString(self):
         s=''
+        # Special file formats, TODO subclass
+        if self.module=='ExtPtfm':
+            s+='!Comment\n'
+            s+='!Comment Flex 5 Format\n'
+            s+='!Dimension: {}\n'.format(self['nDOF'])
+            s+='!Time increment in simulation: {}\n'.format(self['dt'])
+            s+='!Total simulation time in file: {}\n'.format(self['T'])
+
+            s+='\n!Mass Matrix\n'
+            s+='!Dimension: {}\n'.format(self['nDOF'])
+            s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['MassMatrix'])
+
+            s+='\n\n!Stiffness Matrix\n'
+            s+='!Dimension: {}'.format(self['nDOF'])
+            s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['StiffnessMatrix'])
+
+            s+='\n\n!Damping Matrix\n'
+            s+='!Dimension: {}'.format(self['nDOF'])
+            s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['DampingMatrix'])
+
+            s+='\n\n!Loading and Wave Elevation\n'
+            s+='!Dimension: 1 time column -  {} force columns\n'.format(self['nDOF'])
+            s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['Loading'])
+            return s
+
         for i in range(len(self.data)):
             d=self.data[i]
             if d['isComment']:
@@ -423,6 +454,31 @@ class FASTInFile(File):
 
     def _toDataFrame(self):
         dfs={}
+        # Special types, TODO Subclass
+        if self.module=='ExtPtfm':
+            nDOF=self['nDOF']
+            Cols=['Time_[s]','InpF_Fx_[N]', 'InpF_Fy_[N]', 'InpF_Fz_[N]', 'InpF_Mx_[Nm]', 'InpF_My_[Nm]', 'InpF_Mz_[Nm]']
+            Cols+=['CBF_{:03d}_[-]'.format(iDOF+1) for iDOF in np.arange(nDOF)]
+            Cols=Cols[:nDOF+1]
+            #dfs['Loading']         = pd.DataFrame(data = self['Loading'],columns  = Cols)
+            dfs = pd.DataFrame(data = self['Loading'],columns  = Cols)
+
+            #Cols=['SurgeAcc_[m/s]', 'SwayAcc_[m/s]', 'HeaveAcc_[m/s]', 'RollAcc_[rad/s]', 'PitchAcc_[rad/s]', 'YawAcc_[rad/s]']
+            #Cols+=['CBQD_{:03d}_[-]'.format(iDOF+1) for iDOF in np.arange(nDOF)]
+            #Cols=Cols[:nDOF]
+            #dfs['MassMatrix']      = pd.DataFrame(data = self['MassMatrix'], columns=Cols)
+
+            #Cols=['SurgeVel_[m/s]', 'SwayVel_[m/s]', 'HeaveVel_[m/s]', 'RollVel_[rad/s]', 'PitchVel_[rad/s]', 'YawVel_[rad/s]']
+            #Cols+=['CBQD_{:03d}_[-]'.format(iDOF+1) for iDOF in np.arange(nDOF)]
+            #Cols=Cols[:nDOF]
+            #dfs['DampingMatrix']   = pd.DataFrame(data = self['DampingMatrix'], columns=Cols)
+
+            #Cols=['Surge_[m]', 'Sway_[m]', 'Heave_[m]', 'Roll_[rad]', 'Pitch_[rad]', 'Yaw_[rad]']
+            #Cols+=['CBQ_{:03d}_[-]'.format(iDOF+1) for iDOF in np.arange(nDOF)]
+            #Cols=Cols[:nDOF]
+            #dfs['StiffnessMatrix'] = pd.DataFrame(data = self['StiffnessMatrix'], columns=Cols)
+            return dfs
+
         for i in range(len(self.data)): 
             d=self.data[i]
             if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER]:
@@ -502,6 +558,78 @@ class FASTInFile(File):
 # --------------------------------------------------------------------------------}
 # --- SubReaders /detectors
 # --------------------------------------------------------------------------------{
+    def detectAndReadExtPtfmSE(self,lines):
+        def readmat(n,m,lines,iStart):
+            M=np.zeros((n,m))
+            for j in np.arange(n):
+                i=iStart+j
+                M[j,:]=np.array(lines[i].split()).astype(float)
+            return M
+        if len(lines)<10:
+            return False
+        if not (lines[0][0]=='!' and lines[1][0]=='!'):
+            return False
+        if lines[1].lower().find('flex')<0:
+            return
+        if  lines[2].lower().find('!dimension')<0:
+            return
+        # --- At this stage we assume it's in the proper format
+        self.module='ExtPtfm'
+        nDOFCommon = -1
+        i=2;
+        try:
+            while i<len(lines):
+                l=lines[i].lower()
+                if l.find('!mass')==0:
+                    l=lines[i+1]
+                    nDOF=int(l.split(':')[1])
+                    if nDOF<-1 or nDOF!=nDOFCommon:
+                        raise BrokenFormatError('ExtPtfm stiffness matrix nDOF issue. nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
+                    self.addKeyVal('MassMatrix',readmat(nDOF,nDOF,lines,i+2))
+                    i=i+2+nDOF
+                elif l.find('!stiffness')==0:
+                    l=lines[i+1]
+                    nDOF=int(l.split(':')[1])
+                    if nDOF<-1 or nDOF!=nDOFCommon:
+                        raise BrokenFormatError('ExtPtfm stiffness matrix nDOF issue nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
+                    self.addKeyVal('StiffnessMatrix',readmat(nDOF,nDOF,lines,i+2))
+                    i=i+2+nDOF
+                elif l.find('!damping')==0:
+                    l=lines[i+1]
+                    nDOF=int(l.split(':')[1])
+                    if nDOF<-1 or nDOF!=nDOFCommon:
+                        raise BrokenFormatError('ExtPtfm damping matrix nDOF issue nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
+                    self.addKeyVal('DampingMatrix',readmat(nDOF,nDOF,lines,i+2))
+                    i=i+2+nDOF
+                elif l.find('!loading')==0:
+                    try: 
+                        nt=int(self['T']/self['dt'])+1
+                    except:
+                        raise BrokenFormatError('Cannot read loading since time step and simulation time not properly set.')
+                    self.addKeyVal('Loading',readmat(nt,nDOFCommon+1,lines,i+2))
+                    i=i+nt+2
+                elif len(l)>0:
+                    if l[0]=='!':
+                        if l.find('!dimension')==0:
+                            self.addKeyVal('nDOF',int(l.split(':')[1]))
+                            nDOFCommon=self['nDOF']
+                        elif l.find('!time increment')==0:
+                            self.addKeyVal('dt',np.float(l.split(':')[1]))
+                        elif l.find('!total simulation time')==0:
+                            self.addKeyVal('T',np.float(l.split(':')[1]))
+                    else:
+                        raise BrokenFormatError('Unexcepted content found on line {}'.format(i))
+                i+=1
+        except BrokenFormatError as e:
+            raise e
+        except: 
+            raise
+
+
+        return True
+        
+
+
     def detectAndReadAirfoil(self,lines):
         if len(lines)<14:
             return False
