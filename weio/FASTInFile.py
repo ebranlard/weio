@@ -31,7 +31,7 @@ class FASTInFile(File):
 
     @staticmethod
     def defaultExtensions():
-        return ['.dat','.fst','.txt']
+        return ['.dat','.fst','.txt','.fstf']
 
     @staticmethod
     def formatName():
@@ -97,11 +97,11 @@ class FASTInFile(File):
 
         # from .dtuwetb import fast_io
         # TODO members for  BeamDyn with mutliple key point                                                                                                                                                                                                                                                                                                        ####### TODO PropSetID is Duplicate SubDyn and used in HydroDyn
-        NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID'  , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      , 'mu1'           , 'TwrHtFr'   , 'TwrRe'   , 'RJointID'        , 'IJointID'        , 'COSMID'             , 'CMJointID'         ]
-        NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints'  , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   , 1               , 'NTwrHt'    , 'NTwrRe'  , 'NReact'          , 'NInterf'         , 'NCOSMs'             , 'NCmass'            ]
-        NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'   , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' , 'DampingCoeffs' , 'TowerProp' , 'TowerRe' , 'BaseReactJoints' , 'InterfaceJoints' , 'MemberCosineMatrix' , 'ConcentratedMasses']
-        NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2          , 2           , 2             , 2           , 2          , 1              , 2            , 2               , 1           , 1         , 2                 , 2                 , 2                    , 2                   ]
-        NUMTAB_FROM_VAL_TYPE    = ['num'      , 'num'       , 'num'      , 'num'        , 'num'          , 'num'      , 'num'      , 'num'      , 'num'      , 'num'       , 'num'         , 'num'       , 'num'      , 1              , 'num'        , 'num'           , 1           , 1         , 'mix'             , 'num'             , 'num'                , 'num'               ]
+        NUMTAB_FROM_VAL_DETECT  = ['HtFract'  , 'TwrElev'   , 'BlFract'  , 'Genspd_TLU' , 'BlSpn'        , 'WndSpeed' , 'HvCoefID' , 'AxCoefID' , 'JointID'  , 'Dpth'      , 'FillNumM'    , 'MGDpth'    , 'SimplCd'  , 'RNodes'       , 'kp_xr'      , 'mu1'           , 'TwrHtFr'   , 'TwrRe'   , 'RJointID'        , 'IJointID'        , 'COSMID'             , 'CMJointID'        , 'WT_X']
+        NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints'  , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   , 1               , 'NTwrHt'    , 'NTwrRe'  , 'NReact'          , 'NInterf'         , 'NCOSMs'             , 'NCmass'           , 'NumTurbines']
+        NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'   , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' , 'DampingCoeffs' , 'TowerProp' , 'TowerRe' , 'BaseReactJoints' , 'InterfaceJoints' , 'MemberCosineMatrix' , 'ConcentratedMasses','WindTurbines']
+        NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2          , 2           , 2             , 2           , 2          , 1              , 2            , 2               , 1           , 1         , 2                 , 2                 , 2                    , 2                   ,2]
+        NUMTAB_FROM_VAL_TYPE    = ['num'      , 'num'       , 'num'      , 'num'        , 'num'          , 'num'      , 'num'      , 'num'      , 'num'      , 'num'       , 'num'         , 'num'       , 'num'      , 1              , 'num'        , 'num'           , 1           , 1         , 'mix'             , 'num'             , 'num'                , 'num'               ,'mix']
         NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
         # NOTE: MJointID1, used by SubDyn and HydroDyn
@@ -349,7 +349,7 @@ class FASTInFile(File):
                     #print('label>',d['label'],'<',type(d['label']),line);
                     if i>3: # first few lines may be comments, we allow it
                         #print('Line',i,'Label:',d['label'])
-                        raise WrongFormatError('Special Character found in Label.')
+                        raise WrongFormatError('Special Character found in Label: `{}`'.format(d['label']))
                 if len(d['label'])==0:
                     nWrongLabels +=1
             if nComments>len(lines)*0.35:
@@ -365,7 +365,7 @@ class FASTInFile(File):
         if len(duplicates)>0:
             print('[WARN] Duplicate labels found in file: '+self.filename)
             print('       Duplicates: '+', '.join(duplicates))
-            print('       It''s strongly recommended to make them unique! ')
+            print('       It\'s strongly recommended to make them unique! ')
 #         except WrongFormatError as e:    
 #             raise WrongFormatError('Fast File {}: '.format(self.filename)+'\n'+e.args[0])
 #         except Exception as e:    
@@ -913,9 +913,12 @@ def parseFASTInputLine(line_raw,i):
         # Defining value and remaining splits
         if len(List)>=2:
             d['value']=List
-            sLast=csplits[ii-1]
-            ipos=line.find(sLast)
-            line_remaining = line[ipos+len(sLast):]
+            line_remaining=line
+            # eating line, removing each values
+            for iii in range(ii):
+                sValue=csplits[iii]
+                ipos=line_remaining.find(sValue)
+                line_remaining = line_remaining[ipos+len(sValue):]
             splits=line_remaining.split()
             iNext=0
         else:
