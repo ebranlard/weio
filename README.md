@@ -19,6 +19,12 @@ f=weio.read('file.csv')
 print(f.toDataFrame())
 f.write('out.csv')
 ```
+Example for an OpenFAST binary file:
+```python
+import weio 
+df=weio.read('Output.outb').toDataFrame()
+plt.plot(df['Time_[s]'], df['GenPwr_[kW']))
+```
 
 
 ## Requirements
