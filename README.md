@@ -43,6 +43,10 @@ cd weio
 ## Installation
 The python packages mentioned in the Requirements section need to be installed.
 ```bash
+pip install -e .
+```
+or
+```bash
 python setup.py install
 ```
 
