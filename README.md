@@ -27,7 +27,7 @@ The script relies on the following python packages: `numpy`, `pandas`, `xarray`
 
 If you have pip installed on your system, you can install them by typing in a terminal: 
 ```bash
-pip install -r requirements
+pip install -r requirements.txt
 ```
 or type `make dep` from the main directory.
 
