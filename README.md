@@ -42,7 +42,7 @@ or type `make dep` from the main directory.
 From the github page, click on the "Clone or download" button, and you may chose to download as Zip.
 Alternatively, from a command line:
 ```bash
-git clone https://github.com/elmanuelito/weio
+git clone https://github.com/ebranlard/weio
 cd weio
 ```
 
