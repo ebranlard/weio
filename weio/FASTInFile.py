@@ -714,7 +714,7 @@ class FASTInFile(File):
 class FASTInputDeck(object):
     """Container for input files that make up a FAST input deck"""
 
-    def __init__(self,fstfile,readlist=['ED','Aero']):
+    def __init__(self,fstfile,readlist=['ED','Aero'],silent=True):
         """Read FAST master file and read inputs for FAST modules that
         are used
         """
@@ -724,6 +724,7 @@ class FASTInputDeck(object):
         # read master file
         self.fst = FASTInFile(fstfile)
         print('Read',fstfile)
+        self.Attributes=['fst']
 
         def sub_read(file_obj,store_obj,expected_keys,names):
             """ read sub files from object """
@@ -742,7 +743,7 @@ class FASTInputDeck(object):
                     bFileList = False
                     keyval=[keyval]
                 for i,keyv in enumerate(keyval):
-                    fpath = os.path.join(modeldir, keyv.strip('"'))
+                    fpath = os.path.join(modeldir, os.path.normpath(keyv.strip('"').replace('\\','/')))
                     if os.path.isfile(fpath):
                         self.inputfiles[name] = fpath
                         try:
@@ -752,10 +753,16 @@ class FASTInputDeck(object):
                         else:
                             if bFileList:
                                 getattr(store_obj,name).append(modinput)
-                                print('Read',fpath,'as{}[{}]'.format(name,i))
+                                if not silent:
+                                    print('Read',fpath,'as{}[{}]'.format(name,i))
                             else:
                                 setattr(store_obj, name, modinput)
-                                print('Read',fpath,'as',name)
+                                if not silent:
+                                    print('Read',fpath,'as',name)
+                                self.Attributes.append(name)
+                    else:
+                        if not silent:
+                            print('Not a file:',fpath)
 
         filekeys = [ key for key in self.fst.keys() if key.endswith('File') ]
         names    = [key[:-4] for key in filekeys]
@@ -771,6 +778,12 @@ class FASTInputDeck(object):
             names    = ['Bld1'     , 'Bld2'     , 'Bld3'    , 'AF']
             sub_read(self.Aero,self.Aero,filekeys,names)
 
+    def __repr__(self):
+        s='<weio.FastInputDeck object>'+'\n'
+        s+='filename   :'+self.filename+'\n'
+        s+='available attributes: '+','.join(self.Attributes)
+        s+='\n'
+        return s
 
 
 #         EDFile      
