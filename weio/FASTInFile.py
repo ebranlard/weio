@@ -431,7 +431,6 @@ class FASTInFile(File):
                 if d['tabUnits'] is not None:
                     s+='\n'
                     s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
-                print(d['value'])
                 if np.size(d['value'],0) > 0 :
                     s+='\n'
                     s+='\n'.join('\t'.join('{}'.format(x) for x in y) for y in d['value'])
