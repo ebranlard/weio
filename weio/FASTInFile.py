@@ -101,7 +101,7 @@ class FASTInFile(File):
         NUMTAB_FROM_VAL_DIM_VAR = ['NTwInpSt' , 'NumTwrNds' , 'NBlInpSt' , 'DLL_NumTrq' , 'NumBlNds'     , 'NumCases' , 'NHvCoef'  , 'NAxCoef'  , 'NJoints'  , 'NCoefDpth' , 'NFillGroups' , 'NMGDepths' , 1          , 'BldNodes'     , 'kp_total'   , 1               , 'NTwrHt'    , 'NTwrRe'  , 'NReact'          , 'NInterf'         , 'NCOSMs'             , 'NCmass'           , 'NumTurbines']
         NUMTAB_FROM_VAL_VARNAME = ['TowProp'  , 'TowProp'   , 'BldProp'  , 'DLLProp'    , 'BldAeroNodes' , 'Cases'    , 'HvCoefs'  , 'AxCoefs'  , 'Joints'   , 'DpthProp'  , 'FillGroups'  , 'MGProp'    , 'SmplProp' , 'BldAeroNodes' , 'MemberGeom' , 'DampingCoeffs' , 'TowerProp' , 'TowerRe' , 'BaseReactJoints' , 'InterfaceJoints' , 'MemberCosineMatrix' , 'ConcentratedMasses','WindTurbines']
         NUMTAB_FROM_VAL_NHEADER = [2          , 2           , 2          , 2            , 2              , 2          , 2          , 2          , 2          , 2           , 2             , 2           , 2          , 1              , 2            , 2               , 1           , 1         , 2                 , 2                 , 2                    , 2                   ,2]
-        NUMTAB_FROM_VAL_TYPE    = ['num'      , 'num'       , 'num'      , 'num'        , 'num'          , 'num'      , 'num'      , 'num'      , 'num'      , 'num'       , 'num'         , 'num'       , 'num'      , 1              , 'num'        , 'num'           , 1           , 1         , 'mix'             , 'num'             , 'num'                , 'num'               ,'mix']
+        NUMTAB_FROM_VAL_TYPE    = ['num'      , 'num'       , 'num'      , 'num'        , 'num'          , 'num'      , 'num'      , 'num'      , 'num'      , 'num'       , 'num'         , 'num'       , 'num'      , 'mix'          , 'num'        , 'num'           , 'num'       , 'num'     , 'mix'             , 'num'             , 'num'                , 'num'               ,'mix']
         NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
         # NOTE: MJointID1, used by SubDyn and HydroDyn
@@ -431,6 +431,7 @@ class FASTInFile(File):
                 if d['tabUnits'] is not None:
                     s+='\n'
                     s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
+                print(d['value'])
                 if np.size(d['value'],0) > 0 :
                     s+='\n'
                     s+='\n'.join('\t'.join('{}'.format(x) for x in y) for y in d['value'])
@@ -1090,6 +1091,8 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num'):
                     print('[WARN] Line {}: Number of data is different than number of column names'.format(iStart+1+i))
                 v=v[0:min(len(v),nCols)]
                 Tab[i-nHeaders,0:len(v)] = v
+        else:
+            raise Exception('Unknown table type')
             
     except Exception as e:    
         raise BrokenFormatError('Line {}: {}'.format(iStart+i+1,e.args[0]))
