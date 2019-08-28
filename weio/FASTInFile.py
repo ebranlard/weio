@@ -553,6 +553,8 @@ class FASTInFile(File):
                 data = data[:,IOrg]
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=data,columns=Cols)
+        if len(dfs)==1:
+            dfs=dfs[list(dfs.keys())[0]]
         return dfs
 
 # --------------------------------------------------------------------------------}
@@ -865,7 +867,7 @@ def strIsInt(s):
 def hasSpecialChars(s):
     # fast allows for parenthesis
     # For now we allow for - but that's because of BeamDyn geometry members 
-    return not re.match("^[a-zA-Z0-9_()-]*$", s)
+    return not re.match("^[\"\'a-zA-Z0-9_()-]*$", s)
 
 def cleanLine(l):
     # makes a string single space separated
