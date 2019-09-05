@@ -132,8 +132,8 @@ class ReadHawc2(object):
                     raise Exception('Dont know how to split the input of the sel file into 4 columns')
 
                 Unit.append(unit)
-                Description.append(sp[1]) 
-                Name.append(sp[0]) 
+                Description.append(sp[0]) 
+                Name.append(sp[1]) 
 
             self.ChInfo = [Name, Unit, Description]
             self.FileFormat = 'BHAWC_ASCII'
