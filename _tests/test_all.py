@@ -10,12 +10,13 @@ class Test(unittest.TestCase):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
         #F = weio.FASTInFile('../_tests/FASTIn_ExtPtfm_SubSef.dat')
+        #F = weio.HAWC2DatFile('../_tests/BHAWC_out_ascii.dat')
         #return
         #F.toDataFrame()
         #print(F)
         #print(fileformat)
         #print(F.toDataFrame())
-        DEBUG=False
+        DEBUG=True
         nError=0
         for f in glob.glob(os.path.join(MyDir,'*.*')):
             if os.path.splitext(f)[-1] in ['.py','.pyc']:
