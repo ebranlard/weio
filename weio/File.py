@@ -62,6 +62,15 @@ class File(object):
     def _toDataFrame(self):
         raise NotImplementedError("Method must be implemented in the subclass")
 
+    def _fromDataFrame(self):
+        raise NotImplementedError("Method must be implemented in the subclass")
+
+    def _fromDictionary(self):
+        raise NotImplementedError("Method must be implemented in the subclass")
+
+    def _fromFile(self):
+        raise NotImplementedError("Method must be implemented in the subclass")
+
     @staticmethod
     def defaultExtension():
         raise NotImplementedError("Method must be implemented in the subclass")
@@ -86,41 +95,49 @@ class File(object):
 
 
 
-
-    def test_ascii(self):
-        # compare ourselves (assuming read has occured) with what we write
-        # --- First re-read original as ascii
-        # comparison is done ignoring multiple white spaces for now
-        with open(self.filename, 'r') as f1:
-            lines1 = f1.read().splitlines();
-            lines1 = '|'.join([l.replace('\t',' ').strip() for l in lines1])
-            lines1 = ' '.join(lines1.split())
-
-        # --- Then test write function (assuming read)
+    def test_write_read(self,bDelete=False):
+        """ Test that we can write and then read what we wrote
+        NOTE: this does not check that what we read is the same..
+        """
+        # --- First, test write function (assuming read)
         try:
-            filename_out = self.filename+'_TMP'
+            f,ext=os.path.splitext(self.filename)
+            filename_out = f+'_TMP'+ext
             self.write(filename_out)
         except Exception as e:
             raise Exception('Error writing what we read\n'+e.args[0])
-
-        # --- Third read what we wrote as ascii
-        with open(filename_out, 'r') as f2:
-            lines2 = f2.read().splitlines();
-            lines2 = '|'.join([l.replace('\t',' ').strip() for l in lines2])
-            lines2 = ' '.join(lines2.split())
-
-        # --- Fourth re-read what we wrote
+        # --- Second,  re-read what we wrote
         try:
             self.read(filename_out)
         except Exception as e:
             raise Exception('Error reading what we wrote\n'+e.args[0])
-
-        # Last, we perform the ascii comparison
-        if lines1 == lines2:
-            print('[ OK ] '+self.filename)
+        if bDelete:
             os.remove(filename_out)
+        return filename_out
+
+    def test_ascii(self,bCompareWritesOnly=False,bDelete=True):
+        # compare ourselves (assuming read has occured) with what we write
+
+        f,ext=os.path.splitext(self.filename)
+        # --- Perform a simple write/read test
+        filename_out=self.test_write_read()
+
+        # --- Perform ascii comparison (and delete if success)
+        if bCompareWritesOnly:
+            f1 = filename_out
+            f2 = f+'_TMP2'+ext
+            self.write(f2)
         else:
-            print('[FAIL] '+self.filename)
+            f1 = self.filename
+            f2 = filename_out
+        bStat=ascii_comp(f1,f2,bDelete=bDelete)
+
+        if bStat:
+            if bCompareWritesOnly and bDelete:
+                os.remove(f1)
+        else:
+            raise Exception('The ascii content of {} and {} are different'.format(f1,f2))
+
 
 
 # --------------------------------------------------------------------------------}
@@ -133,3 +150,24 @@ def isBinary(filename):
             return False
         except UnicodeDecodeError:
             return True
+
+def ascii_comp(file1,file2,bDelete=False):
+    """ Compares two ascii files line by line.
+    Comparison is done ignoring multiple white spaces for now"""
+    # --- Read original as ascii
+    with open(file1, 'r') as f1:
+        lines1 = f1.read().splitlines();
+        lines1 = '|'.join([l.replace('\t',' ').strip() for l in lines1])
+        lines1 = ' '.join(lines1.split())
+    # --- Read second file as ascii
+    with open(file2, 'r') as f2:
+        lines2 = f2.read().splitlines();
+        lines2 = '|'.join([l.replace('\t',' ').strip() for l in lines2])
+        lines2 = ' '.join(lines2.split())
+
+    if lines1 == lines2:
+        if bDelete:
+            os.remove(file2)
+        return True
+    else:
+        return False

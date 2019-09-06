@@ -66,3 +66,7 @@ def read(filename,fileformat=None):
     if not isinstance(F,fileformat.constructor):
         F=fileformat.constructor(filename=filename)
     return F
+
+
+
+

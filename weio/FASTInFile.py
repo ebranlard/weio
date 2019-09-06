@@ -389,11 +389,11 @@ class FASTInFile(File):
             s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['MassMatrix'])
 
             s+='\n\n!Stiffness Matrix\n'
-            s+='!Dimension: {}'.format(self['nDOF'])
+            s+='!Dimension: {}\n'.format(self['nDOF'])
             s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['StiffnessMatrix'])
 
             s+='\n\n!Damping Matrix\n'
-            s+='!Dimension: {}'.format(self['nDOF'])
+            s+='!Dimension: {}\n'.format(self['nDOF'])
             s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['DampingMatrix'])
 
             s+='\n\n!Loading and Wave Elevation\n'
