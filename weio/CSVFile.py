@@ -215,10 +215,19 @@ class CSVFile(File):
             self.sep='\t'
         # Write
         if len(self.header)>0:
-            with open(self.filename, 'w') as f:
+            with open(self.filename, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(self.header)+'\n')
-            with open(self.filename, 'a') as f:
-                self.data.to_csv(f,        sep=self.sep,index=False,header=False)
+            with open(self.filename, 'a', encoding='utf-8') as f:
+                try:
+                    self.data.to_csv(f,   sep=self.sep,     index=False,header=False)
+                except TypeError:
+                    print('[WARN] CSVFile: Pandas failed, likely encoding error. Attempting a quick and dirty fix.')
+                    s=''
+                    vals=self.data.values
+                    for l in vals:
+                        sLine=(self.sep).join([str(v) for v in l])
+                        s+=sLine+'\n'
+                    f.write(s)
         else:
             self.data.to_csv(self.filename,sep=self.sep,index=False)
 
