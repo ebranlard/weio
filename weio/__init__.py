@@ -12,6 +12,7 @@ from .FLEXBladeFile  import FLEXBladeFile
 from .FLEXProfileFile  import FLEXProfileFile
 from .FLEXOutFile  import FLEXOutFile
 from .ExcelFile  import ExcelFile
+from .TurbSimTSFile  import TurbSimTSFile
 #from .NetCDFFile   import NetCDFFile
 
 class FormatNotDetectedError(Exception):
@@ -24,6 +25,7 @@ def fileFormats():
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
     formats.append(FileFormat(FASTWndFile))
+    formats.append(FileFormat(TurbSimTSFile))
     formats.append(FileFormat(HAWC2DatFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
