@@ -1,6 +1,7 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from io import open
 from .File import File, isBinary, WrongFormatError, BrokenFormatError
 import pandas as pd
 import numpy as np
