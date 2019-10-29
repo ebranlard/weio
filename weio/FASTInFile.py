@@ -1086,7 +1086,7 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num'):
             # For now, we are being a bit more relaxed about the number of columns
             Tab = np.zeros((n, nCols)).astype(object)
             for i in range(nHeaders,n+nHeaders):
-                l = lines[i].lower()
+                l = lines[i]
                 v = l.split()
                 if len(v) != nCols:
                     print('[WARN] Line {}: Number of data is different than number of column names'.format(iStart+1+i))
