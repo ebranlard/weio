@@ -36,6 +36,16 @@ class FASTOutFile(File):
         return 'FAST output file'
 
     def _read(self):
+        def readline(iLine):
+            with open(self.filename) as f:
+                for i, line in enumerate(f):
+                    if i==iLine-1:
+                        return line.strip()
+                    elif i>=iLine:
+                        break
+
+
+
         ext = os.path.splitext(self.filename.lower())[1]
         self.info={}
         try:
@@ -47,7 +57,7 @@ class FASTOutFile(File):
                 F=CSVFile(filename=self.filename, sep=' ', commentLines=[0,2],colNamesLine=1)
                 self.data = F.data
                 del F
-                self.info['attribute_units']=None
+                self.info['attribute_units']=readline(3).replace('sec','s').split()
                 self.info['attribute_names']=self.data.columns.values
             else:
                 self.data, self.info = fast_io.load_output(self.filename)
@@ -63,10 +73,16 @@ class FASTOutFile(File):
 
     def _toDataFrame(self):
         if self.info['attribute_units'] is not None:
-            cols=[n+'_['+u+']' for n,u in zip(self.info['attribute_names'],self.info['attribute_units'])]
+            cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(self.info['attribute_names'],self.info['attribute_units'])]
         else:
             cols=self.info['attribute_names']
-        return pd.DataFrame(data=self.data,columns=cols)
+        if isinstance(self.data, pd.DataFrame):
+            df= self.data
+            df.columns=cols
+        else:
+            df = pd.DataFrame(data=self.data,columns=cols)
+
+        return df
 
 
 if __name__ == "__main__":
