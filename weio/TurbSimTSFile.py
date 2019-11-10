@@ -51,7 +51,7 @@ class TurbSimTSFile(File):
 
     def columns(self):
         Comp=['u','v','w']
-        return ['Elapsed Time ']+['Point{}{}'.format(ip+1,Comp[ic]) for ic in np.arange(self.nComp) for ip in np.arange(len(self.Points))]
+        return ['Time']+['Point{}{}'.format(ip+1,Comp[ic]) for ic in np.arange(self.nComp) for ip in np.arange(len(self.Points))]
 
     def units(self):
         nPoints = self.Points.shape[0]
