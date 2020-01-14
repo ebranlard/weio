@@ -14,7 +14,7 @@ try: #Python3
 except NameError: # Python2
     FileNotFoundError = IOError
 
-class File(object):
+class File(dict):
     def __init__(self,filename=None):
         if filename:
             ### If there is a new filename, replace the object variable

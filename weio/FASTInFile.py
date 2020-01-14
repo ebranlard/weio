@@ -401,6 +401,15 @@ class FASTInFile(File):
             s+='\n'.join(''.join('{:16.8e}'.format(x) for x in y) for y in self['Loading'])
             return s
 
+        def toStringVLD(val,lab,descr):
+            val='{}'.format(val)
+            lab='{}'.format(lab)
+            if len(val)<13:
+                val='{:13s}'.format(val)
+            if len(lab)<13:
+                lab='{:13s}'.format(lab)
+            return val+' '+lab+' - '+descr.strip().strip('-')+'\n'
+
         for i in range(len(self.data)):
             d=self.data[i]
             if d['isComment']:
@@ -410,13 +419,7 @@ class FASTInFile(File):
                     sList=', '.join([str(x) for x in d['value']])
                     s+='{} {} {}'.format(sList,d['label'],d['descr'])
                 else:
-                    val='{}'.format(d['value'])
-                    if len(val)<13:
-                        val='{:13s}'.format(val)
-                    lab = '{}'.format(d['label'])
-                    if len(lab)<13:
-                        lab='{:13s}'.format(lab)
-                    s+='{} {} {}'.format(val,lab,d['descr'])
+                    s+=toStringVLD(d['value'],d['label'],d['descr']).strip()
             elif d['tabType']==TABTYPE_NUM_WITH_HEADER:
                 s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabColumnNames']]))
                 #s+=d['descr'] # Not ready for that
