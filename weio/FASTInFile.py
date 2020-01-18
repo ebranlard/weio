@@ -408,7 +408,7 @@ class FASTInFile(File):
                 val='{:13s}'.format(val)
             if len(lab)<13:
                 lab='{:13s}'.format(lab)
-            return val+' '+lab+' - '+descr.strip().strip('-')+'\n'
+            return val+' '+lab+' - '+descr.strip().strip('-').strip()+'\n'
 
         for i in range(len(self.data)):
             d=self.data[i]

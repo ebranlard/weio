@@ -165,13 +165,11 @@ def load_binary_output(filename, use_buffer=True):
         for iChan in range(NumOutChans + 1):
             ChanNameASCII = fread(fid, LenName, 'uint8')  #; % ChanName converted to numeric ASCII
             ChanName.append("".join(map(chr, ChanNameASCII)).strip())
-        print('ChanName',ChanName)
 
         ChanUnit = []  # initialize the ChanUnit cell array
         for iChan in range(NumOutChans + 1):
             ChanUnitASCII = fread(fid, LenName, 'uint8')  #; % ChanUnit converted to numeric ASCII
             ChanUnit.append("".join(map(chr, ChanUnitASCII)).strip()[1:-1])
-        print('ChanUnit',ChanUnit)
 
         # -------------------------
         #  get the channel time series
