@@ -44,9 +44,33 @@ class ExcelFile(File):
     #    s=''
     #    return s
 
-    #def _write(self):
-    #    with open(self.filename,'w') as f:
-    #        f.write(self.toString)
+    def _write(self):
+        # Create a Pandas Excel writer using XlsxWriter as the engine.
+        writer = pd.ExcelWriter(self.filename, engine='xlsxwriter')
+        # Convert the dataframe to an XlsxWriter Excel object.
+        for k,_ in self.data.items():
+            df = self.data[k]
+            df.to_excel(writer, sheet_name=k, index=False)
+        # # Account info columns (set size)
+        # worksheet.set_column('B:D', 20)
+        # # Total formatting
+        # total_fmt = workbook.add_format({'align': 'right', 'num_format': '$#,##0',
+        #                                  'bold': True, 'bottom':6})
+        # # Total percent format
+        # total_percent_fmt = workbook.add_format({'align': 'right', 'num_format': '0.0%',
+        #                                          'bold': True, 'bottom':6})
+        # workbook = writer.book
+        # worksheet = writer.sheets['report']
+        # Highlight the top 5 values in Green
+        #worksheet.conditional_format(color_range, {'type': 'top',
+        #                                           'value': '5',
+        #                                           'format': format2})
+        ## Highlight the bottom 5 values in Red
+        #worksheet.conditional_format(color_range, {'type': 'bottom',
+        #                                           'value': '5',
+        #                                           'format': format1})
+        # Close the Pandas Excel writer and output the Excel file.
+        writer.save()
 
     def __repr__(self):
         s ='Class XXXX (attributes: data)\n'
