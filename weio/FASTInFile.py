@@ -428,7 +428,7 @@ class FASTInFile(File):
                     s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabUnits']]))
                 if np.size(d['value'],0) > 0 :
                     s+='\n'
-                    s+='\n'.join('\t'.join('{:15.8e}'.format(x) for x in y) for y in d['value'])
+                    s+='\n'.join('\t'.join( ('{:15.0f}'.format(x) if int(x)==x else '{:15.8e}'.format(x) )  for x in y) for y in d['value'])
             elif d['tabType']==TABTYPE_MIX_WITH_HEADER:
                 s+='{}'.format(' '.join(['{:15s}'.format(s) for s in d['tabColumnNames']]))
                 if d['tabUnits'] is not None:
