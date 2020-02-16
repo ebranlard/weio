@@ -4,6 +4,7 @@ from .FileFormats import FileFormat
 from .FASTInFile   import FASTInFile, FASTInputDeck
 from .FASTOutFile  import FASTOutFile
 from .FASTWndFile  import FASTWndFile
+from .FASTLinFile  import FASTLinFile
 from .CSVFile      import CSVFile
 from .HAWC2PCFile  import HAWC2PCFile
 from .HAWC2AEFile  import HAWC2AEFile
@@ -25,6 +26,7 @@ def fileFormats():
     formats.append(FileFormat(FASTInFile))
     formats.append(FileFormat(FASTOutFile))
     formats.append(FileFormat(FASTWndFile))
+    formats.append(FileFormat(FASTLinFile))
     formats.append(FileFormat(TurbSimTSFile))
     formats.append(FileFormat(HAWC2DatFile))
     formats.append(FileFormat(HAWC2PCFile))
