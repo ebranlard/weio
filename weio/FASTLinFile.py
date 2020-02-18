@@ -63,7 +63,8 @@ class FASTLinFile(File):
         # Reading 
         with open(self.filename, 'r', errors="surrogateescape") as f:
             # --- Reader header
-            self['header'], lastLine=readToMarker(f, 'Order of', 30)
+            self['header'], lastLine=readToMarker(f, 'Jacobians included', 30)
+            self['header'].append(lastLine)
             nx  = int(extractVal(self['header'],'Number of continuous states:'))
             nxd = int(extractVal(self['header'],'Number of discrete states:'  ))
             nz  = int(extractVal(self['header'],'Number of constraint states:'))
@@ -83,43 +84,33 @@ class FASTLinFile(File):
             except:
                 self.WindSpeed = None
 
-            if nx>0:
-                # --- Cont states
-                if lastLine.find('continuous states')>=0:
-                    self['x'], self['x_info'] = readOP(f, nx)
-                else:
-                    raise Exception()
-                # --- Cont states deriv
-                dummy, lastLine=readToMarker(f, 'Order of', 5)
-                if lastLine.find('continuous state derivatives:')>=0:
-                    self['xdot'], self['xdot_info'] = readOP(f, nx)
-                else:
-                    raise Exception()
-            # --- Inputs
-            if nu>0:
-                dummy, lastLine=readToMarker(f, 'Order of', 5)
-                if lastLine.find('inputs:')>=0:
-                    self['u'], self['u_info'] = readOP(f, nu)
-                else:
-                    raise Exception()
-            # --- Outputs
-            if ny>0:
-                dummy, lastLine=readToMarker(f, 'Order of', 5)
-                if lastLine.find('outputs:')>=0:
-                    self['y'], self['y_info'] = readOP(f, ny)
-                else:
-                    raise Exception()
 
-            # -- state matrices
-            dummy, lastLine=readToMarker(f, 'A:', 5)
-            self['A'] = readMat(f, nx, nx)
-            dummy, lastLine=readToMarker(f, 'B:', 5)
-            self['B'] = readMat(f, nx, nu)
-            dummy, lastLine=readToMarker(f, 'C:', 5)
-            self['C'] = readMat(f, ny, nx)
-            dummy, lastLine=readToMarker(f, 'D:', 5)
-            self['D'] = readMat(f, ny, nu)
+            KEYS=['Order of','A:','B:','C:','D:','ED M:']
 
+
+            for i, line in enumerate(f):
+                line = line.strip()
+                KeyFound=any([line.find(k)>=0 for k in KEYS])
+                if KeyFound:
+                    if line.find('Order of continuous states:')>=0:
+                        self['x'], self['x_info'] = readOP(f, nx)
+                    elif line.find('Order of continuous state derivatives:')>=0:
+                        self['xdot'], self['xdot_info'] = readOP(f, nx)
+                    elif line.find('Order of inputs')>=0:
+                        self['u'], self['u_info'] = readOP(f, nu)
+                    elif line.find('Order of outputs')>=0:
+                        self['y'], self['y_info'] = readOP(f, ny)
+                    elif line.find('A:')>=0:
+                        self['A'] = readMat(f, nx, nx)
+                    elif line.find('B:')>=0:
+                        self['B'] = readMat(f, nx, nu)
+                    elif line.find('C:')>=0:
+                        self['C'] = readMat(f, ny, nx)
+                    elif line.find('D:')>=0:
+                        self['D'] = readMat(f, ny, nu)
+                    elif line.find('ED M:')>=0:
+                        self['EDDOF'] = line[5:].split()
+                        self['M']     = readMat(f, 24, 24)
 
     def toString(self):
         s=''
@@ -206,7 +197,10 @@ class FASTLinFile(File):
         dfs['x'] = pd.DataFrame(data = np.asarray(self['x']).reshape((1,-1)), columns=xdescr_short)
         dfs['u'] = pd.DataFrame(data = np.asarray(self['u']).reshape((1,-1)), columns=udescr_short)
         dfs['y'] = pd.DataFrame(data = np.asarray(self['y']).reshape((1,-1)), columns=ydescr_short)
-
+        try:
+            dfs['M'] = pd.DataFrame(data = self['M'], index=self['EDDOF'], columns=self['EDDOF'])
+        except:
+            pass
         return dfs
 
 

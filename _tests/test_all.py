@@ -9,12 +9,12 @@ class Test(unittest.TestCase):
         #fileformat,F = weio.detectFormat('_tests/FASTIn_ED_bld.dat')
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
         #F = weio.FASTInFile('../_tests/FASTIn_ExtPtfm_SubSef.dat')
-        #F = weio.FASTLinFile('../_tests/FASTOutLin.lin')
+        #F = weio.FASTLinFile('../_tests/FASTOutLin_New.lin')
+        #dfs=F.toDataFrame()
+        #print(F.toDataFrame())
         #print(F)
         #return
         #print(fileformat)
-#        print(F.toDataFrame())
-        #dfs=F.toDataFrame()
         pass
 
     def test_001_read_all(self):
@@ -152,6 +152,13 @@ class Test(unittest.TestCase):
         F=weio.FASTLinFile(os.path.join(MyDir,'FASTOutLin.lin'))
         self.assertAlmostEqual(F['A'][3,1], 3.91159454E-04 )
         self.assertAlmostEqual(F['u'][7]   ,4.00176055E+04)
+
+        F=weio.FASTLinFile(os.path.join(MyDir,'FASTOutLin_EDM.lin'))
+        dfs=F.toDataFrame()
+        M=dfs['M']
+        self.assertAlmostEqual(M['7_TwFADOF1']['7_TwFADOF1'],0.436753E+06)
+        self.assertAlmostEqual(M['13_GeAz']['13_GeAz']     , 0.437026E+08)
+
  
     def test_FLEX(self):
         self.assertAlmostEqual(self.DF('FLEXProfile.pro')['pc_set_2_t_57.0'].values[2,2],0.22711022)
