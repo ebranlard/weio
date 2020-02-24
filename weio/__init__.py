@@ -10,6 +10,7 @@ from .HAWC2PCFile  import HAWC2PCFile
 from .HAWC2AEFile  import HAWC2AEFile
 from .HAWC2DatFile import HAWC2DatFile
 from .HAWCStab2PwrFile import HAWCStab2PwrFile
+from .HAWCStab2IndFile import HAWCStab2IndFile
 from .FLEXBladeFile  import FLEXBladeFile
 from .FLEXProfileFile  import FLEXProfileFile
 from .FLEXOutFile  import FLEXOutFile
@@ -32,10 +33,11 @@ def fileFormats():
     formats.append(FileFormat(HAWC2DatFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))
+    formats.append(FileFormat(HAWCStab2PwrFile))
+    formats.append(FileFormat(HAWCStab2IndFile))
     formats.append(FileFormat(FLEXBladeFile))
     formats.append(FileFormat(FLEXProfileFile))
     formats.append(FileFormat(FLEXOutFile))
-    formats.append(FileFormat(HAWCStab2PwrFile))
     #formats.append(FileFormat(NetCDFFile))
     return formats
 
