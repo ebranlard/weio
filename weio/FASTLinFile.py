@@ -45,20 +45,28 @@ class FASTLinFile(File):
             bHasDeriv= colNames.find('Derivative Order')>=0
             for i, line in enumerate(fid):
                 sp=line.strip().split()
-                OP.append(float(sp[1]))
-                Var['RotatingFrame'].append(sp[2])
+                if sp[1].find(',')>=0:
+                    #  Most likely this OP has three values (e.g. orientation angles)
+                    # For now we discard the two other values
+                    OP.append(float(sp[1][:-1]))
+                    iRot=4
+                else:
+                    OP.append(float(sp[1]))
+                    iRot=2
+                Var['RotatingFrame'].append(sp[iRot])
                 if bHasDeriv:
-                    Var['DerivativeOrder'].append(int(sp[3]))
-                    Var['Description'].append(' '.join(sp[4:]).strip())
+                    Var['DerivativeOrder'].append(int(sp[iRot+1]))
+                    Var['Description'].append(' '.join(sp[iRot+2:]).strip())
                 else:
                     Var['DerivativeOrder'].append(-1)
-                    Var['Description'].append(' '.join(sp[3:]).strip())
+                    Var['Description'].append(' '.join(sp[iRot+1:]).strip())
                 if i>=n-1:
                     break
             return OP, Var
 
         def readMat(fid, n, m):
-            return np.array([f.readline().strip().split() for i in np.arange(n)]).astype(np.float)
+            vals=[f.readline().strip().split() for i in np.arange(n)]
+            return np.array(vals).astype(np.float)
 
         # Reading 
         with open(self.filename, 'r', errors="surrogateescape") as f:
@@ -127,25 +135,33 @@ class FASTLinFile(File):
             s = s.replace('(kW)'    , '_[kW]'   );
             s = s.replace('(deg)'   , '_[deg]'  );
             s = s.replace('(N)'     , '_[N]'    );
-            s = s.replace('(kN-m)'  , '_[kN-m]' );
-            s = s.replace('(N-m)'  , '_[N-m]' );
+            s = s.replace('(kN-m)'  , '_[kNm]' );
+            s = s.replace('(N-m)'  , '_[Nm]' );
             s = s.replace('(kN)'  , '_[kN]' );
             s = s.replace('(rpm)'   , '_[rpm]'  );
             s = s.replace('(m/s^2)' , '_[m/s^2]');
             s = s.replace('(m)'     , '_[m]'    );
+            s = s.replace(', m/s^2','_[m/s^2]');
             s = s.replace(', m/s','_[m/s]');
+            s = s.replace(', m','_[m]');
+            s = s.replace(', rad/s^2','_[rad/s^2]');
             s = s.replace(', rad/s','_[rad/s]');
             s = s.replace(', rad','_[rad]');
-            s = s.replace(', m','_[m]');
             s = s.replace(', -','_[-]');
+            s = s.replace(', Nm/m','_[Nm/m]');
             s = s.replace(', Nm','_[Nm]');
-            s= re.sub(r'\([^)]*\)','', s)
+            s = s.replace(', N/m','_[N/m]');
+            s = s.replace(', N','_[N]');
+            s = s.replace('(1)','1')
+            s = s.replace('(2)','2')
+            s = s.replace('(3)','3')
+            s= re.sub(r'\([^)]*\)','', s) # remove parenthesis
             s = s.replace('ED ','');
             s = s.replace('IfW ','');
             s = s.replace('Extended input: ','')
             s = s.replace('1st tower ','qt1');
             s = s.replace('First time derivative of '     ,'d_');
-            s = s.replace('Variable speed generator DOF ','psi_gen');
+            s = s.replace('Variable speed generator DOF ','psi_rot'); # NOTE: internally in FAST this is the azimuth of the rotor
             s = s.replace('fore-aft bending mode DOF '    ,'FA'     );
             s = s.replace('side-to-side bending mode DOF','SS'     );
             s = s.replace('bending-mode DOF of blade '    ,''     );
@@ -154,6 +170,36 @@ class FASTLinFile(File):
             s = s.replace('Drivetrain','DT'   );
             s = s.replace('translational displacement in ','trans'   );
             s = s.replace('finite element node ','N'   );
+            s = s.replace('-component position of node ','posN')
+            s = s.replace('-component inflow on tower node','TwrN')
+            s = s.replace('-component inflow on blade 1, node','Bld1N')
+            s = s.replace('-component inflow on blade 2, node','Bld2N')
+            s = s.replace('-component inflow on blade 3, node','Bld3N')
+            s = s.replace('-component inflow velocity at node','N')
+            s = s.replace('X translation displacement, node','XN')
+            s = s.replace('Y translation displacement, node','YN')
+            s = s.replace('Z translation displacement, node','ZN')
+            s = s.replace('X translation velocity, node','VxN')
+            s = s.replace('Y translation velocity, node','VyN')
+            s = s.replace('Z translation velocity, node','VzN')
+            s = s.replace('X translation acceleration, node','AxN')
+            s = s.replace('Y translation acceleration, node','AyN')
+            s = s.replace('Z translation acceleration, node','AzN')
+            s = s.replace('X orientation angle, node'  ,'XorN')
+            s = s.replace('Y orientation angle, node'  ,'YorN')
+            s = s.replace('Z orientation angle, node'  ,'ZorN')
+            s = s.replace('X rotation velocity, node'  ,'RVxN')
+            s = s.replace('Y rotation velocity, node'  ,'RVyN')
+            s = s.replace('Z rotation velocity, node'  ,'RVzN')
+            s = s.replace('X rotation acceleration, node'  ,'RAxN')
+            s = s.replace('Y rotation acceleration, node'  ,'RAyN')
+            s = s.replace('Z rotation acceleration, node'  ,'RAzN')
+            s = s.replace('X force, node','FxN')
+            s = s.replace('Y force, node','FyN')
+            s = s.replace('Z force, node','FzN')
+            s = s.replace('X moment, node','MxN')
+            s = s.replace('Y moment, node','MyN')
+            s = s.replace('Z moment, node','MzN')
             s = s.replace('cosine','cos'   );
             s = s.replace('sine','sin'   );
             s = s.replace('collective','coll.');
@@ -169,7 +215,13 @@ class FASTLinFile(File):
             s = s.replace('horizontal wind speed ','WS')
             s = s.replace('propagation direction','WD')
             s = s.replace(' pitch command','pitch')
-            s = s.replace('Bld ','Bld')
+            s = s.replace('HSS_','HSS')
+            s = s.replace('Bld','B')
+            s = s.replace('tower','Twr')
+            s = s.replace('Tower','Twr')
+            s = s.replace('Nacelle','Nac')
+            s = s.replace('Platform','Ptfm')
+            s = s.replace('SrvD','SvD')
             s = s.replace('Generator torque','Qgen')
             s = s.replace('coll. blade-pitch command','PitchColl')
             s = s.replace(',','');
@@ -187,13 +239,16 @@ class FASTLinFile(File):
 
     def _toDataFrame(self):
         dfs={}
-        xdescr_short=['{:17.17s}'.format(d).strip() for d in self.xdescr()]
-        udescr_short=['{:17.17s}'.format(d).strip() for d in self.udescr()]
-        ydescr_short=['{:17.17s}'.format(d).strip() for d in self.ydescr()]
+        xdescr_short=self.xdescr()
+        udescr_short=self.udescr()
+        ydescr_short=self.ydescr()
         dfs['A'] = pd.DataFrame(data = self['A'], index=xdescr_short, columns=xdescr_short)
         dfs['B'] = pd.DataFrame(data = self['B'], index=xdescr_short, columns=udescr_short)
         dfs['C'] = pd.DataFrame(data = self['C'], index=ydescr_short, columns=xdescr_short)
-        dfs['D'] = pd.DataFrame(data = self['D'], index=ydescr_short, columns=udescr_short)
+        try:
+            dfs['D'] = pd.DataFrame(data = self['D'], index=ydescr_short, columns=udescr_short)
+        except:
+            pass
         dfs['x'] = pd.DataFrame(data = np.asarray(self['x']).reshape((1,-1)), columns=xdescr_short)
         dfs['u'] = pd.DataFrame(data = np.asarray(self['u']).reshape((1,-1)), columns=udescr_short)
         dfs['y'] = pd.DataFrame(data = np.asarray(self['y']).reshape((1,-1)), columns=ydescr_short)
