@@ -14,7 +14,8 @@ from .FLEXProfileFile  import FLEXProfileFile
 from .FLEXOutFile  import FLEXOutFile
 from .ExcelFile  import ExcelFile
 from .TurbSimTSFile  import TurbSimTSFile
-#from .NetCDFFile   import NetCDFFile
+from .NetCDFFile   import NetCDFFile
+from .TDMSFile   import TDMSFile
 
 class FormatNotDetectedError(Exception):
     pass
@@ -34,7 +35,8 @@ def fileFormats():
     formats.append(FileFormat(FLEXBladeFile))
     formats.append(FileFormat(FLEXProfileFile))
     formats.append(FileFormat(FLEXOutFile))
-    #formats.append(FileFormat(NetCDFFile))
+    formats.append(FileFormat(NetCDFFile))
+    formats.append(FileFormat(TDMSFile))
     return formats
 
 
