@@ -53,12 +53,14 @@ class HAWCStab2IndFile(File):
         basename = '_'.join(os.path.basename(self.filename).split('_')[:-1])
         regex = basename + '_u\d+.ind'
         files = [f for f in os.listdir(dirname) if re.match(regex, f)]
+        # find order of wind speeds
+        wsps = [float(f.split('_')[-1].rstrip('.ind').lstrip('u'))/1000 for f in files]
+        idcs = np.argsort(wsps)
         # load the data
         dfs = {}
-        for f in files:
-            wsp_filename = os.path.join(dirname, f)
-            wsp = float(f.split('_')[-1].rstrip('.ind').lstrip('u'))/1000
-            key = '{:.3f}'.format(wsp)
+        for i_f in idcs:
+            wsp_filename = os.path.join(dirname, files[i_f])
+            key = '{:.3f}'.format(wsps[i_f])
             dfs[key] = pd.read_csv(wsp_filename, delim_whitespace=True, names=cols, skiprows=1)
         return dfs
 
