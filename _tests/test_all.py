@@ -201,7 +201,7 @@ class Test(unittest.TestCase):
 
     def test_HAWCStab2(self):
         # power file
-        F=weio.read(os.path.join(MyDir,'HAWCStab2_out.pwr'))
+        F=weio.read(os.path.join(MyDir,'HAWCStab2.pwr'))
         DF=F.toDataFrame()
         self.assertEqual(DF.values[-1,1],0.1553480512E+05)
         self.assertEqual(DF.values[-1,-1], 0.3181950053E+09)
