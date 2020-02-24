@@ -210,22 +210,22 @@ class Test(unittest.TestCase):
         # induction files
         F=weio.read(os.path.join(MyDir,'HAWCStab2_u3000.ind'))  # mult files, normal .ind
         DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS[3.0].values[-1,1],0.517961E+00)
-        self.assertAlmostEqual(DFS[3.5].values[-1,-1], -0.509335E+00)
-        self.assertEqual(DFS[3.0].columns[0], 's_[m]')
-        self.assertEqual(DFS[3.5].columns[1], 'A_[-]')
+        self.assertAlmostEqual(DFS['3.000'].values[-1,1],0.517961E+00)
+        self.assertAlmostEqual(DFS['3.500'].values[-1,-1], -0.509335E+00)
+        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
+        self.assertEqual(DFS['3.500'].columns[1], 'A_[-]')
         F=weio.read(os.path.join(MyDir,'HAWCStab2_defl_u3000.ind'))  # defl .ind
         DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS[3.0].values[-1,1],19)
-        self.assertAlmostEqual(DFS[3.0].values[-1,-1], 0.242932E-05)
-        self.assertEqual(DFS[3.0].columns[0], 's_[m]')
-        self.assertEqual(DFS[3.0].columns[1], 'Element_no_[-]')
+        self.assertAlmostEqual(DFS['3.000'].values[-1,1],19)
+        self.assertAlmostEqual(DFS['3.000'].values[-1,-1], 0.242932E-05)
+        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
+        self.assertEqual(DFS['3.000'].columns[1], 'Element_no_[-]')
         F=weio.read(os.path.join(MyDir,'HAWCStab2_fext_u3000.ind'))  # fext .ind
         DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS[3.0].values[-1,1],20)
-        self.assertAlmostEqual(DFS[3.0].values[-1,-1], -0.170519E+03)
-        self.assertEqual(DFS[3.0].columns[0], 's_[m]')
-        self.assertEqual(DFS[3.0].columns[1], 'Node_[-]')
+        self.assertAlmostEqual(DFS['3.000'].values[-1,1],20)
+        self.assertAlmostEqual(DFS['3.000'].values[-1,-1], -0.170519E+03)
+        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
+        self.assertEqual(DFS['3.000'].columns[1], 'Node_[-]')
 
 
 if __name__ == '__main__':

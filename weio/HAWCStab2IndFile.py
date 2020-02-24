@@ -58,6 +58,7 @@ class HAWCStab2IndFile(File):
         for f in files:
             wsp_filename = os.path.join(dirname, f)
             wsp = float(f.split('_')[-1].rstrip('.ind').lstrip('u'))/1000
-            dfs[wsp] = pd.read_csv(wsp_filename, delim_whitespace=True, names=cols, skiprows=1)
+            key = '{:.3f}'.format(wsp)
+            dfs[key] = pd.read_csv(wsp_filename, delim_whitespace=True, names=cols, skiprows=1)
         return dfs
 
