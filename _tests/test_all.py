@@ -199,6 +199,15 @@ class Test(unittest.TestCase):
         os.remove(os.path.join(MyDir,'BHAWC_out_ascii_TMP.sel'))
         os.remove(os.path.join(MyDir,'BHAWC_out_ascii_TMP2.sel'))
 
+    def test_HAWCStab2(self):
+        # power file
+        F=weio.read(os.path.join(MyDir,'HAWCStab2_out.pwr'))
+        DF=F.toDataFrame()
+        self.assertEqual(DF.values[-1,1],0.1553480512E+05)
+        self.assertEqual(DF.values[-1,-1], 0.3181950053E+09)
+        self.assertEqual(DF.columns[0], 'V_[m/s]')
+        self.assertEqual(DF.columns[1], 'P_[kW]')
+
 
 if __name__ == '__main__':
 #     Test().test_000_debug()
