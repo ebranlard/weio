@@ -208,24 +208,24 @@ class Test(unittest.TestCase):
         self.assertEqual(DF.columns[0], 'V_[m/s]')
         self.assertEqual(DF.columns[1], 'P_[kW]')
         # induction files
-        F=weio.read(os.path.join(MyDir,'HAWCStab2_u3000.ind'))  # mult files, normal .ind
-        DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS['3.000'].values[-1,1],0.517961E+00)
-        self.assertAlmostEqual(DFS['3.500'].values[-1,-1], -0.509335E+00)
-        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
-        self.assertEqual(DFS['3.500'].columns[1], 'A_[-]')
+        F=weio.read(os.path.join(MyDir,'HAWCStab2_u3000.ind'))  # normal .ind
+        DF=F.toDataFrame()
+        self.assertAlmostEqual(DF.values[-1,1],0.517961E+00)
+        self.assertAlmostEqual(DF.values[-1,-1], 0.354614E-02)
+        self.assertEqual(DF.columns[0], 's_[m]')
+        self.assertEqual(DF.columns[1], 'A_[-]')
         F=weio.read(os.path.join(MyDir,'HAWCStab2_defl_u3000.ind'))  # defl .ind
-        DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS['3.000'].values[-1,1],19)
-        self.assertAlmostEqual(DFS['3.000'].values[-1,-1], 0.242932E-05)
-        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
-        self.assertEqual(DFS['3.000'].columns[1], 'Element_no_[-]')
+        DF=F.toDataFrame()
+        self.assertAlmostEqual(DF.values[-1,1],19)
+        self.assertAlmostEqual(DF.values[-1,-1], 0.242932E-05)
+        self.assertEqual(DF.columns[0], 's_[m]')
+        self.assertEqual(DF.columns[1], 'Element_no_[-]')
         F=weio.read(os.path.join(MyDir,'HAWCStab2_fext_u3000.ind'))  # fext .ind
-        DFS=F.toDataFrame()
-        self.assertAlmostEqual(DFS['3.000'].values[-1,1],20)
-        self.assertAlmostEqual(DFS['3.000'].values[-1,-1], -0.170519E+03)
-        self.assertEqual(DFS['3.000'].columns[0], 's_[m]')
-        self.assertEqual(DFS['3.000'].columns[1], 'Node_[-]')
+        DF=F.toDataFrame()
+        self.assertAlmostEqual(DF.values[-1,1],20)
+        self.assertAlmostEqual(DF.values[-1,-1], -0.170519E+03)
+        self.assertEqual(DF.columns[0], 's_[m]')
+        self.assertEqual(DF.columns[1], 'Node_[-]')
 
 
 if __name__ == '__main__':
