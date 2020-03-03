@@ -30,12 +30,12 @@ class HAWCStab2IndFile(File):
     def _read(self):
         try:
             self.data = np.loadtxt(self.filename, skiprows=1)
-            self.type = {38: '', 14: 'fext', 18: 'defl'}[self.data.shape[1]]  # type of ind file
+            self.type = {38: 'ind', 14: 'fext', 18: 'defl'}[self.data.shape[1]]  # type of ind file
         except Exception as e:    
             raise WrongFormatError('Ind File {}: '.format(self.filename)+e.args[0])
 
     def _toDataFrame(self):
-        if self.type == '':
+        if self.type == 'ind':
             cols=['s_[m]', 'A_[-]', 'AP_[-]', 'PHI0_[rad]', 'ALPHA0_[rad]', 'U0_[m/s]', 'FX0_[N/m]', 'FY0_[N/m]',
                   'M0_[Nm/m]', 'UX0_[m]', 'UY0_[m]', 'UZ0_[m]', 'Twist[rad]', 'X_AC0_[m]', 'Y_AC0_[m]', 'Z_AC0_[m]',
                   'CL0_[-]', 'CD0_[-]', 'CM0_[-]', 'CLp0[1/rad]', 'CDp0[1/rad]', 'CMp0[1/rad]', 'F0_[-]', "F'[1/rad]",
@@ -48,9 +48,12 @@ class HAWCStab2IndFile(File):
             cols=['s_[m]', 'Element_no_[-]', 'pos_xR_[m]', 'pos_yR_[m]', 'pos_zR_[m]', 'Elem_angle_[rad]', 'Elem_v_1_[-]', 'Elem_v_2_[-]',
                   'Elem_v_3_[-]', 'Node_1_angle_[rad]', 'Node_1_v_1_[-]', 'Node_1_v_2_[-]', 'Node_1_v_3_[-]', 'Node_2_angle_[rad]',
                    'Node_2_v_1_[-]', 'Node_2_v_2_[-]', 'Node_2_v_3_[-]', 'Elongation_[m]']
-        return pd.DataFrame(data=self.data, columns=cols)
-        #wsp = float(self.filename.split('_')[-1].rstrip('.ind').lstrip('u'))/1000
-        #key = '{:.3f}'.format(wsp)
+
+        wsp = float(self.filename.lower().split('_')[-1].rstrip('.ind').lstrip('u'))/1000
+        key = '{:s} - ws={:06.3f}'.format(self.type,wsp)
+        df= pd.DataFrame(data=self.data, columns=cols)
+        df.columns.name=key
+        return df
         #dfs = {key: pd.read_csv(self.filename, delim_whitespace=True, names=cols, skiprows=1)}
         #return dfs
 
