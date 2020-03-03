@@ -27,31 +27,39 @@ class HAWCStab2IndFile(File):
     def formatName():
         return 'HAWCStab2 induction file'
 
-    def _read(self):
+    def _read(self, *args, **kwargs):
+        # Reading header line
+        with open(self.filename,'r',encoding=self.encoding) as f:
+            header = f.readline().strip()
+        if len(header)<=0 or header[0]!='#':
+            raise WrongFormatError('Ind File {}: header line does not start with `#`.'.format(self.filename)+e.args[0])
+        # Extracting column names
+        header       = '0 '+header[1:].strip()
+        num_and_cols = [s.strip()+']' for s in header.split(']')[:-1]]
+        cols         = [(' '.join(col.split(' ')[1:])).strip().replace(' ','_')  for col in num_and_cols]
+        # Determining type based on number of columns (NOTE: could use col names as well maybe)
+        NumCol2Type = {38: 'ind', 14: 'fext', 18: 'defl'}
+        try:
+            self.type = NumCol2Type[len(cols)]
+        except Exception as e:    
+            raise WrongFormatError('Ind File {}: '.format(self.filename))
+        self.colNames=cols
+
+        # Reading numerical data
         try:
             self.data = np.loadtxt(self.filename, skiprows=1)
-            self.type = {38: 'ind', 14: 'fext', 18: 'defl'}[self.data.shape[1]]  # type of ind file
         except Exception as e:    
-            raise WrongFormatError('Ind File {}: '.format(self.filename)+e.args[0])
+            raise BrokenFormatError('Ind File {}: '.format(self.filename)+e.args[0])
+
+        if self.data.shape[1]!=len(cols):
+            raise BrokenFormatError('Ind File {}: inconsistent number of header columns and data columns.'.format(self.filename)+e.args[0])
+
+        # Extracting wind speed from filename 
+        self.wsp = float(self.filename.lower().split('_')[-1].rstrip('.ind').lstrip('u'))/1000
 
     def _toDataFrame(self):
-        if self.type == 'ind':
-            cols=['s_[m]', 'A_[-]', 'AP_[-]', 'PHI0_[rad]', 'ALPHA0_[rad]', 'U0_[m/s]', 'FX0_[N/m]', 'FY0_[N/m]',
-                  'M0_[Nm/m]', 'UX0_[m]', 'UY0_[m]', 'UZ0_[m]', 'Twist[rad]', 'X_AC0_[m]', 'Y_AC0_[m]', 'Z_AC0_[m]',
-                  'CL0_[-]', 'CD0_[-]', 'CM0_[-]', 'CLp0[1/rad]', 'CDp0[1/rad]', 'CMp0[1/rad]', 'F0_[-]', "F'[1/rad]",
-                  'CL_FS0_[-]', "CLFS'[1/rad]", 'V_a_[m/s]', 'V_t_[m/s]', 'Tors._[rad]', 'vx_[m/s]', 'vy_[m/s]',
-                  'chord_[m]', 'CT_[-]', 'CP_[-]', 'angle_[rad]', 'v_1_[-]', 'v_2_[-]', 'v_3_[-]']
-        elif self.type == 'fext':
-            cols=['s_[m]', 'Node_[-]', 'Fx_e_[N]', 'Fy_e_[N]', 'Fz_e_[N]', 'Mx_e_[Nm]', 'My_e_[Nm]', 'Mz_e_[Nm]', 'Fx_r_[N]',
-                  'Fy_r_[N]', 'Fz_r_[N]', 'Mx_r_[Nm]', 'My_r_[Nm]', 'Mz_r_[Nm]']
-        elif self.type == 'defl':
-            cols=['s_[m]', 'Element_no_[-]', 'pos_xR_[m]', 'pos_yR_[m]', 'pos_zR_[m]', 'Elem_angle_[rad]', 'Elem_v_1_[-]', 'Elem_v_2_[-]',
-                  'Elem_v_3_[-]', 'Node_1_angle_[rad]', 'Node_1_v_1_[-]', 'Node_1_v_2_[-]', 'Node_1_v_3_[-]', 'Node_2_angle_[rad]',
-                   'Node_2_v_1_[-]', 'Node_2_v_2_[-]', 'Node_2_v_3_[-]', 'Elongation_[m]']
-
-        wsp = float(self.filename.lower().split('_')[-1].rstrip('.ind').lstrip('u'))/1000
-        key = '{:s} - ws={:06.3f}'.format(self.type,wsp)
-        df= pd.DataFrame(data=self.data, columns=cols)
+        key = '{:s} - ws={:06.3f}'.format(self.type,self.wsp)
+        df= pd.DataFrame(data=self.data, columns=self.colNames)
         df.columns.name=key
         return df
         #dfs = {key: pd.read_csv(self.filename, delim_whitespace=True, names=cols, skiprows=1)}

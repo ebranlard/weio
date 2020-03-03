@@ -26,17 +26,31 @@ class HAWCStab2PwrFile(File):
         return 'HAWCStab2 power file'
 
     def _read(self):
+        # Reading header line
+        with open(self.filename,'r',encoding=self.encoding) as f:
+            header = f.readline().strip()
+        if len(header)<=0 or header[0]!='#':
+            raise WrongFormatError('Pwr File {}: header line does not start with `#`'.format(self.filename)+e.args[0])
+        # Extracting column names
+        header       = '0 '+header[1:].strip()
+        num_and_cols = [s.strip()+']' for s in header.split(']')[:-1]]
+        cols         = [(' '.join(col.split(' ')[1:])).strip().replace(' ','_')  for col in num_and_cols]
+        # Determining type based on number of columns (NOTE: could use col names as well maybe)
+        if len(cols)!=15:
+            raise WrongFormatError('Pwr File {}: '.format(self.filename))
+        self.colNames=cols
+        # Reading numerical data
         try:
             self.data = np.loadtxt(self.filename, skiprows=1)
         except Exception as e:    
-            raise WrongFormatError('Pwr File {}: '.format(self.filename)+e.args[0])
+            raise BrokenFormatError('Pwr File {}: '.format(self.filename)+e.args[0])
+
+        if self.data.shape[1]!=len(cols):
+            raise BrokenFormatError('Pwr File {}: inconsistent number of header columns and data columns.'.format(self.filename)+e.args[0])
 
     #def _write(self):
         #self.data.to_csv(self.filename,sep=self.false,index=False)
 
     def _toDataFrame(self):
-        cols=['V_[m/s]', 'P_[kW]', 'T_[kN]', 'Cp_[-]', 'Ct_[-]', 'Pitch_Q_[Nm]', 'Flap_M_[kNm]',
-              'Edge_M_[kNm]', 'Pitch_[deg]', 'Speed_[rpm]', 'Tip_x_[m]', 'Tip_y_[m]', 'Tip_z_[m]',
-              'J_rot_[kg*m^2]', 'J_DT_[kg*m^2]']
-        return pd.DataFrame(data=self.data, columns=cols)
+        return pd.DataFrame(data=self.data, columns=self.colNames)
 
