@@ -27,7 +27,6 @@ class CSVFile(File):
         self.commentChar  = commentChar
         self.commentLines = commentLines
         self.colNamesLine = colNamesLine
-        self.encoding = None
         self.data=[]
         self.header=[]
         self.nHeader=0
@@ -40,14 +39,7 @@ class CSVFile(File):
     def _read(self):
         COMMENT_CHAR=['#','!',';']
         # --- Detecting encoding
-        byts = min(32, os.path.getsize(self.filename))
-        with open(self.filename, 'rb') as f:
-            raw = f.read(byts)
-        if raw.startswith(codecs.BOM_UTF8):
-            self.encoding = 'utf-8-sig'
-        else:
-            result = chardet.detect(raw)
-            self.encoding = result['encoding']
+        # NOTE: done by parent class method
         
         # --- Subfunctions
         def readline(iLine):

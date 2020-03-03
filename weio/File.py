@@ -1,4 +1,7 @@
 import os
+# for encoding detection:
+import codecs
+import chardet 
 
 class WrongFormatError(Exception):
     pass
@@ -16,6 +19,8 @@ except NameError: # Python2
 
 class File(dict):
     def __init__(self,filename=None):
+        self._size=None
+        self._encoding=None
         if filename:
             ### If there is a new filename, replace the object variable
             self.filename = filename
@@ -52,7 +57,37 @@ class File(dict):
     def toDataFrame(self):
         return self._toDataFrame()
 
+    # --------------------------------------------------------------------------------
+    # --- Properties
+    # --------------------------------------------------------------------------------
+    @property
+    def size(self):
+        if self._size is None:
+            self._size = os.path.getsize(self.filename)
+        return self._size
+
+    @property
+    def encoding(self):
+        """  Detects encoding"""
+        if self._encoding is None:
+            byts = min(32, self.size)
+            with open(self.filename, 'rb') as f:
+                raw = f.read(byts)
+            if raw.startswith(codecs.BOM_UTF8):
+                self._encoding = 'utf-8-sig'
+            else:
+                result = chardet.detect(raw)
+                self._encoding = result['encoding']
+        return self._encoding
+
+
+    # --------------------------------------------------------------------------------}
+    # --- Helper methods
+    # --------------------------------------------------------------------------------{
     
+    # --------------------------------------------------------------------------------
+    # --- Sub class methods 
+    # --------------------------------------------------------------------------------
     def _read(self):
         raise NotImplementedError("Method must be implemented in the subclass")
 
@@ -71,6 +106,9 @@ class File(dict):
     def _fromFile(self):
         raise NotImplementedError("Method must be implemented in the subclass")
 
+    # --------------------------------------------------------------------------------
+    # --- Static methods
+    # --------------------------------------------------------------------------------
     @staticmethod
     def defaultExtension():
         raise NotImplementedError("Method must be implemented in the subclass")
