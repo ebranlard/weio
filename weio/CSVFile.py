@@ -199,7 +199,8 @@ class CSVFile(File):
         #print(skiprows)
         try:
 #             self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None,comment=self.commentChar,encoding=self.encoding)
-            self.data = pd.read_csv(open(self.filename,'r',encoding=self.encoding),sep=self.sep,skiprows=skiprows,header=None,comment=self.commentChar)
+            with open(self.filename,'r',encoding=self.encoding) as f:
+                self.data = pd.read_csv(f,sep=self.sep,skiprows=skiprows,header=None,comment=self.commentChar)
         except pd.errors.ParserError as e:
             raise WrongFormatError('CSV File {}: '.format(self.filename)+e.args[0])
 
