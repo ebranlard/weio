@@ -34,9 +34,10 @@ class HAWCStab2IndFile(File):
         if len(header)<=0 or header[0]!='#':
             raise WrongFormatError('Ind File {}: header line does not start with `#`.'.format(self.filename)+e.args[0])
         # Extracting column names
-        header       = '0 '+header[1:].strip()
+        header       = '00'+header[1:].strip()
         num_and_cols = [s.strip()+']' for s in header.split(']')[:-1]]
-        cols         = [(' '.join(col.split(' ')[1:])).strip().replace(' ','_')  for col in num_and_cols]
+        cols         = [col[2:].strip().replace(' ','_')  for col in num_and_cols]
+        cols         = [col.replace('[','_[').replace('__','_')  for col in cols]
         # Determining type based on number of columns (NOTE: could use col names as well maybe)
         NumCol2Type = {38: 'ind', 14: 'fext', 18: 'defl'}
         try:
