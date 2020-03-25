@@ -141,6 +141,7 @@ class FASTInFile(File):
         i=0    
         nComments  = 0
         nWrongLabels = 0
+        allowSpaceSeparatedList=False
         while i<len(lines):
             line = lines[i]
             # OUTLIST Exceptions
@@ -209,10 +210,13 @@ class FASTInFile(File):
 
             # --- Parsing of standard lines: value(s) key comment
             line = lines[i]
-            d = parseFASTInputLine(line,i)
+            d = parseFASTInputLine(line,i,allowSpaceSeparatedList)
 
             # --- Handling of special files
-            if d['label'].lower()=='numcoords':
+            if d['label'].lower()=='kp_total':
+                # BeamDyn has weird space speparated list around keypoint definition
+                allowSpaceSeparatedList=True
+            elif d['label'].lower()=='numcoords':
                 # TODO, lazy implementation so far, MAKE SUB FUNCTION
                 if isStr(d['value']):
                     if d['value'][0]=='@':
@@ -779,6 +783,13 @@ class FASTInputDeck(object):
         filekeys = [ key for key in FST_Keys if key.endswith('File') ]
         names    = [key[:-4] for key in filekeys]
         sub_read(self.fst,self,filekeys,names)
+        # BD
+        if 'BD' in readlist:
+            if self.fst['CompElast']==2:
+                filekeys = ['BDBldFile(1)']
+                names    = ['BD']
+                sub_read(self.fst,self,filekeys,names)
+
 
 
         if 'InterpOrder' in FST_Keys:
@@ -930,7 +941,7 @@ def getDict():
     return {'value':None, 'label':'', 'isComment':False, 'descr':'', 'tabType':TABTYPE_NOT_A_TAB}
 
 
-def parseFASTInputLine(line_raw,i):
+def parseFASTInputLine(line_raw,i,allowSpaceSeparatedList=False):
     d = getDict()
     #print(line_raw)
     try:
@@ -985,6 +996,9 @@ def parseFASTInputLine(line_raw,i):
 
             if strIsInt(s):
                 d['value']=int(s)
+                if allowSpaceSeparatedList and len(splits)>1:
+                    if strIsInt(splits[1]):
+                        d['value']=splits[0]+ ' '+splits[1]
             elif strIsFloat(s):
                 d['value']=float(s)
             elif strIsBool(s):
@@ -1114,7 +1128,7 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num'):
                 l = lines[i].lower()
                 v = l.split()
                 if len(v) > nCols:
-                    print('[WARN] Line {}: number of data different from number of column names'.format(iStart+i+1))
+                    print('[WARN] {}: Line {}: number of data different from number of column names'.format(filename, iStart+i+1))
                 if len(v) < nCols:
                     raise Exception('Number of data is lower than number of column names')
                 # Accounting for TRUE FALSE and converting to float
@@ -1131,7 +1145,7 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num'):
                 l = lines[i]
                 v = l.split()
                 if len(v) != nCols:
-                    print('[WARN] Line {}: Number of data is different than number of column names'.format(iStart+1+i))
+                    print('[WARN] {}: Line {}: Number of data is different than number of column names'.format(filename,iStart+1+i))
                 v=v[0:min(len(v),nCols)]
                 Tab[i-nHeaders,0:len(v)] = v
         else:
