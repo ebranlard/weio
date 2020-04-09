@@ -12,6 +12,9 @@ class EmptyFileError(Exception):
 class BrokenFormatError(Exception):
     pass
 
+class BrokenReaderError(Exception):
+    pass
+
 try: #Python3
     FileNotFoundError=FileNotFoundError
 except NameError: # Python2

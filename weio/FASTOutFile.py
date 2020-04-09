@@ -10,7 +10,7 @@ from builtins import str
 from future import standard_library
 standard_library.install_aliases()
 
-from .File import File, WrongFormatError
+from .File import File, WrongFormatError, BrokenReaderError
 from .CSVFile import CSVFile
 import numpy as np
 import pandas as pd
@@ -61,8 +61,10 @@ class FASTOutFile(File):
                 self.info['attribute_names']=self.data.columns.values
             else:
                 self.data, self.info = fast_io.load_output(self.filename)
+        except MemoryError as e:    
+            raise BrokenReaderError('FAST Out File {}: Memory error encountered\n{}'.format(self.filename,e))
         except Exception as e:    
-            raise WrongFormatError('FAST Out File {}: '.format(self.filename)+e.args[0])
+            raise WrongFormatError('FAST Out File {}: {}'.format(self.filename,e.args))
 
         if self.info['attribute_units'] is not None:
             self.info['attribute_units'] = [re.sub('[()\[\]]','',u) for u in self.info['attribute_units']]

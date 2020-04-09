@@ -65,7 +65,7 @@ def detectFormat(filename):
         i += 1
 
     if not detected:
-        raise FormatNotDetectedError('The file format was not detected.')
+        raise FormatNotDetectedError('The file format could not be detected for the file: '+filename)
 
 def read(filename,fileformat=None):
     F = None
