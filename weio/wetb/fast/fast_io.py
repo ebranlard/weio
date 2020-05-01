@@ -63,8 +63,7 @@ def load_ascii_output(filename):
         # Data, up to end of file or empty line (potential comment line at the end)
 #         data = np.array([l.strip().split() for l in takewhile(lambda x: len(x.strip())>0, f.readlines())]).astype(np.float)
         # ---
-        print('>> here')
-        data = np.loadtxt(f)
+        data = np.loadtxt(f, comments=('This')) # Adding "This" for the Hydro Out files..
         return data, info
 
 
