@@ -2,6 +2,7 @@ import unittest
 import glob
 import weio
 import os
+import numpy as np
 MyDir=os.path.dirname(__file__)
 
 class Test(unittest.TestCase):
@@ -93,6 +94,27 @@ class Test(unittest.TestCase):
     def test_FASTWnd(self):
         F=weio.read(os.path.join(MyDir,'FASTWnd.wnd'))
         F.test_ascii(bCompareWritesOnly=False,bDelete=True)
+
+    def test_TurbSim(self):
+        # --- Test without tower
+        F = weio.read(os.path.join(MyDir,'TurbSimNoTwr.bts'))
+        F.write(      os.path.join(MyDir,'TurbSimNoTwr_TMP.bts'))
+        F2= weio.read(os.path.join(MyDir,'TurbSimNoTwr_TMP.bts'))
+        os.remove(    os.path.join(MyDir,'TurbSimNoTwr_TMP.bts'))
+        np.testing.assert_almost_equal(F['u'][0,:,:,:],F2['u'][0,:,:,:],4)
+        np.testing.assert_almost_equal(F['u'][1,:,:,:],F2['u'][1,:,:,:],4)
+        np.testing.assert_almost_equal(F['u'][2,:,:,:],F2['u'][2,:,:,:],4)
+        # --- Test with tower
+        F = weio.read(os.path.join(MyDir,'TurbSimWithTwr.bts'))
+        np.testing.assert_almost_equal(F['u'][2,-1,1,3], 0.508036, 5)
+        np.testing.assert_almost_equal(F['u'][0, 4,2,0], 7.4867466, 5)
+        np.testing.assert_almost_equal(F['uTwr'][0, 4, :], [6.1509, 6.4063, 8.9555, 7.6943], 4)
+        F.write(      os.path.join(MyDir,'TurbSimWithTwr_TMP.bts'))
+        F2= weio.read(os.path.join(MyDir,'TurbSimWithTwr_TMP.bts'))
+        os.remove(    os.path.join(MyDir,'TurbSimWithTwr_TMP.bts'))
+        np.testing.assert_almost_equal(F['u'][0,:,:,:],F2['u'][0,:,:,:],3)
+        np.testing.assert_almost_equal(F['u'][1,:,:,:],F2['u'][1,:,:,:],3)
+        np.testing.assert_almost_equal(F['u'][2,:,:,:],F2['u'][2,:,:,:],3)
 
     def test_FASTIn(self):
         F=weio.read(os.path.join(MyDir,'FASTIn_BD.dat'))

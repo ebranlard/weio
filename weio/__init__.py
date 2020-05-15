@@ -16,6 +16,7 @@ from .FLEXProfileFile  import FLEXProfileFile
 from .FLEXOutFile  import FLEXOutFile
 from .ExcelFile  import ExcelFile
 from .TurbSimTSFile  import TurbSimTSFile
+from .TurbSimFile  import TurbSimFile
 from .NetCDFFile   import NetCDFFile
 from .TDMSFile   import TDMSFile
 
@@ -31,6 +32,7 @@ def fileFormats():
     formats.append(FileFormat(FASTWndFile))
     formats.append(FileFormat(FASTLinFile))
     formats.append(FileFormat(TurbSimTSFile))
+    formats.append(FileFormat(TurbSimFile))
     formats.append(FileFormat(HAWC2DatFile))
     formats.append(FileFormat(HAWC2PCFile))
     formats.append(FileFormat(HAWC2AEFile))

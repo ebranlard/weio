@@ -9,12 +9,50 @@ from builtins import chr
 from builtins import str
 from future import standard_library
 standard_library.install_aliases()
-
-from .File import File, WrongFormatError, BrokenFormatError
+try:
+    from .File import File, WrongFormatError, BrokenFormatError
+except:
+    # --- Allowing this file to be standalone..
+    class WrongFormatError(Exception):
+        pass
+    class BrokenFormatError(Exception):
+        pass
+    class File(dict):
+        def __init__(self,filename=None):
+            self._size=None
+            self._encoding=None
+            if filename:
+                self.filename = filename
+                self.read()
+            else:
+                self.filename = None
+        def read(self, filename=None):
+            if filename:
+                self.filename = filename
+            if self.filename:
+                if not os.path.isfile(self.filename):
+                    raise OSError(2,'File not found:',self.filename)
+                if os.stat(self.filename).st_size == 0:
+                    raise EmptyFileError('File is empty:',self.filename)
+                self._read()
+            else:  
+                raise Exception('No filename provided')
+        def write(self, filename=None):
+            if filename:
+                self.filename = filename
+            if self.filename:
+                self._write()
+            else:
+                raise Exception('No filename provided')
+        def toDataFrame(self):
+            return self._toDataFrame()
 import os
 import numpy as np
 import re
 import pandas as pd
+
+__all__  = ['FASTInFile','FASTInputDeck']
+
 TABTYPE_NOT_A_TAB          = 0
 TABTYPE_NUM_WITH_HEADER    = 1
 TABTYPE_NUM_WITH_HEADERCOM = 2
