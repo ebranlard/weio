@@ -224,6 +224,9 @@ class FASTLinFile(File):
             s = s.replace('SrvD','SvD')
             s = s.replace('Generator torque','Qgen')
             s = s.replace('coll. blade-pitch command','PitchColl')
+            s = s.replace('1)','1');
+            s = s.replace('2)','2');
+            s = s.replace('3)','3');
             s = s.replace(',','');
             s = s.replace(' ','');
             s=s.strip()
@@ -239,19 +242,32 @@ class FASTLinFile(File):
 
     def _toDataFrame(self):
         dfs={}
-        xdescr_short=self.xdescr()
-        udescr_short=self.udescr()
-        ydescr_short=self.ydescr()
-        dfs['A'] = pd.DataFrame(data = self['A'], index=xdescr_short, columns=xdescr_short)
-        dfs['B'] = pd.DataFrame(data = self['B'], index=xdescr_short, columns=udescr_short)
-        dfs['C'] = pd.DataFrame(data = self['C'], index=ydescr_short, columns=xdescr_short)
+        try:
+            xdescr_short=self.xdescr()
+            dfs['A'] = pd.DataFrame(data = self['A'], index=xdescr_short, columns=xdescr_short)
+        except:
+            pass
+        dfs={}
+        try:
+            udescr_short=self.udescr()
+            dfs['B'] = pd.DataFrame(data = self['B'], index=xdescr_short, columns=udescr_short)
+        except:
+            pass
+        try:
+            ydescr_short=self.ydescr()
+            dfs['C'] = pd.DataFrame(data = self['C'], index=ydescr_short, columns=xdescr_short)
+        except:
+            pass
         try:
             dfs['D'] = pd.DataFrame(data = self['D'], index=ydescr_short, columns=udescr_short)
         except:
             pass
         dfs['x'] = pd.DataFrame(data = np.asarray(self['x']).reshape((1,-1)), columns=xdescr_short)
         dfs['u'] = pd.DataFrame(data = np.asarray(self['u']).reshape((1,-1)), columns=udescr_short)
-        dfs['y'] = pd.DataFrame(data = np.asarray(self['y']).reshape((1,-1)), columns=ydescr_short)
+        try:
+            dfs['y'] = pd.DataFrame(data = np.asarray(self['y']).reshape((1,-1)), columns=ydescr_short)
+        except:
+            pass
         try:
             dfs['M'] = pd.DataFrame(data = self['M'], index=self['EDDOF'], columns=self['EDDOF'])
         except:
