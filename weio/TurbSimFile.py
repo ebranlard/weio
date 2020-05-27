@@ -60,6 +60,8 @@ class TurbSimFile(File):
         self['z']    = np.arange(nz)*dz +zBottom
         self['t']    = np.arange(nt)*dt
         self['zTwr'] =-np.arange(nTwr)*dz + zBottom
+        self['zHub'] = zHub
+        self['uHub'] = uHub
 
     def _write(self):
         """ 
@@ -103,11 +105,11 @@ class TurbSimFile(File):
         dt = self['t'][1]- self['t'][0]
 
         # Providing estimates of uHub and zHub even if these fields are not used
-        zHub,uHub = self.hubValues()
+        zHub,uHub, bHub = self.hubValues()
 
         with open(self.filename, mode='wb') as f:            
             f.write(struct.pack('<h4l', self['ID'], nz, ny, nTwr, nt))
-            f.write(struct.pack('<6f', dz, dy, dt, uHub, zHub, z0)) # NOTE uHub, zHub not used
+            f.write(struct.pack('<6f', dz, dy, dt, uHub, zHub, z0)) # NOTE uHub, zHub maybe not used
             f.write(struct.pack('<6f', scl[0],off[0],scl[1],off[1],scl[2],off[2]))
             f.write(struct.pack('<l' , len(info)))
             f.write(info.encode())
@@ -118,15 +120,18 @@ class TurbSimFile(File):
     def hubValues(self):
         try:
             zHub=self['zHub']
+            bHub=True
         except:
-            zHub = np.mean(self['z'])
+            bHub=False
+            iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+            zHub = self['z'][iz]
         try:
             uHub=self['uHub']
         except:
             iz = np.argmin(np.abs(self['z']-zHub))
-            iy = np.argmin(np.abs(self['y']-np.mean(self['y'])))
+            iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
             uHub = np.mean(self['u'][0,:,iy,iz])
-        return zHub, uHub
+        return zHub, uHub, bHub
 
     def __repr__(self):
         s='<TurbSimFile object> with keys:\n'
@@ -139,8 +144,11 @@ class TurbSimFile(File):
         s+='    ux: min: {}, max: {}, mean: {} \n'.format(np.min(ux), np.max(ux), np.mean(ux))
         s+='    uy: min: {}, max: {}, mean: {} \n'.format(np.min(uy), np.max(uy), np.mean(uy))
         s+='    uz: min: {}, max: {}, mean: {} \n'.format(np.min(uz), np.max(uz), np.mean(uz))
-        zMid, uMid = self.hubValues()
-        s+='    zMid: {} - uMid: {} (NOTE: values at box middle, not hub)\n'.format(zMid, uMid)
+        zMid, uMid, bHub = self.hubValues()
+        if bHub:
+            s+='    zHub: {} - uHub: {} (NOTE: values at hub)\n'.format(zMid, uMid)
+        else:
+            s+='    zMid: {} - uMid: {} (NOTE: values at box middle, not hub)\n'.format(zMid, uMid)
         if 'zTwr' in self.keys() and len(self['zTwr'])>0:
             s+=' - zTwr: [{} ... {}],  dz: {}, n: {} \n'.format(self['zTwr'][0],self['zTwr'][-1],self['zTwr'][1]-self['zTwr'][0],len(self['zTwr']))
         if 'uTwr' in self.keys() and self['uTwr'].shape[2]>0:
@@ -153,13 +161,39 @@ class TurbSimFile(File):
         return s
 
     def _toDataFrame(self):
-        return None
-        #Cols = ['{}_{}'.format(c.replace(' ','_'), u.replace('(','[').replace(')',']')) for c,u in zip(self.columns(),self.units())]
-        #dfs={}
-        #dfs['Points']     = pd.DataFrame(data = self['Points'],columns = ['PointYi','PointZi'])
-        #dfs['TimeSeries'] = pd.DataFrame(data = self['data'] ,columns = Cols)
+        dfs={}
 
-        #return dfs
+        ny = len(self['y'])
+        nz = len(self['y'])
+        # Index at mid box
+        iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
+        iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+
+        # Mean vertical profile
+        m = np.mean(self['u'][:,:,iy,:], axis=1)
+        s = np.std( self['u'][:,:,iy,:], axis=1)
+        ti = s/m*100
+        Cols=['z_[m]','u_[m/s]','v_[m/s]','w_[m/s]','sigma_u_[m/s]','sigma_v_[m/s]','sigma_w_[m/s]','TI_[%]']
+        data = np.column_stack((self['z'],m[0,:],m[1,:],m[2,:],s[0,:],s[1,:],s[2,:],ti[0,:]))
+        dfs['VertProfile'] = pd.DataFrame(data = data ,columns = Cols)
+
+        # Mid time series
+        u = self['u'][:,:,iy,iz]
+        Cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
+        data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
+        dfs['MidLine'] = pd.DataFrame(data = data ,columns = Cols)
+
+        # Hub time series
+        try:
+            zHub = self['zHub']
+            iz = np.argmin(np.abs(self['z']-zHub))
+            u = self['u'][:,:,iy,iz]
+            Cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
+            data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
+            dfs['HubLine'] = pd.DataFrame(data = data ,columns = Cols)
+        except:
+            pass
+        return dfs
 
 if __name__=='__main__':
     ts = TurbSimFile('../_tests/TurbSim.bts')
