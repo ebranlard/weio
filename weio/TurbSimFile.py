@@ -133,6 +133,35 @@ class TurbSimFile(File):
             uHub = np.mean(self['u'][0,:,iy,iz])
         return zHub, uHub, bHub
 
+    def _iMid(self):
+        iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
+        iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+        return iy,iz
+
+    def makePeriodic(self):
+        """ Make the box periodic by mirroring it """
+        nDim, nt0, ny, nz = self['u'].shape
+        u = self['u'].copy()
+        del self['u']
+
+        nt = 2*len(self['t'])-2
+        dt = self['t'][1]- self['t'][0]
+        self['u']  = np.zeros((nDim,nt,ny,nz))
+        self['u'][:,:nt0,:,:] = u
+        self['u'][:,nt0:,:,:] = np.flip(u[:,1:-1,:,:],axis=1)
+        self['t'] = np.arange(nt)*dt
+        if 'uTwr' in self.keys():
+            _, _, nTwr = self['uTwr'].shape
+            uTwr = self['uTwr'].copy()
+            del self['uTwr']
+            # empty tower for now
+            self['uTwr'] = np.zeros((nDim,nt,nTwr))
+            self['uTwr'][:,:nt0,:] = uTwr
+            self['uTwr'][:,nt0:,:] = np.flip(uTwr[:,1:-1,:],axis=1)
+
+        self['ID']=8 # Periodic
+
+
     def __repr__(self):
         s='<TurbSimFile object> with keys:\n'
         s+=' - ID {}\n'.format(self['ID'])
@@ -144,11 +173,19 @@ class TurbSimFile(File):
         s+='    ux: min: {}, max: {}, mean: {} \n'.format(np.min(ux), np.max(ux), np.mean(ux))
         s+='    uy: min: {}, max: {}, mean: {} \n'.format(np.min(uy), np.max(uy), np.mean(uy))
         s+='    uz: min: {}, max: {}, mean: {} \n'.format(np.min(uz), np.max(uz), np.mean(uz))
+
+        # Mid of box, nearest neighbor
+        iy,iz = self._iMid()
+        zMid=self['z'][iz]
+        yMid=self['y'][iy]
+        uMid = np.mean(self['u'][0,:,iy,iz])
+        s+='    yMid: {} - zMid: {} - iy: {} - iz: {} - uMid: {} (nearest neighbor))\n'.format(yMid, zMid, iy, iz, uMid)
+
         zMid, uMid, bHub = self.hubValues()
         if bHub:
-            s+='    zHub: {} - uHub: {} (NOTE: values at hub)\n'.format(zMid, uMid)
-        else:
-            s+='    zMid: {} - uMid: {} (NOTE: values at box middle, not hub)\n'.format(zMid, uMid)
+            s+='    z"Hub": {} - u"Hub": {} (NOTE: values at TurbSim "hub")\n'.format(zMid, uMid)
+
+        # Tower
         if 'zTwr' in self.keys() and len(self['zTwr'])>0:
             s+=' - zTwr: [{} ... {}],  dz: {}, n: {} \n'.format(self['zTwr'][0],self['zTwr'][-1],self['zTwr'][1]-self['zTwr'][0],len(self['zTwr']))
         if 'uTwr' in self.keys() and self['uTwr'].shape[2]>0:
@@ -166,8 +203,7 @@ class TurbSimFile(File):
         ny = len(self['y'])
         nz = len(self['y'])
         # Index at mid box
-        iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
-        iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+        iy,iz = self._iMid()
 
         # Mean vertical profile
         m = np.mean(self['u'][:,:,iy,:], axis=1)
@@ -184,15 +220,15 @@ class TurbSimFile(File):
         dfs['MidLine'] = pd.DataFrame(data = data ,columns = Cols)
 
         # Hub time series
-        try:
-            zHub = self['zHub']
-            iz = np.argmin(np.abs(self['z']-zHub))
-            u = self['u'][:,:,iy,iz]
-            Cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
-            data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
-            dfs['HubLine'] = pd.DataFrame(data = data ,columns = Cols)
-        except:
-            pass
+        #try:
+        #    zHub = self['zHub']
+        #    iz = np.argmin(np.abs(self['z']-zHub))
+        #    u = self['u'][:,:,iy,iz]
+        #    Cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
+        #    data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
+        #    dfs['TSHubLine'] = pd.DataFrame(data = data ,columns = Cols)
+        #except:
+        #    pass
         return dfs
 
 if __name__=='__main__':
