@@ -153,8 +153,8 @@ class CSVFile(File):
                 first_cols = split(first_line)
                 nFloat = sum([strIsFloat(s) for s in first_cols])
                 nPa    = first_line.count('(')+first_line.count('[')
-                #print('>>> nFloat',nFloat)
-                if nFloat == 0 or nPa>len(self.colNames)/2:
+                #if nFloat == 0 or nPa>len(self.colNames)/2:
+                if nPa>len(self.colNames)/2:
                     # that's definitely some units
                     if len(first_cols)==len(self.colNames):
                         self.colNames=[c.strip()+'_'+u.strip() for c,u in zip(self.colNames, first_cols)]
@@ -176,10 +176,6 @@ class CSVFile(File):
                         if len(cols)==len(first_cols) and nFloat <= len(colNames)-1:
                             self.colNames = cols
                             break
-                #print('Sep>',self.sep,'<')
-                #print('Col in HEADER???',self.header)
-                #print('Col in HEADER???',self.colNames)
-            
         # --- Reading data
         skiprows = list(range(iStartLine))
         if (self.colNamesLine is not None):
