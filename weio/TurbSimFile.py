@@ -102,15 +102,31 @@ class TurbSimFile(File):
         dy = self['y'][1]- self['y'][0]
         dt = self['t'][1]- self['t'][0]
 
+        # Providing estimates of uHub and zHub even if these fields are not used
+        zHub,uHub = self.hubValues()
+
         with open(self.filename, mode='wb') as f:            
             f.write(struct.pack('<h4l', self['ID'], nz, ny, nTwr, nt))
-            f.write(struct.pack('<6f', dz, dy, dt, 999.999, 999.99, z0)) # NOTE uHub, zHub not used
+            f.write(struct.pack('<6f', dz, dy, dt, uHub, zHub, z0)) # NOTE uHub, zHub not used
             f.write(struct.pack('<6f', scl[0],off[0],scl[1],off[1],scl[2],off[2]))
             f.write(struct.pack('<l' , len(info)))
             f.write(info.encode())
             for it in np.arange(nt):
                 f.write(out[:,it,:,:].tostring(order='F'))
                 f.write(outTwr[:,it,:].tostring(order='F'))
+
+    def hubValues(self):
+        try:
+            zHub=self['zHub']
+        except:
+            zHub = np.mean(self['z'])
+        try:
+            uHub=self['uHub']
+        except:
+            iz = np.argmin(np.abs(self['z']-zHub))
+            iy = np.argmin(np.abs(self['y']-np.mean(self['y'])))
+            uHub = np.mean(self['u'][0,:,iy,iz])
+        return zHub, uHub
 
     def __repr__(self):
         s='<TurbSimFile object> with keys:\n'
@@ -123,6 +139,8 @@ class TurbSimFile(File):
         s+='    ux: min: {}, max: {}, mean: {} \n'.format(np.min(ux), np.max(ux), np.mean(ux))
         s+='    uy: min: {}, max: {}, mean: {} \n'.format(np.min(uy), np.max(uy), np.mean(uy))
         s+='    uz: min: {}, max: {}, mean: {} \n'.format(np.min(uz), np.max(uz), np.mean(uz))
+        zMid, uMid = self.hubValues()
+        s+='    zMid: {} - uMid: {} (NOTE: values at box middle, not hub)\n'.format(zMid, uMid)
         if 'zTwr' in self.keys() and len(self['zTwr'])>0:
             s+=' - zTwr: [{} ... {}],  dz: {}, n: {} \n'.format(self['zTwr'][0],self['zTwr'][-1],self['zTwr'][1]-self['zTwr'][0],len(self['zTwr']))
         if 'uTwr' in self.keys() and self['uTwr'].shape[2]>0:
