@@ -8,8 +8,9 @@ This library is for instance used by the GUI tool [pyDatView](https://github.com
 
 ## Typical file formats supported
 - Various CSV and delimited files
-- FAST input and output files
-- Main HAWC2 input and output files (still some missing)
+- Simple Excel files
+- FAST input and output files (including some turbulence files)
+- HAWC2 and HawcStab2 input and output files (still some missing)
 - FLEX output files
 - NetCDF files (partial support for 1D and 2D data for now)
 
