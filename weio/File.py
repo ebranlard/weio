@@ -21,41 +21,36 @@ except NameError: # Python2
     FileNotFoundError = IOError
 
 class File(dict):
-    def __init__(self,filename=None):
+    def __init__(self,filename=None,**kwargs):
         self._size=None
         self._encoding=None
         if filename:
             ### If there is a new filename, replace the object variable
             self.filename = filename
             ### If the filename is provided, read the file
-            self.read()
+            self.read(**kwargs)
         else:
             self.filename = None
 
-
-    def read(self, filename=None):
+    def read(self, filename=None, **kwargs):
         if filename:
             self.filename = filename
-
-        if self.filename:
-            if not os.path.isfile(self.filename):
-                raise OSError(2,'File not found:',self.filename)
-            if os.stat(self.filename).st_size == 0:
-                raise EmptyFileError('File is empty:',self.filename)
-            # Calling children function
-            self._read()
-        else:  
+        if not self.filename:
             raise Exception('No filename provided')
+        if not os.path.isfile(self.filename):
+            raise OSError(2,'File not found:',self.filename)
+        if os.stat(self.filename).st_size == 0:
+            raise EmptyFileError('File is empty:',self.filename)
+        # Calling children function
+        self._read(**kwargs)
 
     def write(self, filename=None):
         if filename:
             self.filename = filename
-
-        if self.filename:
-            # Calling children function
-            self._write()
-        else:
+        if not self.filename:
             raise Exception('No filename provided')
+        # Calling children function
+        self._write()
 
     def toDataFrame(self):
         return self._toDataFrame()
@@ -91,7 +86,7 @@ class File(dict):
     # --------------------------------------------------------------------------------
     # --- Sub class methods 
     # --------------------------------------------------------------------------------
-    def _read(self):
+    def _read(self,**kwargs):
         raise NotImplementedError("Method must be implemented in the subclass")
 
     def _write(self):
@@ -133,8 +128,6 @@ class File(dict):
             return False,None
         except:
             raise
-
-
 
     def test_write_read(self,bDelete=False):
         """ Test that we can write and then read what we wrote
@@ -178,8 +171,6 @@ class File(dict):
                 os.remove(f1)
         else:
             raise Exception('The ascii content of {} and {} are different'.format(f1,f2))
-
-
 
 # --------------------------------------------------------------------------------}
 # --- Helper functions

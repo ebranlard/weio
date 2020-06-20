@@ -1,8 +1,6 @@
-"""
-License: Apache 2.0
+"""Read/Write TurbSim File
 
-Inpsired by scripts from:
-  L. Kilcher  (https://github.com/lkilcher/pyTurbSim)
+Part of weio library: https://github.com/ebranlard/weio
 
 """
 import pandas as pd
@@ -11,7 +9,11 @@ import os
 import struct
 import time
 
-from .File import File, isBinary, WrongFormatError, BrokenFormatError
+try:
+    from .File import File, EmptyFileError
+except:
+    EmptyFileError = type('EmptyFileError', (Exception,),{})
+    File=dict()
 
 class TurbSimFile(File):
 
@@ -23,11 +25,25 @@ class TurbSimFile(File):
     def formatName():
         return 'TurbSim binary'
 
-    def _read(self, header_only=False):
+    def __init__(self,filename=None, **kwargs):
+        self.filename = None
+        if filename:
+            self.read(filename, **kwargs)
+
+    def read(self, filename=None, header_only=False):
         """ read BTS file, with field: 
                      u    (3 x nt x ny x nz)
                      uTwr (3 x nt x nTwr)
         """
+        if filename:
+            self.filename = filename
+        if not self.filename:
+            raise Exception('No filename provided')
+        if not os.path.isfile(self.filename):
+            raise OSError(2,'File not found:',self.filename)
+        if os.stat(self.filename).st_size == 0:
+            raise EmptyFileError('File is empty:',self.filename)
+
         scl = np.zeros(3, np.float32); off = np.zeros(3, np.float32)
         with open(self.filename, mode='rb') as f:            
             # Reading header info
@@ -56,21 +72,25 @@ class TurbSimFile(File):
         self['ID']   = ID
         self['dt']   = dt
         self['y']    = np.arange(ny)*dy 
-        self['y']   -= np.mean(self['y'])
+        self['y']   -= np.mean(self['y']) # y always centered on 0
         self['z']    = np.arange(nz)*dz +zBottom
         self['t']    = np.arange(nt)*dt
         self['zTwr'] =-np.arange(nTwr)*dz + zBottom
         self['zHub'] = zHub
         self['uHub'] = uHub
 
-    def _write(self):
+    def write(self, filename=None):
         """ 
         write a BTS file, using the following keys: 'u','z','y','t','uTwr'
                      u    (3 x nt x ny x nz)
                      uTwr (3 x nt x nTwr)
         """
-        nDim, nt, ny, nz = self['u'].shape
+        if filename:
+            self.filename = filename
+        if not self.filename:
+            raise Exception('No filename provided')
 
+        nDim, nt, ny, nz = self['u'].shape
         if 'uTwr' not in self.keys() :
             self['uTwr']=np.zeros((3,nt,0))
         if 'ID' not in self.keys() :
@@ -162,6 +182,18 @@ class TurbSimFile(File):
         self['ID']=8 # Periodic
 
 
+    def checkPeriodic(self, sigmaTol=1.5, aTol=0.5):
+        """ Check periodicity in u """
+        ic=0
+        sig  = np.std(self['u'][ic,:,:,:],axis=0)
+        mean = np.mean(self['u'][ic,:,:,:],axis=0)
+        u_first= self['u'][ic,0 ,:,:]
+        u_last = self['u'][ic,-1,:,:]
+        relSig = np.abs(u_first-u_last)/sig
+        compPeriodic = (np.max(relSig) < sigmaTol) and (np.mean(np.abs(u_first-u_last))<aTol)
+        return compPeriodic
+
+
     def __repr__(self):
         s='<TurbSimFile object> with keys:\n'
         s+=' - ID {}\n'.format(self['ID'])
@@ -181,9 +213,9 @@ class TurbSimFile(File):
         uMid = np.mean(self['u'][0,:,iy,iz])
         s+='    yMid: {} - zMid: {} - iy: {} - iz: {} - uMid: {} (nearest neighbor))\n'.format(yMid, zMid, iy, iz, uMid)
 
-        zMid, uMid, bHub = self.hubValues()
-        if bHub:
-            s+='    z"Hub": {} - u"Hub": {} (NOTE: values at TurbSim "hub")\n'.format(zMid, uMid)
+#         zMid, uMid, bHub = self.hubValues()
+#         if bHub:
+#             s+='    z"Hub": {} - u"Hub": {} (NOTE: values at TurbSim "hub")\n'.format(zMid, uMid)
 
         # Tower
         if 'zTwr' in self.keys() and len(self['zTwr'])>0:
@@ -197,7 +229,7 @@ class TurbSimFile(File):
             
         return s
 
-    def _toDataFrame(self):
+    def toDataFrame(self):
         dfs={}
 
         ny = len(self['y'])
