@@ -206,9 +206,12 @@ class FASTInFile(File):
 
                 # --- Here we cheat and force an exit of the input file
                 # The reason for this is that some files have a lot of things after the END, which will result in the file being intepreted as a wrong format due to too many comments
-                self.data.append(parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1))
-                self.data.append(parseFASTInputLine('---------------------------------------------------------------------------------------',i+2))
-                break
+                if i+2<len(lines) and lines[i+2].lower().find('bldnd_bladesout')>0:
+                    print('>>>Bld Nodal outputs present')
+                else:
+                    self.data.append(parseFASTInputLine('END of input file (the word "END" must appear in the first 3 columns of this last OutList line)',i+1))
+                    self.data.append(parseFASTInputLine('---------------------------------------------------------------------------------------',i+2))
+                    break
             elif line.upper().find('SSOUTLIST'   )>0:
                 # SUBDYN Outlist doesn not follow regular format
                 self.data.append(parseFASTInputLine(line,i))
