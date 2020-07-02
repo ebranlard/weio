@@ -13,7 +13,7 @@ try:
     from .File import File, EmptyFileError
 except:
     EmptyFileError = type('EmptyFileError', (Exception,),{})
-    File=dict()
+    File=dict
 
 class TurbSimFile(File):
 
