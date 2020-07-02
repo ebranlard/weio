@@ -76,7 +76,7 @@ def readFirstLines(fid, nLines):
 # --- Sub reader for different summary files
 # --------------------------------------------------------------------------------{
 def readSubDynSum(fid):
-    T=yaml.load(fid)
+    T=yaml.load(fid, Loader=yaml.SafeLoader)
     for k,v in T.items():
         if isinstance(v,list):
             T[k]=np.array(v)
@@ -127,7 +127,7 @@ def subDynToDataFrame(data):
 
     DOF_B=data['DOF___B'].ravel()
     DOF_F=data['DOF___F'].ravel()
-    DOF_K = np.concatenate((DOF_B,data['DOF___L'].ravel(), DOF_F))-1
+    DOF_K = (np.concatenate((DOF_B,data['DOF___L'].ravel(), DOF_F))-1).astype(int)
 
     # CB modes
     Phi_CB = np.vstack((np.zeros((len(DOF_B),PhiM.shape[1])),PhiM, np.zeros((len(DOF_F),PhiM.shape[1]))))
@@ -150,14 +150,16 @@ def subDynToDataFrame(data):
         df= pd.DataFrame(data = disptot ,columns = columns)
         # remove zero 
         dfDisp= pd.DataFrame(data = disp ,columns = columns)
-        return df.loc[:, (dfDisp !=0).any(axis=0)]
-        #return df
+        df     = df.loc[:,     (dfDisp != 0).any(axis=0)]
+        dfDisp = dfDisp.loc[:, (dfDisp != 0).any(axis=0)]
+        dfDisp.columns = [c.replace('Mode','Disp') for c in dfDisp.columns.values]
+        return df, dfDisp
     columns = ['z_[m]','x_[m]','y_[m]']
     dataZXY = np.column_stack((posGy[:,2],posGy[:,0],posGy[:,1]))
     dfZXY   = pd.DataFrame(data = dataZXY, columns=columns)
-    df1 = toDF(posGy, dispGy,'Guyan')
-    df2 = toDF(posCB, dispCB,'CB')
-    df = pd.concat((dfZXY, df1, df2), axis=1)
+    df1, df1d = toDF(posGy, dispGy,'Guyan')
+    df2, df2d = toDF(posCB, dispCB,'CB')
+    df = pd.concat((dfZXY, df1, df2, df1d, df2d), axis=1)
     return df 
 
 
