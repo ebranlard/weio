@@ -3,7 +3,8 @@ import pandas as pd
 from io import open
 import os
 # Local 
-import yaml
+#import yaml
+from .MiniYaml import yaml_read
 
 
 try:
@@ -45,7 +46,7 @@ class FASTSummaryFile(File):
             header= readFirstLines(fid, 4)
             if any(['subdyn' in s.lower() for s in header]):
                 self['module']='SubDyn'
-                data=readSubDynSum(fid)
+                data=readSubDynSum(self.filename)
                 for k,v in data.items():
                     self[k]=v
             else:
@@ -75,11 +76,13 @@ def readFirstLines(fid, nLines):
 # --------------------------------------------------------------------------------}
 # --- Sub reader for different summary files
 # --------------------------------------------------------------------------------{
-def readSubDynSum(fid):
-    T=yaml.load(fid, Loader=yaml.SafeLoader)
-    for k,v in T.items():
-        if isinstance(v,list):
-            T[k]=np.array(v)
+def readSubDynSum(filename):
+    #T=yaml.load(fid, Loader=yaml.SafeLoader)
+    T=yaml_read(filename)
+    # Convert lists to np arrays for  convenience
+    #for k,v in T.items():
+    #    if isinstance(v,list):
+    #        T[k]=np.array(v)
     return T
 
 def subDynToDataFrame(data):

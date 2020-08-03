@@ -4,4 +4,3 @@ xlrd
 pandas
 future
 chardet
-pyyaml
