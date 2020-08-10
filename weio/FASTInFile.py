@@ -143,10 +143,10 @@ class FASTInFile(File):
         NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
         # NOTE: MJointID1, used by SubDyn and HydroDyn
-        NUMTAB_FROM_LAB_DETECT   = ['NumAlf'  , 'F_X'       , 'MemberCd1'    , 'MJointID1' , 'NOutLoc'    , 'NOutCnt'    , 'PropD'             , 'YoungE'            , 'YoungE'          ]
-        NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf'  , 'NKInpSt'   , 'NCoefMembers' , 'NMembers'  , 'NMOutputs'  , 'NMOutputs'  , 'NPropSets'         , 'NPropSets'         , 'NXPropSets'         ]
-        NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff' , 'TMDspProp' , 'MemberProp'   , 'Members'   , 'MemberOuts' , 'MemberOuts' , 'MemberSectionProp' , 'MemberSectionProp' , 'MemberSectionProp2' ]
-        NUMTAB_FROM_LAB_TYPE     = ['num'     , 'num'       , 'num'          , 'mix'       , 'num'        , 'num'        , 'num'               , 'num'               , 'num'                    ]
+        NUMTAB_FROM_LAB_DETECT   = ['NumAlf'  , 'F_X'       , 'MemberCd1'    , 'MJointID1' , 'NOutLoc'    , 'NOutCnt'    , 'PropD'             , 'YoungE'            , 'YoungE'             ,'Diam'       ,'Type'           ,'LineType']
+        NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf'  , 'NKInpSt'   , 'NCoefMembers' , 'NMembers'  , 'NMOutputs'  , 'NMOutputs'  , 'NPropSets'         , 'NPropSets'         , 'NXPropSets'         ,'NTypes'     ,'NConnects'      ,'NLines']
+        NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff' , 'TMDspProp' , 'MemberProp'   , 'Members'   , 'MemberOuts' , 'MemberOuts' , 'MemberSectionProp' , 'MemberSectionProp' , 'MemberSectionProp2' ,'LineTypes'  ,'ConnectionProp' ,'LineProp']
+        NUMTAB_FROM_LAB_TYPE     = ['num'     , 'num'       , 'num'          , 'mix'       , 'num'        , 'num'        , 'num'               , 'num'               , 'num'                ,'mix'        ,'mix'            ,'mix']
         NUMTAB_FROM_LAB_DETECT_L = [s.lower() for s in NUMTAB_FROM_LAB_DETECT]                                         
 
         FILTAB_FROM_LAB_DETECT   = ['FoilNm' ,'AFNames']
