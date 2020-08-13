@@ -744,10 +744,9 @@ class FASTInFile(File):
         try:
             for j in range(nStations):
                 M[j,0]=float(lines[i]); i+=1;
-                LL = lines[i:i+6]
-                M[j,1:37]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,1:37]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
-                M[j,37:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,37:]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
         except: 
             raise WrongFormatError('An error occured while reading section {}/{}'.format(j+1,nStations))
@@ -1215,7 +1214,8 @@ def parseFASTFilTable(lines,n,iStart):
 
 
 if __name__ == "__main__":
-    B=FASTInFile('BeamDyn_Blade.dat')
+    pass
+    #B=FASTIn('Turbine.outb')
 
 
 
