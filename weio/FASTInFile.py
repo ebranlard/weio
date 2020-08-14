@@ -529,7 +529,7 @@ class FASTInFile(File):
 
         for i in range(len(self.data)): 
             d=self.data[i]
-            if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER]:
+            if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER, TABTYPE_MIX_WITH_HEADER]:
                 Val= d['value']
                 if d['tabUnits'] is None:
                     Cols=d['tabColumnNames']
