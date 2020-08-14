@@ -44,7 +44,7 @@ def fileFormats():
     formats.append(FileFormat(FLEXProfileFile))
     formats.append(FileFormat(FLEXOutFile))
     formats.append(FileFormat(NetCDFFile))
-    formats.append(FileFormat(TDMSFile)) 
+    formats.append(FileFormat(TDMSFile))
     return formats
 
 
