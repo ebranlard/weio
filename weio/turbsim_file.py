@@ -1,7 +1,5 @@
 """Read/Write TurbSim File
 
-Part of weio library: https://github.com/ebranlard/weio
-
 """
 import pandas as pd
 import numpy as np
@@ -16,6 +14,30 @@ except:
     File=dict
 
 class TurbSimFile(File):
+    """ 
+    Read/write a TurbSim turbulence file (.bts). The object behaves as a dictionary.
+
+    Main keys
+    ---------
+    - 'u': velocity field, shape (3 x nt x ny x nz)
+    - 'y', 'z', 't': space and time coordinates 
+    - 'dt', 'ID', 'info'
+    - 'zTwr', 'uTwr': tower coordinates and field if present (3 x nt x nTwr)
+    - 'zHub', 'uHub': height and velocity at a reference point (usually not hub)
+
+    Main methods
+    ------------
+    - read, write, toDataFrame, keys, makePeriodic, checkPeriodic, closestPoint
+
+    Examples
+    --------
+
+        ts = TurbSimFile('Turb.bts')
+        print(ts.keys())
+        print(ts['u'].shape)  
+
+
+    """
 
     @staticmethod
     def defaultExtensions():

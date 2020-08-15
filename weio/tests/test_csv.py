@@ -1,0 +1,50 @@
+import unittest
+import os
+import numpy as np
+from .helpers_for_test import MyDir, reading_test 
+try:
+    from weio.csv_file import CSVFile
+except:
+    from weio.weio.csv_file import CSVFile
+
+class Test(unittest.TestCase):
+
+    def test_001_read_all(self, DEBUG=True):
+        reading_test('CSV*.*', CSVFile)
+
+    def DF(self,FN):
+        """ Reads a file and return a dataframe """ 
+        return CSVFile(os.path.join(MyDir,FN)).toDataFrame()
+ 
+    def test_CSV(self):
+        self.assertEqual(self.DF('CSVAutoCommentChar.txt').shape,(11,6))
+ 
+        DF=self.DF('CSVColInHeader.csv')
+        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertEqual(DF.shape,(2,3))
+ 
+        DF=self.DF('CSVColInHeader2.csv')
+        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertEqual(DF.shape,(2,3))
+ 
+        DF=self.DF('CSVColInHeader3.csv')
+        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertEqual(DF.shape,(2,3))
+
+        DF=self.DF('CSVComma_UTF16.csv')
+        self.assertEqual(DF.shape,(4,3))
+ 
+        self.assertEqual(self.DF('CSVComma.csv').shape,(4,2))
+        self.assertEqual(self.DF('CSVDateNaN.csv').shape,(11,2))
+        self.assertEqual(self.DF('CSVNoHeader.csv').shape,(4,2))
+        self.assertEqual(self.DF('CSVSemi.csv').shape,(3,2))
+        self.assertEqual(self.DF('CSVSpace_ExtraCol.csv').shape,(5,4))
+        self.assertEqual(self.DF('CSVTab.csv').shape,(5,2))
+ 
+        DF = self.DF('CSVTwoLinesHeaders.txt')
+        self.assertEqual(DF.columns.values[-1],'GenTq_(kN m)')
+        self.assertEqual(DF.shape,(9,6))
+
+if __name__ == '__main__':
+    #Test().test_CSV()
+    unittest.main()

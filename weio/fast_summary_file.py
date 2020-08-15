@@ -16,6 +16,24 @@ except:
 # --- Main Class 
 # --------------------------------------------------------------------------------{
 class FASTSummaryFile(File):
+    """ 
+    Read an OpenFAST summary file (.sum, .yaml). The object behaves as a dictionary.
+    NOTE: open new subdyn format supported.
+
+    Main methods
+    ------------
+    - read, toDataFrame
+
+    Examples
+    --------
+
+        # read a subdyn summary file
+        sum = FASTSummaryFile('5MW.SD.sum.yaml')
+        print(sum['module']) # SubDyn
+        M = sum['M'] # Mass matrix
+        K = sum['K'] # stiffness matrix
+
+    """
 
     @staticmethod
     def defaultExtensions():

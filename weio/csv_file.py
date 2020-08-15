@@ -4,8 +4,6 @@ from io import open
 from future import standard_library
 standard_library.install_aliases()
 import os
-import codecs
-import chardet
 
 from .file import File, WrongFormatError
 import pandas as pd
