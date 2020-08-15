@@ -3,7 +3,6 @@ import pandas as pd
 from io import open
 import os
 # Local 
-#import yaml
 from .MiniYaml import yaml_read
 
 
@@ -44,13 +43,13 @@ class FASTSummaryFile(File):
 
         with open(self.filename, 'r', errors="surrogateescape") as fid:
             header= readFirstLines(fid, 4)
-            if any(['subdyn' in s.lower() for s in header]):
-                self['module']='SubDyn'
-                data=readSubDynSum(self.filename)
-                for k,v in data.items():
-                    self[k]=v
-            else:
-                raise NotImplementedError('This summary file format is not yet supported')
+        if any(['subdyn' in s.lower() for s in header]):
+            self['module']='SubDyn'
+            data=readSubDynSum(self.filename)
+            for k,v in data.items():
+                self[k]=v
+        else:
+            raise NotImplementedError('This summary file format is not yet supported')
 
     def toDataFrame(self):
         if 'module' not in self.keys():
@@ -170,16 +169,6 @@ def subDynToDataFrame(data):
 
 
 if __name__=='__main__':
-    # read('Main_Monopile-SoilDyn.SD.sum')
     T=FASTSummaryFile('../Pendulum.SD.sum.yaml')
     df=T.toDataFrame()
     print(df)
-
-#     DOF2Nodes=T['DOF2Nodes']
-#     DOF_L=T['DOF___L'] # internal DOFs
-#     DOF_B=T['DOF___B'] # internal
-#     nDOF =T['nDOF_red']
-#     PhiB =T['PhiM']
-#     PhiR =T['PhiR']
-#     MM  =T['M']
-#     KK  =T['K']

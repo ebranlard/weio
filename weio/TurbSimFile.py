@@ -137,14 +137,17 @@ class TurbSimFile(File):
                 f.write(out[:,it,:,:].tostring(order='F'))
                 f.write(outTwr[:,it,:].tostring(order='F'))
 
-    def hubValues(self):
-        try:
-            zHub=self['zHub']
+    def hubValues(self, zHub=None):
+        if zHub is None:
+            try:
+                zHub=self['zHub']
+                bHub=True
+            except:
+                bHub=False
+                iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+                zHub = self['z'][iz]
+        else:
             bHub=True
-        except:
-            bHub=False
-            iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
-            zHub = self['z'][iz]
         try:
             uHub=self['uHub']
         except:
@@ -156,6 +159,11 @@ class TurbSimFile(File):
     def _iMid(self):
         iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
         iz = np.argmin(np.abs(self['z']-(self['z'][0]+self['z'][-1])/2))
+        return iy,iz
+
+    def closestPoint(self, y, z):
+        iy = np.argmin(np.abs(self['y']-y))
+        iz = np.argmin(np.abs(self['z']-z))
         return iy,iz
 
     def makePeriodic(self):
