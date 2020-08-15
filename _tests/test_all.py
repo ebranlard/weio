@@ -160,7 +160,11 @@ class Test(unittest.TestCase):
         F=weio.read(os.path.join(MyDir,'FASTIn_SD.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         self.assertEqual(F['PitManRat(1)'],2)
-
+        
+        F=weio.read(os.path.join(MyDir,'FASTIn_MD.dat'))
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
+        self.assertEqual(float(F['LineTypes'][0,1]),0.02)
+        
  
     def test_FASTOut(self):
         self.assertEqual(self.DF('FASTOut.out').values[-1,1],1036)
