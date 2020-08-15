@@ -3,7 +3,7 @@ import glob
 import weio
 import os
 import numpy as np
-MyDir=os.path.dirname(__file__)
+MyDir=os.path.join(os.path.dirname(__file__),'example_files')
 
 class Test(unittest.TestCase):
     def test_000_debug(self):
