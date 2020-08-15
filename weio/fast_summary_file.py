@@ -3,11 +3,11 @@ import pandas as pd
 from io import open
 import os
 # Local 
-from .MiniYaml import yaml_read
+from .mini_yaml import yaml_read
 
 
 try:
-    from .File import File, EmptyFileError
+    from .file import File, EmptyFileError
 except:
     EmptyFileError = type('EmptyFileError', (Exception,),{})
     File=dict

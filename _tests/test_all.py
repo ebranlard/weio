@@ -93,7 +93,7 @@ class Test(unittest.TestCase):
 
     def test_FASTWnd(self):
         F=weio.read(os.path.join(MyDir,'FASTWnd.wnd'))
-        F.test_ascii(bCompareWritesOnly=False,bDelete=True)
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
 
     def test_TurbSim(self):
         # --- Test without tower
@@ -122,6 +122,14 @@ class Test(unittest.TestCase):
         self.assertEqual(F['PitchK'],2.0e+07)
         self.assertEqual(F['MemberGeom'][-1,2],61.5)
         self.assertEqual(F['MemberGeom'][-2,3],0.023000)
+
+        F=weio.read(os.path.join(MyDir,'FASTIn_BD_bld.dat'))
+        F.test_ascii(bCompareWritesOnly=False,bDelete=True)
+        self.assertEqual(F['DampingCoeffs'][0][0],0.01)
+        # TODO BeamDyn Blade properties are not really "user friendly"
+        self.assertEqual(F['BeamProperties'][1][0],1.0)
+        self.assertEqual(F['BeamProperties'][1][1],1.8e+08) # K11
+        self.assertEqual(F['BeamProperties'][1][37],1.2) # M11
 
         F=weio.read(os.path.join(MyDir,'FASTIn_ED.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
@@ -175,11 +183,11 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(M['GenPwr_[kW]'].values[-1],40.57663190807828)
 
     def test_FASTLin(self):
-        F=weio.FASTLinFile(os.path.join(MyDir,'FASTOutLin.lin'))
+        F=weio.FASTLinearizationFile(os.path.join(MyDir,'FASTOutLin.lin'))
         self.assertAlmostEqual(F['A'][3,1], 3.91159454E-04 )
         self.assertAlmostEqual(F['u'][7]   ,4.00176055E+04)
 
-        F=weio.FASTLinFile(os.path.join(MyDir,'FASTOutLin_EDM.lin'))
+        F=weio.FASTLinearizationFile(os.path.join(MyDir,'FASTOutLin_EDM.lin'))
         dfs=F.toDataFrame()
         M=dfs['M']
         self.assertAlmostEqual(M['7_TwFADOF1']['7_TwFADOF1'],0.436753E+06)
@@ -255,5 +263,5 @@ class Test(unittest.TestCase):
 
 
 if __name__ == '__main__':
-#     Test().test_000_debug()
+#     Test().test_FASTIn()
     unittest.main()

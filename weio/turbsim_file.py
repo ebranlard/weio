@@ -10,7 +10,7 @@ import struct
 import time
 
 try:
-    from .File import File, EmptyFileError
+    from .file import File, EmptyFileError
 except:
     EmptyFileError = type('EmptyFileError', (Exception,),{})
     File=dict

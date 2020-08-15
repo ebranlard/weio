@@ -12,8 +12,8 @@ standard_library.install_aliases()
 
 from itertools import takewhile
 
-from .File import File, WrongFormatError, BrokenReaderError
-from .CSVFile import CSVFile
+from .file import File, WrongFormatError, BrokenReaderError
+from .csv_file import CSVFile
 import numpy as np
 import pandas as pd
 import struct
@@ -24,7 +24,23 @@ import re
 # --------------------------------------------------------------------------------}
 # --- OUT FILE 
 # --------------------------------------------------------------------------------{
-class FASTOutFile(File):
+class FASTOutputFile(File):
+    """ 
+    Read an OpenFAST ouput file (.out, .outb, .elev).
+
+    Main methods
+    ------------
+    - read, toDataFrame
+
+    Examples
+    --------
+
+        # read an output file and convert it to pandas dataframe
+        df = FASTOutputFile('5MW.outb').toDataFrame()
+        time  = df['Time_[s]']
+        Omega = df['RotSpeed_[rpm]']
+
+    """
 
     @staticmethod
     def defaultExtensions():

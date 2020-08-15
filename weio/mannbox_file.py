@@ -21,7 +21,7 @@ import os
 import struct
 
 try:
-    from .File import EmptyFileError 
+    from .file import EmptyFileError 
 except:
     EmptyFileError = type('EmptyFileError', (Exception,),{})
     File=dict
