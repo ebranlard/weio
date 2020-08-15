@@ -143,10 +143,10 @@ class FASTInFile(File):
         NUMTAB_FROM_VAL_DETECT_L = [s.lower() for s in NUMTAB_FROM_VAL_DETECT]
 
         # NOTE: MJointID1, used by SubDyn and HydroDyn
-        NUMTAB_FROM_LAB_DETECT   = ['NumAlf'  , 'F_X'       , 'MemberCd1'    , 'MJointID1' , 'NOutLoc'    , 'NOutCnt'    , 'PropD'             , 'YoungE'            , 'YoungE'          ]
-        NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf'  , 'NKInpSt'   , 'NCoefMembers' , 'NMembers'  , 'NMOutputs'  , 'NMOutputs'  , 'NPropSets'         , 'NPropSets'         , 'NXPropSets'         ]
-        NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff' , 'TMDspProp' , 'MemberProp'   , 'Members'   , 'MemberOuts' , 'MemberOuts' , 'MemberSectionProp' , 'MemberSectionProp' , 'MemberSectionProp2' ]
-        NUMTAB_FROM_LAB_TYPE     = ['num'     , 'num'       , 'num'          , 'mix'       , 'num'        , 'num'        , 'num'               , 'num'               , 'num'                    ]
+        NUMTAB_FROM_LAB_DETECT   = ['NumAlf'  , 'F_X'       , 'MemberCd1'    , 'MJointID1' , 'NOutLoc'    , 'NOutCnt'    , 'PropD'             , 'YoungE'            , 'YoungE'             ,'Diam'       ,'Type'           ,'LineType']
+        NUMTAB_FROM_LAB_DIM_VAR  = ['NumAlf'  , 'NKInpSt'   , 'NCoefMembers' , 'NMembers'  , 'NMOutputs'  , 'NMOutputs'  , 'NPropSets'         , 'NPropSets'         , 'NXPropSets'         ,'NTypes'     ,'NConnects'      ,'NLines']
+        NUMTAB_FROM_LAB_VARNAME  = ['AFCoeff' , 'TMDspProp' , 'MemberProp'   , 'Members'   , 'MemberOuts' , 'MemberOuts' , 'MemberSectionProp' , 'MemberSectionProp' , 'MemberSectionProp2' ,'LineTypes'  ,'ConnectionProp' ,'LineProp']
+        NUMTAB_FROM_LAB_TYPE     = ['num'     , 'num'       , 'num'          , 'mix'       , 'num'        , 'num'        , 'num'               , 'num'               , 'num'                ,'mix'        ,'mix'            ,'mix']
         NUMTAB_FROM_LAB_DETECT_L = [s.lower() for s in NUMTAB_FROM_LAB_DETECT]                                         
 
         FILTAB_FROM_LAB_DETECT   = ['FoilNm' ,'AFNames']
@@ -529,7 +529,7 @@ class FASTInFile(File):
 
         for i in range(len(self.data)): 
             d=self.data[i]
-            if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER]:
+            if d['tabType'] in [TABTYPE_NUM_WITH_HEADER, TABTYPE_NUM_WITH_HEADERCOM, TABTYPE_NUM_NO_HEADER, TABTYPE_MIX_WITH_HEADER]:
                 Val= d['value']
                 if d['tabUnits'] is None:
                     Cols=d['tabColumnNames']
@@ -744,10 +744,9 @@ class FASTInFile(File):
         try:
             for j in range(nStations):
                 M[j,0]=float(lines[i]); i+=1;
-                LL = lines[i:i+6]
-                M[j,1:37]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,1:37]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
-                M[j,37:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,37:]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
         except: 
             raise WrongFormatError('An error occured while reading section {}/{}'.format(j+1,nStations))
@@ -1215,7 +1214,8 @@ def parseFASTFilTable(lines,n,iStart):
 
 
 if __name__ == "__main__":
-    B=FASTInFile('BeamDyn_Blade.dat')
+    pass
+    #B=FASTIn('Turbine.outb')
 
 
 
