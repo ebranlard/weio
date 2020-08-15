@@ -89,6 +89,18 @@ class FASTInFile(File):
         else:
             return i
 
+    def getIDs(self,label):
+        I=[]
+        # brute force search
+        for i in range(len(self.data)):
+            d = self.data[i]
+            if d['label'].lower()==label.lower():
+                I.append(i)
+        if len(I)<0:
+            raise KeyError('Variable `'+ label+'` not found in FAST file:'+self.filename)
+        else:
+            return I
+
     def getIDSafe(self,label):
         # brute force search
         for i in range(len(self.data)):
@@ -112,8 +124,9 @@ class FASTInFile(File):
 
     # Making it behave like a dictionary
     def __setitem__(self,key,item):
-        i = self.getID(key)
-        self.data[i]['value'] = item
+        I = self.getIDs(key)
+        for i in I: 
+            self.data[i]['value'] = item
 
     def __getitem__(self,key):
         i = self.getID(key)
@@ -744,9 +757,9 @@ class FASTInFile(File):
         try:
             for j in range(nStations):
                 M[j,0]=float(lines[i]); i+=1;
-                M[j,1:37]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,1:37]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
-                M[j,37:]=np.array((''.join(lines[i:i+6])).split()).astype(np.float)
+                M[j,37:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
                 i+=7
         except: 
             raise WrongFormatError('An error occured while reading section {}/{}'.format(j+1,nStations))
