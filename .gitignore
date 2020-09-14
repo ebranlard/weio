@@ -3,5 +3,6 @@
 build
 dist
 *.spec
-_TODO/
-_TODO.txt
+*_TODO*
+*.pdf
+*.png

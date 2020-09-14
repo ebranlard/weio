@@ -158,7 +158,7 @@ class CSVFile(File):
             # Looking at first line of data, if mainly floats -> it's not the column names
             colNames = split(readline(iStartLine))
             nFloat = sum([strIsFloat(s) for s in colNames])
-            if nFloat <= len(colNames)-1:
+            if nFloat <= len(colNames)/2:
                 self.colNames=colNames
                 self.colNamesLine = iStartLine
                 iStartLine = iStartLine+1

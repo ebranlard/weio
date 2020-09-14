@@ -833,7 +833,7 @@ class FASTInputDeck(object):
         self.modeldir = os.path.split(fstfile)[0]
         self.inputfiles = {}
         # read master file
-        self.fst = FASTInFile(fstfile)
+        self.fst = FASTInputFile(fstfile)
         print('Read',fstfile)
         self.Attributes=['fst']
 
@@ -857,9 +857,9 @@ class FASTInputDeck(object):
                     fpath = os.path.join(modeldir, os.path.normpath(keyv.strip('"').replace('\\','/')))
                     if os.path.isfile(fpath):
                         self.inputfiles[name] = fpath
-                        modinput = FASTInFile(fpath)
+                        modinput = FASTInputFile(fpath)
                         try:
-                            modinput = FASTInFile(fpath)
+                            modinput = FASTInputFile(fpath)
                         except:
                             print('Problem reading',fpath)
                         else:
@@ -961,7 +961,7 @@ class FASTInputDeck(object):
         #        name = key[:-4]
         #        self.inputfiles[name] = fpath
         #        try:
-        #            modinput = FASTInFile(fpath)
+        #            modinput = FASTInputFile(fpath)
         #        except:
         #            print('Problem reading',fpath)
         #        else:
