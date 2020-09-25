@@ -11,6 +11,7 @@ class Test(unittest.TestCase):
         #F = weio.CSVFile('_tests/CSVComma_Fail.csv')
         #F = weio.FASTInFile('../_tests/FASTIn_ExtPtfm_SubSef.dat')
         #F = weio.FASTLinFile('../_tests/FASTOutLin_New.lin')
+        #F = weio.TecplotFile('example_files/TecplotASCII_1.dat')
         #dfs=F.toDataFrame()
         #print(F.toDataFrame())
         #print(F)
@@ -60,5 +61,5 @@ class Test(unittest.TestCase):
 
 
 if __name__ == '__main__':
-#     Test().test_FASTIn()
-    unittest.main()
+    Test().test_000_debug()
+#     unittest.main()

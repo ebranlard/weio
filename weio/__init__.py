@@ -20,6 +20,7 @@ from .turbsim_ts_file         import TurbSimTSFile
 from .turbsim_file            import TurbSimFile
 from .netcdf_file             import NetCDFFile
 from .tdms_file               import TDMSFile
+from .tecplot_file            import TecplotFile 
 
 class FormatNotDetectedError(Exception):
     pass
@@ -27,6 +28,7 @@ class FormatNotDetectedError(Exception):
 def fileFormats():
     formats = []
     formats.append(FileFormat(CSVFile))
+    formats.append(FileFormat(TecplotFile))
     formats.append(FileFormat(ExcelFile))
     formats.append(FileFormat(FASTInputFile))
     formats.append(FileFormat(FASTOutputFile))
