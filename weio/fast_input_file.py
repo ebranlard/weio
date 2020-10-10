@@ -594,6 +594,8 @@ class FASTInputFile(File):
                     Cols=['{}_{}'.format(c,u.replace('(','[').replace(')',']')) for c,u in zip(d['tabColumnNames'],d['tabUnits'])]
                 #print(Val)
                 #print(Cols)
+
+                # --- Adding some useful tabulated data for some files (Shapefunctions, polar)
                 if self.getIDSafe('BldFl1Sh(2)')>0:
                     # Hack for blade files, we add the modes
                     x=Val[:,0]
@@ -642,6 +644,35 @@ class FASTInputFile(File):
                                + x**6 * self['TwSSM2Sh(6)'] 
                     Val = np.hstack((Val,Modes))
                     Cols = Cols + ['ShapeForeAft1_[-]','ShapeForeAft2_[-]','ShapeSideSide1_[-]','ShapeSideSide2_[-]']
+                elif d['label']=='AFCoeff':
+                    try:
+                        pol   = d['value']
+                        alpha = pol[:,0]*np.pi/180.
+                        Cl    = pol[:,1]
+                        Cd    = pol[:,2]
+                        Cd0   = self['Cd0']
+                        # Cn (with or without Cd0)
+                        Cn1 = Cl*np.cos(alpha)+ (Cd-Cd0)*np.sin(alpha) 
+                        Cn  = Cl*np.cos(alpha)+ Cd*np.sin(alpha) 
+                        Val=np.column_stack((Val,Cn));  Cols+=['Cn_[-]']
+                        Val=np.column_stack((Val,Cn1)); Cols+=['Cn_Cd0off_[-]']
+
+                        CnLin = self['C_nalpha']*(alpha-self['alpha0']*np.pi/180.)
+                        CnLin[alpha<-20*np.pi/180]=np.nan
+                        CnLin[alpha> 30*np.pi/180]=np.nan
+                        Val=np.column_stack((Val,CnLin)); Cols+=['Cn_pot_[-]']
+
+                        # Highlighting points surrounding 0 1 2 Cn points
+                        CnPoints = Cn*np.nan
+                        iBef2 = np.where(alpha<self['alpha2']*np.pi/180.)[0][-1]
+                        iBef1 = np.where(alpha<self['alpha1']*np.pi/180.)[0][-1]
+                        iBef0 = np.where(alpha<self['alpha0']*np.pi/180.)[0][-1]
+                        CnPoints[iBef2:iBef2+2] = Cn[iBef2:iBef2+2]
+                        CnPoints[iBef1:iBef1+2] = Cn[iBef1:iBef1+2]
+                        CnPoints[iBef0:iBef0+2] = Cn[iBef0:iBef0+2]
+                        Val=np.column_stack((Val,CnPoints)); Cols+=['Cn_012_[-]']
+                    except:
+                        pass
 
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=Val,columns=Cols)
