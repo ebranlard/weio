@@ -55,6 +55,15 @@ class CSVFile(File):
         # NOTE: done by parent class method
         
         # --- Subfunctions
+        def readFirstLines(nLines):
+            lines=[]
+            with open(self.filename, 'r', encoding=self.encoding, errors="surrogateescape") as fid:
+                for i, line in enumerate(fid):
+                    lines.append(line.strip())
+                    if i==nLines:
+                        break
+            return lines
+
         def readline(iLine):
             with open(self.filename,'r',encoding=self.encoding) as f:
                 for i, line in enumerate(f):
@@ -158,7 +167,8 @@ class CSVFile(File):
             # Looking at first line of data, if mainly floats -> it's not the column names
             colNames = split(readline(iStartLine))
             nFloat = sum([strIsFloat(s) for s in colNames])
-            if nFloat <= len(colNames)/2:
+            if nFloat ==0 or (len(colNames)>2 and nFloat <= len(colNames)/2):
+                # We assume that the line contains the column names
                 self.colNames=colNames
                 self.colNamesLine = iStartLine
                 iStartLine = iStartLine+1
