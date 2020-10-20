@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy as np
-from helpers_for_test import MyDir, reading_test 
+from .helpers_for_test import MyDir, reading_test 
 import weio
 from weio.flex_wavekin_file import FLEXWaveKinFile 
 from weio.flex_doc_file import FLEXDocFile 
@@ -45,8 +45,8 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(doc['Foundation']['ShapeFunction_DOF1_Shape']['H_[m]'].values[-1], 100)
         self.assertAlmostEqual(doc['Foundation']['ShapeFunction_DOF1_Shape']['U_[m]'].values[-1], 1)
         self.assertAlmostEqual(doc['Foundation']['ShapeFunction_DOF2_Shape']['U_[m]'].values[-1], 0)
-
         self.assertEqual(type(doc['Blade']['ShapeFunction_DOF1_Shape']) is pd.DataFrame, True)
+
 
 if __name__ == '__main__':
 #     Test().test_FLEXWaves()

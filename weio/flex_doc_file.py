@@ -82,7 +82,6 @@ class FLEXDocFile(File):
         i=0
         while i<len(lines):
             l=lines[i]
-
             if len(l.strip())==0:
                 i+=1; continue
             if l.find('###')==0:
@@ -91,7 +90,6 @@ class FLEXDocFile(File):
                 sp=l.split()
                 # --- Array with header
                 if sp[0] in ArraysHeader:
-                    print(sp[0])
                     array_lines=[]
                     i=i+1
                     header=lines[i]
@@ -112,11 +110,12 @@ class FLEXDocFile(File):
                         cols=header.split()
                     else:
                         header=header.replace('rough','rough_[-]')
+                        header=header.replace('n ','n_[-] ')
                         spcol=header.split(']')
                         cols= [v.strip().replace(' ','_').replace('[','_[').replace('__','_').replace('__','_')+']' for v in spcol[:-1]]
 
                     if len(cols)!=M.shape[1]:
-                        cols=['C{}'.format(i) for i in range(M.shape[1])]
+                        cols=['C{}'.format(j) for j in range(M.shape[1])]
                     # --- Store
                     keys = sp[0].split('_')
                     keys[0]=keys[0][1:]
@@ -127,7 +126,7 @@ class FLEXDocFile(File):
                     self[keys[0]][subkey] = df
                     continue
                 # --- Array with no header
-                if sp[0] in ArraysNoHeader:
+                elif sp[0] in ArraysNoHeader:
                     array_lines=[]
                     i=i+1
                     header=lines[i]
@@ -145,28 +144,31 @@ class FLEXDocFile(File):
                     subkey = '_'.join(keys[1:])
                     self[keys[0]][subkey] = M
                     continue
-                # --- Regular
-                keys = sp[0].split('_')
-                key=keys[0][1:]
-                subkey = '_'.join(keys[1:])
-                values= ' '.join(sp[1:])
-                try:
-                    dat= np.array(rx.findall(values)).astype(float)
-                    if len(dat)==1:
-                        dat=dat[0]
-                except:
-                    dat = values
+                else:
+                    # --- Regular
+                    keys = sp[0].split('_')
+                    key=keys[0][1:]
+                    subkey = '_'.join(keys[1:])
+                    values= ' '.join(sp[1:])
+                    try:
+                        dat= np.array(rx.findall(values)).astype(float)
+                        if len(dat)==1:
+                            dat=dat[0]
+                    except:
+                        dat = values
 
-                if len(key.strip())>0:
-                    if len(subkey)==0:
-                        if key not in self.keys():
-                            self[key] = dat
+                    if len(key.strip())>0:
+                        if len(subkey)==0:
+                            if key not in self.keys():
+                                self[key] = dat
+                            else:
+                                print('>>> line',i,l)
+                                print(self.keys())
+                                raise Exception('Duplicate singleton key:',key)
                         else:
-                            raise Exception('Duplicate singleton key:',key)
-                    else:
-                        if key not in self.keys():
-                            self[key] = dict()
-                        self[key][subkey]=dat
+                            if key not in self.keys():
+                                self[key] = dict()
+                            self[key][subkey]=dat
             i+=1
 
             # --- Some adjustements
