@@ -8,6 +8,7 @@ setup(
     author='Emmanuel Branlard',
     author_email='lastname@gmail.com',
     license='MIT',
-    packages=find_packages(),
+    packages=find_packages(include=['weio'],exclude=['./__init__.py']),
     zip_safe=False
 )
+#     packages=['weio'],

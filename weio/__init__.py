@@ -15,6 +15,8 @@ from .hawcstab2_ind_file      import HAWCStab2IndFile
 from .flex_blade_file         import FLEXBladeFile
 from .flex_profile_file       import FLEXProfileFile
 from .flex_out_file           import FLEXOutFile
+from .flex_doc_file           import FLEXDocFile
+from .flex_wavekin_file       import FLEXWaveKinFile
 from .excel_file              import ExcelFile
 from .turbsim_ts_file         import TurbSimTSFile
 from .turbsim_file            import TurbSimFile
@@ -45,6 +47,8 @@ def fileFormats():
     formats.append(FileFormat(FLEXBladeFile))
     formats.append(FileFormat(FLEXProfileFile))
     formats.append(FileFormat(FLEXOutFile))
+    formats.append(FileFormat(FLEXWaveKinFile))
+    formats.append(FileFormat(FLEXDocFile))
     formats.append(FileFormat(NetCDFFile))
     formats.append(FileFormat(TDMSFile)) 
     return formats
