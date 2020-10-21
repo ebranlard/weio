@@ -272,7 +272,6 @@ class FASTLinearizationFile(File):
             dfs['A'] = pd.DataFrame(data = self['A'], index=xdescr_short, columns=xdescr_short)
         except:
             pass
-        dfs={}
         try:
             udescr_short=self.udescr()
             dfs['B'] = pd.DataFrame(data = self['B'], index=xdescr_short, columns=udescr_short)
