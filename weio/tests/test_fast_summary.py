@@ -26,16 +26,18 @@ class Test(unittest.TestCase):
         np.testing.assert_almost_equal(df['GuyanMode1x_[m]'].values[0],0.6)
 
         # Test toJSON
-        dJSON=f.toJSON()
+        dJSON=f.toJSON('test.json')
         np.testing.assert_almost_equal(dJSON['Connectivity'], [[0,1],[1,2]])
 
 
     def test_FASTSumGraph(self):
         f = FASTSummaryFile(os.path.join(MyDir, 'FASTSum_Pendulum.SD.sum.yaml'))
         graph = f.toGraph()
-        #print(graph)
+       # print(graph)
         self.assertEqual(len(graph.Nodes), 3)
         self.assertEqual(len(graph.Elements), 2)
+        self.assertEqual(len(graph.Modes), 11)
+        np.testing.assert_almost_equal(graph.Modes[10]['freq'], 98.26435)
 
 
 if __name__ == '__main__':

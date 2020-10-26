@@ -110,7 +110,7 @@ def readSubDynSum(self):
     self['DOF___B'] -=1 # internal
     self['DOF___F'] -=1 # fixed DOFs
 
-        
+    self['CB_frequencies']=self['CB_frequencies'].ravel()
     self['X'] = self['Nodes'][:,1].astype(float)
     self['Y'] = self['Nodes'][:,2].astype(float)
     self['Z'] = self['Nodes'][:,3].astype(float)
@@ -118,10 +118,14 @@ def readSubDynSum(self):
     # --- Useful methods that will be added to the class
     def NodesDisp(self, IDOF, UDOF, maxDisp=None, sortDim=None):
         DOF2Nodes = self['DOF2Nodes']
-        INodes = list(np.sort(np.unique(DOF2Nodes[IDOF,1]))) # NOTE: sorted
+        # NOTE: SubDyn nodes in the summary files are sorted
+        # so the position we give are for all Nodes
+        INodes = list(np.sort(np.unique(DOF2Nodes[IDOF,1]))) # Sort
         nShapes = UDOF.shape[1]
         disp=np.empty((len(INodes),3,nShapes)); disp.fill(np.nan)
         pos=np.empty((len(INodes),3))         ; pos.fill(np.nan)
+        # TODO
+        #   handle T_red for rigid and joints
         for i,iDOF in enumerate(IDOF):
             iNode       = DOF2Nodes[iDOF,1]
             nDOFPerNode = DOF2Nodes[iDOF,2]
@@ -147,7 +151,7 @@ def readSubDynSum(self):
             pos    = pos[I,:]
         return disp, pos, INodes
 
-    def getModes(data,maxDisp=None):
+    def getModes(data, maxDisp=None, sortDim=2):
         """ return Guyan and CB modes"""
         if maxDisp is None:
             #compute max disp such as it's 10% of maxdimension
@@ -164,19 +168,19 @@ def readSubDynSum(self):
         # CB modes
         PhiM      = data['PhiM']
         Phi_CB = np.vstack((np.zeros((len(DOF_B),PhiM.shape[1])),PhiM, np.zeros((len(DOF_F),PhiM.shape[1]))))
-        dispCB, posCB, INodes = data.NodesDisp(DOF_K, Phi_CB, maxDisp=maxDisp, sortDim=2)
+        dispCB, posCB, INodesCB = data.NodesDisp(DOF_K, Phi_CB, maxDisp=maxDisp, sortDim=sortDim)
         # Guyan modes
         PhiR      = data['PhiR']
         Phi_Guyan = np.vstack((np.eye(len(DOF_B)),PhiR, np.zeros((len(DOF_F),PhiR.shape[1]))))
-        dispGy, posGy, INodesGy = data.NodesDisp(DOF_K, Phi_Guyan, maxDisp=maxDisp, sortDim=2)
+        dispGy, posGy, INodesGy = data.NodesDisp(DOF_K, Phi_Guyan, maxDisp=maxDisp, sortDim=sortDim)
 
-        return dispGy, posGy, dispCB, posCB
+        return dispGy, posGy, INodesGy, dispCB, posCB, INodesCB
 
 
     def subDynToJson(data, outfile=None):
         """ Convert to a "JSON" format """
 
-        dispGy, posGy, dispCB, posCB = data.getModes()
+        dispGy, posGy, _, dispCB, posCB, _ = data.getModes()
 
         Nodes    = self['Nodes']
         Elements = self['Elements']
@@ -206,10 +210,8 @@ def readSubDynSum(self):
         d['groundLevel']=np.min(data['Z']) # TODO
 
         if outfile is not None:
-            jsonFile=outfile
-            # os.path.splitext(subDynSumFile)[0]+'.json'
-            print('>>> Writing json file: ',jsonFile)
-            with open(jsonFile, 'w', encoding='utf-8') as f:
+            import json
+            with open(outfile, 'w', encoding='utf-8') as f:
                 try:
                     f.write(unicode(json.dumps(d, ensure_ascii=False))) #, indent=2)
                 except:
@@ -237,7 +239,7 @@ def readSubDynSum(self):
             dfDisp.columns = [c.replace('Mode','Disp') for c in dfDisp.columns.values]
             return df, dfDisp
 
-        dispGy, posGy, dispCB, posCB = data.getModes()
+        dispGy, posGy, _, dispCB, posCB, _ = data.getModes()
 
         columns = ['z_[m]','x_[m]','y_[m]']
         dataZXY = np.column_stack((posGy[:,2],posGy[:,0],posGy[:,1]))

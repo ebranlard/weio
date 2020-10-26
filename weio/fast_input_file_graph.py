@@ -185,6 +185,7 @@ def subdynSumToGraph(data):
     nDOF      = data['nDOF_red']
 
     Graph = GraphModel()
+
     # --- Nodes and DOFs
     Nodes = data['Nodes']
     for iNode,N in enumerate(Nodes):
@@ -200,31 +201,26 @@ def subdynSumToGraph(data):
     Elements = data['Elements']
     for ie,E in enumerate(Elements):
         nodeIDs=[int(E[1]),int(E[2])]
-        elem= Element(int(E[0]), nodeIDs)
+        #  shear_[-]       Ixx_[m^4]       Iyy_[m^4]       Jzz_[m^4]          T0_[N]
+        D = np.sqrt(E[7]/np.pi)*4 # <<< Approximation basedon area TODO use I as well
+        elem= Element(int(E[0]), nodeIDs, Type=int(E[5]), Area=E[7], rho=E[8], E=E[7], G=E[8], D=D)
         Graph.addElement(elem)
 
     #print(self.extent)
     #print(self.maxDimension)
 
     # --- Graph Modes
-    dispGy, posGy, dispCB, posCB = data.getModes()
+    # Very important sortDims should be None to respect order of nodes
+    dispGy, posGy, InodesGy, dispCB, posCB, InodesCB = data.getModes(sortDim=None) 
+    for iMode in range(dispGy.shape[2]):
+        Graph.addMode(displ=dispGy[:,:,iMode],name='GY{:d}'.format(iMode+1), freq=1/(2*np.pi))
 
-#     d['ElemProps']=[{'shape':'cylinder','type':int(Elements[iElem,5]),'Diam':np.sqrt(Elements[iElem,7]/np.pi)*4} for iElem in range(len(Elements))] # NOTE: diameter is cranked up
-# #  disp[iiNode, nodeDOF-1, iShape] = UDOF[i, iShape]
-# 
-#     d['Modes']=[
-#             {
-#                 'name':'GY{:d}'.format(iMode+1),
-#                 'omega':1,
-#                 'Displ':dispGy[:,:,iMode].tolist()
-#             }  for iMode in range(dispGy.shape[2]) ]
-#     d['Modes']+=[
-#             {
-#                 'name':'CB{:d}'.format(iMode+1),
-#                 'omega':CB_freq[iMode]*2*np.pi, #in [rad/s]
-#                 'Displ':dispCB[:,:,iMode].tolist()
-#             }  for iMode in range(dispCB.shape[2]) ]
-#     d['groundLevel']=np.min(data['Z']) # TODO
+    for iMode in range(dispCB.shape[2]):
+        Graph.addMode(displ=dispCB[:,:,iMode],name='CB{:d}'.format(iMode+1), freq=data['CB_frequencies'][iMode]) 
+
+    #print(Graph.toJSON())
+
+
     return Graph
 
 
