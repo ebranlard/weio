@@ -74,6 +74,17 @@ class Test(unittest.TestCase):
         F=weio.read(os.path.join(MyDir,'FASTWnd.wnd'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
 
+    def test_FASTInGraph(self):
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_HD.dat'))
+        graph = F.toGraph()
+        #print(graph)
+        self.assertEqual(len(graph.Nodes), 4)
+        self.assertEqual(len(graph.Elements), 3)
+
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_SbD.dat'))
+        graph = F.toGraph()
+        self.assertEqual(len(graph.Nodes), 2)
+        self.assertEqual(len(graph.Elements), 1)
 
 if __name__ == '__main__':
     #Test().test_FASTIn()
