@@ -75,12 +75,12 @@ def subdynToGraph(sd):
 
     # Nodal data
     for iN,N in enumerate(sd['InterfaceJoints']):
-        nodeID   = N[0]
+        nodeID   = int(N[0])
         Graph.setNodalData(nodeID,IBC=N[1:])
     for iN,N in enumerate(sd['BaseJoints']):
-        nodeID   = N[0]
-        Graph.setNodalData(nodeID,RBC=N[1:])
-
+        NN=[int(n) if i<7 else n for i,n in enumerate(N)]
+        nodeID   = NN[0]
+        Graph.setNodalData(nodeID,RBC=NN[1:])
     #     print('CMass')
     #     print(sd['ConcentratedMasses'])
 

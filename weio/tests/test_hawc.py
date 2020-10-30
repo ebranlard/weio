@@ -1,8 +1,11 @@
 import unittest
 import os
 import numpy as np
-from .helpers_for_test import MyDir, reading_test 
 import weio
+try:
+    from .helpers_for_test import MyDir, reading_test 
+except ImportError:
+    from helpers_for_test import MyDir, reading_test 
 
 class Test(unittest.TestCase):
  
@@ -26,6 +29,16 @@ class Test(unittest.TestCase):
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         os.remove(os.path.join(MyDir,'HAWC2_out_ascii_TMP.sel'))
         os.remove(os.path.join(MyDir,'HAWC2_out_ascii_TMP2.sel'))
+
+    def test_HAWC2_pc(self):
+        F=weio.read(os.path.join(MyDir,'HAWC2_pc.dat'))
+        self.assertEqual(len(F.data.pc_sets),1)
+        thicknesses = F.data.pc_sets[1][0]
+        firstPolar  = F.data.pc_sets[1][1][0]
+        np.testing.assert_almost_equal(thicknesses, [24.1, 30.1, 36, 48, 60, 100])
+        self.assertEqual(firstPolar.shape, (105,4))
+        np.testing.assert_almost_equal(firstPolar[0,0], -180)
+        np.testing.assert_almost_equal(firstPolar[-1,0], 180)
 
     def test_BHAWC(self):
         F=weio.read(os.path.join(MyDir,'BHAWC_out_ascii.sel'))
@@ -72,3 +85,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(DF.values[-1,-1], -0.170519E+03)
         self.assertEqual(DF.columns[0], 's_[m]')
         self.assertEqual(DF.columns[1], 'Node_[-]')
+
+if __name__ == '__main__':
+    Test().test_HAWC2_pc()
+#     unittest.main()

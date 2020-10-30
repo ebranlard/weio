@@ -457,7 +457,7 @@ class FASTInputFile(File):
                     #print('label>',d['label'],'<',type(d['label']),line);
                     if i>3: # first few lines may be comments, we allow it
                         #print('Line',i,'Label:',d['label'])
-                        raise WrongFormatError('Special Character found in Label: `{}`'.format(d['label']))
+                        raise WrongFormatError('Special Character found in Label: `{}`, for line: `{}`'.format(d['label'],line))
                 if len(d['label'])==0:
                     nWrongLabels +=1
             if nComments>len(lines)*0.35:
@@ -1332,7 +1332,10 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num',nOffset
                 if len(v) != nCols:
                     print('[WARN] {}: Line {}: Number of data is different than number of column names'.format(filename,iStart+1+i))
                 if i==nHeaders+nOffset:
-                    nCols=min(len(v),nCols)
+                    if len(v)>nCols:
+                        ColNames = ColNames+['Col']*(len(v)-nCols)
+                        Units    = Units+['Col']*(len(v)-nCols)
+                    nCols=len(v)
                     Tab = np.zeros((n, nCols)).astype(object)
                 v=v[0:min(len(v),nCols)]
                 Tab[i-nHeaders-nOffset,0:len(v)] = v
@@ -1345,6 +1348,7 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num',nOffset
         ColNames = ColNames[0:nCols]
         if Units is not None:
             Units    = Units[0:nCols]
+            Units    = ['('+u.replace('(','').replace(')','')+')' for u in Units]
         if nHeaders==0:
             ColNames=None
             

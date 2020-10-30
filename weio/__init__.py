@@ -28,6 +28,7 @@ class FormatNotDetectedError(Exception):
     pass
 
 def fileFormats():
+    from .vtk_file import VTKFile
     formats = []
     formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(TecplotFile))
@@ -50,6 +51,7 @@ def fileFormats():
     formats.append(FileFormat(FLEXWaveKinFile))
     formats.append(FileFormat(FLEXDocFile))
     formats.append(FileFormat(NetCDFFile))
+    formats.append(FileFormat(VTKFile))
     formats.append(FileFormat(TDMSFile)) 
     return formats
 
