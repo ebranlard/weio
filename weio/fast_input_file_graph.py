@@ -31,6 +31,17 @@ def subdynToGraph(sd):
     """
     sd: dict-like object as returned by weio
     """
+    type2Color=[
+            (0.1,0.1,0.1), # Watchout based on background
+            (0.753,0.561,0.05),  # 1 Beam
+            (0.541,0.753,0.05),  # 2 Cable
+            (0.753,0.05,0.204),  # 3 Rigid
+            (0.918,0.702,0.125), # 3 Rigid
+        ]
+
+
+
+
     Graph = GraphModel()
     # --- Properties
     if 'BeamProp' in sd.keys():
@@ -69,6 +80,8 @@ def subdynToGraph(sd):
         Type=1 if len(E)==5 else E[5]
         #elem= Element(E[0], E[1:3], propset=PropSets[Type-1], propIDs=E[3:5], Type=PropSets[Type-1])
         elem= Element(E[0], E[1:3], Type=PropSets[Type-1])
+        elem.data['object']='cylinder'
+        elem.data['color'] = type2Color[Type]
         Graph.addElement(elem)
         # Nodal prop data
         Graph.setElementNodalProp(elem, propset=PropSets[Type-1], propIDs=E[3:5])
@@ -97,6 +110,12 @@ def hydrodynToGraph(hd):
     """
      hd: dict-like object as returned by weio
     """
+    def type2Color(Pot):
+        if Pot:
+            return (0.753,0.05,0.204),  # Pot flow
+        else:
+            return (0.753,0.561,0.05),  # Morison
+
 
     Graph = GraphModel()
 
@@ -161,6 +180,8 @@ def hydrodynToGraph(hd):
         Type = int(E[6]) # MCoefMod
         Pot  = E[7].lower()[0]=='t'
         elem= Element(EE[0], EE[1:3], CoefMod=PropSets[Type-1], DivSize=E[5], Pot=Pot)
+        elem.data['object']='cylinder'
+        elem.data['color'] = type2Color(Pot)
         Graph.addElement(elem)
         # Nodal prop data
         Graph.setElementNodalProp(elem, propset='Section', propIDs=EE[3:5])
@@ -180,6 +201,14 @@ def subdynSumToGraph(data):
     """ 
      data: dict-like object as returned by weio
     """
+    type2Color=[
+            (0.1,0.1,0.1), # Watchout based on background
+            (0.753,0.561,0.05),  # 1 Beam
+            (0.541,0.753,0.05),  # 2 Cable
+            (0.753,0.05,0.204),  # 3 Rigid
+            (0.918,0.702,0.125), # 3 Rigid
+        ]
+
     #print(data.keys())
     DOF2Nodes = data['DOF2Nodes']
     nDOF      = data['nDOF_red']
@@ -204,6 +233,8 @@ def subdynSumToGraph(data):
         #  shear_[-]       Ixx_[m^4]       Iyy_[m^4]       Jzz_[m^4]          T0_[N]
         D = np.sqrt(E[7]/np.pi)*4 # <<< Approximation basedon area TODO use I as well
         elem= Element(int(E[0]), nodeIDs, Type=int(E[5]), Area=E[7], rho=E[8], E=E[7], G=E[8], D=D)
+        elem.data['object']='cylinder'
+        elem.data['color'] = type2Color[int(E[5])]
         Graph.addElement(elem)
 
     #print(self.extent)
