@@ -3,8 +3,13 @@ import os
 import numpy as np
 from .helpers_for_test import MyDir, reading_test 
 import weio
-from weio.flex_wavekin_file import FLEXWaveKinFile 
-from weio.flex_doc_file import FLEXDocFile 
+try:
+    from weio.flex_wavekin_file import FLEXWaveKinFile 
+    from weio.flex_doc_file import FLEXDocFile 
+except:
+    from weio.weio.flex_wavekin_file import FLEXWaveKinFile 
+    from weio.weio.flex_doc_file import FLEXDocFile 
+    
 import pandas as pd
 
 class Test(unittest.TestCase):
