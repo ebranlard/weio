@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import re
 
-
 class FASTLinearizationFile(File):
     """ 
     Read/write an OpenFAST linearization file. The object behaves like a dictionary.
@@ -34,7 +33,6 @@ class FASTLinearizationFile(File):
         print(df['A'])
 
     """
-
     @staticmethod
     def defaultExtensions():
         return ['.lin']
@@ -117,9 +115,7 @@ class FASTLinearizationFile(File):
             except:
                 self.WindSpeed = None
 
-
             KEYS=['Order of','A:','B:','C:','D:','ED M:']
-
 
             for i, line in enumerate(f):
                 line = line.strip()

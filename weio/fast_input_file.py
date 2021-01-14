@@ -578,10 +578,10 @@ class FASTInputFile(File):
                 Cols =['Span'] 
                 Cols+=['K{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
                 Cols+=['M{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
-                for i in np.arange(data.shape[0]):
-                    x = data[i][0]
-                    K = data[i][1:37].reshape(6,6)
-                    M = data[i][37:].reshape(6,6)
+                for i in np.arange(len(data['span'])):
+                    x = data['span'][i]
+                    K = data['K'][i]
+                    M = data['M'][i]
                     s += beamdyn_section_mat_tostring(x,K,M)
             else:
                 raise Exception('Unknown table type for variable {}'.format(d))
@@ -713,7 +713,14 @@ class FASTInputFile(File):
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=Val,columns=Cols)
             elif d['tabType'] in [TABTYPE_NUM_BEAMDYN]:
-                data = d['value']
+                span = d['value']['span']
+                M    = d['value']['M']
+                K    = d['value']['K']
+                nSpan=len(span)
+                MM=np.zeros((nSpan,1+36+36))
+                MM[:,0]    = span
+                MM[:,1:37] = K.reshape(nSpan,36)
+                MM[:,37:]  = M.reshape(nSpan,36)
                 Cols =['Span'] 
                 Cols+=['K{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
                 Cols+=['M{}{}'.format(i+1,j+1) for i in range(6) for j in range(6)] 
@@ -722,7 +729,7 @@ class FASTInputFile(File):
                 IMain= [0] + [i*6+i+1 for i in range(6)] + [i*6+i+37 for i in range(6)]
                 IOrg = IMain + [i for i in range(1+36+36) if i not in IMain]
                 Cols = [Cols[i] for i in IOrg]
-                data = data[:,IOrg]
+                data = MM[:,IOrg]
                 name=d['label']
                 dfs[name]=pd.DataFrame(data=data,columns=Cols)
         if len(dfs)==1:
@@ -869,22 +876,29 @@ class FASTInputFile(File):
 
     def readBeamDynProps(self,lines,iStart):
         nStations=self['station_total']
-        M=np.zeros((nStations,1+36+36))
+        #M=np.zeros((nStations,1+36+36))
+        M    = np.zeros((nStations,6,6))
+        K    = np.zeros((nStations,6,6))
+        span = np.zeros(nStations)
         i=iStart;
         try:
             for j in range(nStations):
-                M[j,0]=float(lines[i]); i+=1;
-                M[j,1:37]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                # Read span location
+                span[j]=float(lines[i]); i+=1;
+                # Read stiffness matrix
+                K[j,:,:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float).reshape(6,6)
                 i+=7
-                M[j,37:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float)
+                # Read mass matrix
+                M[j,:,:]=np.array((' '.join(lines[i:i+6])).split()).astype(np.float).reshape(6,6)
                 i+=7
         except: 
             raise WrongFormatError('An error occured while reading section {}/{}'.format(j+1,nStations))
+
         d = getDict()
         d['label']   = 'BeamProperties'
         d['descr']   = ''
         d['tabType'] = TABTYPE_NUM_BEAMDYN
-        d['value']   = M
+        d['value']   = {'span':span, 'K':K, 'M':M}
         self.data.append(d)
 
 

@@ -27,9 +27,9 @@ class Test(unittest.TestCase):
         F.test_ascii(bCompareWritesOnly=False,bDelete=True)
         self.assertEqual(F['DampingCoeffs'][0][0],0.01)
         # TODO BeamDyn Blade properties are not really "user friendly"
-        self.assertEqual(F['BeamProperties'][1][0],1.0)
-        self.assertEqual(F['BeamProperties'][1][1],1.8e+08) # K11
-        self.assertEqual(F['BeamProperties'][1][37],1.2) # M11
+        self.assertEqual(F['BeamProperties']['span'][1],1.0)
+        self.assertEqual(F['BeamProperties']['K'][1][0,0],1.8e+08) # K11 @ section 2
+        self.assertEqual(F['BeamProperties']['M'][1][0,0],1.2) # M11 @ section 2
 
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
