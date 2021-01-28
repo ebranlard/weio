@@ -22,7 +22,7 @@ class Test(unittest.TestCase):
         self.assertEqual(DF.values[-1,1],-1.72572E+03)
         self.assertEqual(DF.values[-1,-1], 3.63349E+03)
         self.assertEqual(DF.columns[0], 'Time_[s]')
-        self.assertEqual(DF.columns[1], 'WSP gl. coo.,Vy_[m/s]')
+        self.assertEqual(DF.columns[1], 'WSPgl.coo.,Vy_[m/s]')
 
         # Test that "exported dat files" are the same
         # NOTE: cannot do comparison of sel files since names are different
