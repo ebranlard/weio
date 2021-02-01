@@ -761,6 +761,7 @@ class FASTInputFile(File):
         if  lines[2].lower().find('!dimension')<0:
             return
         # --- At this stage we assume it's in the proper format
+        print('>>>>> HERE')
         self.module='ExtPtfm'
         nDOFCommon = -1
         i=2;
@@ -773,28 +774,28 @@ class FASTInputFile(File):
                     if nDOF<-1 or nDOF!=nDOFCommon:
                         raise BrokenFormatError('ExtPtfm stiffness matrix nDOF issue. nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
                     self.addKeyVal('MassMatrix',readmat(nDOF,nDOF,lines,i+2))
-                    i=i+2+nDOF
+                    i=i+1+nDOF
                 elif l.find('!stiffness')==0:
                     l=lines[i+1]
                     nDOF=int(l.split(':')[1])
                     if nDOF<-1 or nDOF!=nDOFCommon:
                         raise BrokenFormatError('ExtPtfm stiffness matrix nDOF issue nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
                     self.addKeyVal('StiffnessMatrix',readmat(nDOF,nDOF,lines,i+2))
-                    i=i+2+nDOF
+                    i=i+1+nDOF
                 elif l.find('!damping')==0:
                     l=lines[i+1]
                     nDOF=int(l.split(':')[1])
                     if nDOF<-1 or nDOF!=nDOFCommon:
                         raise BrokenFormatError('ExtPtfm damping matrix nDOF issue nDOF common: {}, nDOF provided: {}'.format(nDOFCommon,nDOF))
                     self.addKeyVal('DampingMatrix',readmat(nDOF,nDOF,lines,i+2))
-                    i=i+2+nDOF
+                    i=i+1+nDOF
                 elif l.find('!loading')==0:
                     try: 
                         nt=int(self['T']/self['dt'])+1
                     except:
                         raise BrokenFormatError('Cannot read loading since time step and simulation time not properly set.')
                     self.addKeyVal('Loading',readmat(nt,nDOFCommon+1,lines,i+2))
-                    i=i+nt+2
+                    i=i+nt+1
                 elif len(l)>0:
                     if l[0]=='!':
                         if l.find('!dimension')==0:
@@ -804,6 +805,8 @@ class FASTInputFile(File):
                             self.addKeyVal('dt',np.float(l.split(':')[1]))
                         elif l.find('!total simulation time')==0:
                             self.addKeyVal('T',np.float(l.split(':')[1]))
+                    elif len(l.strip())==0:
+                        pass
                     else:
                         raise BrokenFormatError('Unexcepted content found on line {}'.format(i))
                 i+=1
@@ -1388,8 +1391,9 @@ def parseFASTFilTable(lines,n,iStart):
 
 
 if __name__ == "__main__":
+    #B=FASTInputFile('001.dat')
+    #B.write('out.dat')
     pass
-    #B=FASTIn('Turbine.outb')
 
 
 

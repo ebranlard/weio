@@ -26,8 +26,12 @@ class Test(unittest.TestCase):
         np.testing.assert_almost_equal(df['GuyanMode1x_[m]'].values[0],0.6)
 
         # Test toJSON
-        dJSON=f.toJSON('test.json')
+        dJSON=f.toJSON('_test.json')
         np.testing.assert_almost_equal(dJSON['Connectivity'], [[0,1],[1,2]])
+        try:
+            os.remove('_test.json')
+        except:
+            pass
 
 
     def test_FASTSumGraph(self):
