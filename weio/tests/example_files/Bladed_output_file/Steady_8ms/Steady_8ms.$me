@@ -1,0 +1,6 @@
+*** Note:   Function 'CONTROLLER_INIT' not found on first call of \\10.57.64.12\003_RandD\004_Loads\Sim\Bladed\003\DISCON_Win32.dll.  Continuing to run 'CONTROLLER'.
+*** Note:   Function 'CONTROLLER' not found in \\10.57.64.12\003_RandD\004_Loads\Sim\Bladed\003\DISCON_Win32.dll - excecuting legacy 'DISCON' function.
+Running with torque and pitch control of the NREL offshore 5MW baseline wind turbine from DISCON.dll as written by J. Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 studies.
+*** WARNING:   The external controller has reported warning code 1
+
+Run completed:            1 warning.

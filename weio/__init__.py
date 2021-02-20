@@ -24,6 +24,7 @@ from .turbsim_file            import TurbSimFile
 from .netcdf_file             import NetCDFFile
 from .tdms_file               import TDMSFile
 from .tecplot_file            import TecplotFile 
+from .bladed_out_file         import Read_bladed_file
 
 class FormatNotDetectedError(Exception):
     pass
@@ -54,6 +55,7 @@ def fileFormats():
     formats.append(FileFormat(NetCDFFile))
     formats.append(FileFormat(VTKFile))
     formats.append(FileFormat(TDMSFile)) 
+    formats.append(FileFormat(Read_bladed_file()))
     return formats
 
 
