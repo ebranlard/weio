@@ -3,8 +3,9 @@ import os
 import numpy as np
 import re
 import pandas as pd
+# from binaryornot.check import is_binary 
 
-class Read_bladed_file:
+class BladedFile:
     """
     Read a Bladed out put file (current version is only binary files)
     
@@ -16,16 +17,15 @@ class Read_bladed_file:
         
         
 
-    Example: 
-        filename = r'h:\004_Loads\Sim\Bladed\003\Ramp_up\Ramp_up.$PJ'        
+    example: 
+        filename = r'h:\004_Loads\Sim\Bladed\003\Ramp_up\Bladed_out_ascii.$04'        
         Output = Read_bladed_file(filename)
-        Output.read()
         df = Output.toDataFrame()
         
     """ 
     @staticmethod
     def defaultExtensions():
-        return ['.$PJ']
+        return ['.%*', '.$*'] 
 
     @staticmethod
     def formatName():
@@ -33,8 +33,11 @@ class Read_bladed_file:
     
     
     
-    def __init__(self,filename):
-        self.file_name = filename
+    def __init__(self, filename=None, **kwargs):
+        self.filename = None
+        if filename:
+            self.file_name = filename
+            self.read()
         
         
   #--- a function to read sensors     
@@ -191,34 +194,67 @@ class Read_bladed_file:
 # main function to read the data and call other functions:
     def DataValue(self):
         
-        # call "read" function to find all %, $ files
-        # self.read()
+        # call "find_files" function to find all %, $ files
+        # self.find_files()
         
         ChannelName, Precision, SectionList, NoOfSections, category, DataLength, SensorNumber, NDIMENS, ChannelUnit  = self.SensorLib()
         
-        # print(self.files_in)
+        print(self.files_in)
         ## Read only files that ends with $:
         file_in = self.files_in.replace('%','$')
         fid_2 = open(os.path.join(self.Folder_in,file_in), 'r')
+        
+        """
+        I comment binary check here and assume it is always binary
+        """
+        Binary_test_2 = True #is_binary(os.path.join(self.Folder_in,file_in))
         
         if Precision == 4:
             tmp_2 = np.fromfile(fid_2, np.float32)
         elif Precision == 8:
             tmp_2 = np.fromfile(fid_2, np.float64)
             
+        if Binary_test_2 is True:            # it is binary            
+            if NDIMENS == 3:
+                tmp_3 = np.reshape(tmp_2,(SensorNumber, NoOfSections, DataLength), order='F')
+                data_tmp = tmp_3
+                # self.data_T = np.transpose(tmp_3)
             
-        if NDIMENS == 3:
-            tmp_3 = np.reshape(tmp_2,(SensorNumber, NoOfSections, DataLength), order='F')
-            data_tmp = tmp_3
-            # self.data_T = np.transpose(tmp_3)
-        
+               
+                
+            elif NDIMENS == 2:
+                tmp_3 = np.reshape(tmp_2,(SensorNumber, DataLength), order='F')
+                data_tmp = tmp_3
+                
+        else:
+            # print('it is ascii')
+            if NDIMENS == 2:
+               tmp_3 = np.loadtxt(os.path.join(self.Folder_in,file_in)) 
+               data_tmp = np.reshape(tmp_3,(SensorNumber, DataLength), order='F')
            
+            if NDIMENS == 3:
+                tmp_3 = np.loadtxt(os.path.join(self.Folder_in,file_in),) 
+                print(file_in)
+                
             
-        elif NDIMENS == 2:
-            tmp_3 = np.reshape(tmp_2,(SensorNumber, DataLength), order='F')
-            data_tmp = tmp_3
+                n_rows = int(tmp_3.shape[0]/len(SectionList))
+                n_cols = int(len(SectionList)*len(ChannelName))
+                temp_4 = np.zeros( [n_rows,n_cols])
+                
+                ## Bladed ascii file is written so stupid when matrix is 3 dimensional: 
+                col_nr = 0 
+                for rr in range(len(SectionList)):
+                    dd = 0
+                    for ss in range(rr,int(tmp_3.shape[0]),len(SectionList)):  
+                        
+                        temp_4[dd, col_nr:int(len(ChannelName))+col_nr] = tmp_3[ss,:]
+                        dd += 1
+                    
+                    col_nr += len(ChannelName)
+                data_tmp = np.reshape(temp_4,(SensorNumber, NoOfSections, DataLength), order='F')            
         
         self.OrgData(DataLength,SectionList,ChannelName,data_tmp,NDIMENS,ChannelUnit)
+
     
     
   
@@ -231,13 +267,16 @@ class Read_bladed_file:
         file_name_1 = file_name_0.replace('\\' , '/')
         file_name_2 = file_name_1.split('/')
         pth = self.file_name.replace(file_name_2[-1],'') # remove file name
+        keep_filename = file_name_2[-1][:-4]
+        # keep_filename = file_name_2[-1].replace('.$PJ','')
+        searchName = keep_filename + '.%'
         pth = pth[:-1] #  keep only the path
         files_out = [] 
         Folder_out = []
         jj = 0
         for Folder, sub_folder, files in os.walk(pth):
             for i in range(len(files)): 
-                if re.search('%.',files[i]):
+                if searchName in files[i]:
                     
                     jj +=1 # check if it is the first file
                     files_out.append(files[i])
@@ -279,10 +318,9 @@ class Read_bladed_file:
                     
       
 
-# filename = r'e:\Work_Google Drive\Bladed_Sims\Steady_8ms\Steady_8ms.$PJ'
+#filename = r'E:\Work_Google Drive\Bladed_Sims\Bladed_out_binary.$41'
 
-# Output = Read_bladed_file(filename)
-# Output.read()
-# df = Output.toDataFrame()
+#Output = BladedFile(filename)
+#df = Output.toDataFrame()
 
 
