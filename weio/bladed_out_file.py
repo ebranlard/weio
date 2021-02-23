@@ -42,9 +42,9 @@ class BladedFile(File):
         
         
   #--- a function to read sensors     
-    def SensorLib(self):        
-        fid = open(os.path.join(self.Folder_in,self.files_in), 'r')
-        read_sensor = fid.readlines()
+    def SensorLib(self, sensorfile):        
+        with open(sensorfile, 'r') as fid:
+            read_sensor = fid.readlines()
         i = -1
         
         ## read sensor file line by line (just read up to line 20)
@@ -193,34 +193,31 @@ class BladedFile(File):
 
 
 # main function to read the data and call other functions:
-    def DataValue(self):
+    def DataValue(self, rootFolder, sensorfile):
         
         # call "find_files" function to find all %, $ files
         # self.find_files()
+        sensorfile_full=os.path.join(rootFolder, sensorfile)
         
-        ChannelName, Precision, SectionList, NoOfSections, category, DataLength, SensorNumber, NDIMENS, ChannelUnit  = self.SensorLib()
+        ChannelName, Precision, SectionList, NoOfSections, category, DataLength, SensorNumber, NDIMENS, ChannelUnit  = self.SensorLib(sensorfile_full)
         
-        print(self.files_in)
         ## Read only files that ends with $:
-        file_in = self.files_in.replace('%','$')
-        fid_2 = open(os.path.join(self.Folder_in,file_in), 'r')
+        file_in = sensorfile.replace('%','$')
+
+        filename = os.path.join(rootFolder, file_in)
+        Binary_test_2 = isBinary(filename)
         
-        """
-        I comment binary check here and assume it is always binary
-        """
-        Binary_test_2 = isBinary(os.path.join(self.Folder_in,file_in))
-        
-        if Precision == 4:
-            tmp_2 = np.fromfile(fid_2, np.float32)
-        elif Precision == 8:
-            tmp_2 = np.fromfile(fid_2, np.float64)
+        with open(os.path.join(filename), 'r') as fid_2:
+            if Precision == 4:
+                tmp_2 = np.fromfile(fid_2, np.float32)
+            elif Precision == 8:
+                tmp_2 = np.fromfile(fid_2, np.float64)
             
-        if Binary_test_2 is True:            # it is binary            
+        if Binary_test_2:            # it is binary            
             if NDIMENS == 3:
                 tmp_3 = np.reshape(tmp_2,(SensorNumber, NoOfSections, DataLength), order='F')
                 data_tmp = tmp_3
                 # self.data_T = np.transpose(tmp_3)
-            
                
                 
             elif NDIMENS == 2:
@@ -230,12 +227,11 @@ class BladedFile(File):
         else:
             # print('it is ascii')
             if NDIMENS == 2:
-               tmp_3 = np.loadtxt(os.path.join(self.Folder_in,file_in)) 
+               tmp_3 = np.loadtxt(filename) 
                data_tmp = np.reshape(tmp_3,(SensorNumber, DataLength), order='F')
            
             if NDIMENS == 3:
-                tmp_3 = np.loadtxt(os.path.join(self.Folder_in,file_in),) 
-                print(file_in)
+                tmp_3 = np.loadtxt(filename) 
                 
             
                 n_rows = int(tmp_3.shape[0]/len(SectionList))
@@ -285,9 +281,7 @@ class BladedFile(File):
                     
                     
                     # Call "Read_bladed_file" function to Read and store data:
-                    self.Folder_in = Folder
-                    self.files_in = files[i]
-                    self.DataValue()    
+                    self.DataValue(Folder, files[i])    
                     
                     # gather all channel files together:
                     if jj == 1: # for the 1st index, create a variable with file name
