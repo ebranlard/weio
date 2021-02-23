@@ -5,7 +5,6 @@ import os
 # Local 
 from .mini_yaml import yaml_read
 
-
 try:
     from .file import File, EmptyFileError
 except:

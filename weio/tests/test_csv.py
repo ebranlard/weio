@@ -20,15 +20,15 @@ class Test(unittest.TestCase):
         self.assertEqual(self.DF('CSVAutoCommentChar.txt').shape,(11,6))
  
         DF=self.DF('CSVColInHeader.csv')
-        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertTrue(all(DF.columns.values==['ColA','ColB','ColC']))
         self.assertEqual(DF.shape,(2,3))
  
         DF=self.DF('CSVColInHeader2.csv')
-        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertTrue(all(DF.columns.values==['ColA','ColB','ColC']))
         self.assertEqual(DF.shape,(2,3))
  
         DF=self.DF('CSVColInHeader3.csv')
-        self.assertEqual(all(DF.columns.values==['ColA','ColB','ColC']),True)
+        self.assertTrue(all(DF.columns.values==['ColA','ColB','ColC']))
         self.assertEqual(DF.shape,(2,3))
 
         DF=self.DF('CSVComma_UTF16.csv')
@@ -53,5 +53,4 @@ class Test(unittest.TestCase):
 
 if __name__ == '__main__':
     #Test().test_CSV()
-    #Test().test_CSV_string()
     unittest.main()
