@@ -176,9 +176,10 @@ class File(dict):
 # --- Helper functions
 # --------------------------------------------------------------------------------{
 def isBinary(filename):
+    from io import open
     with open(filename, 'r') as f:
         try:
-            f.readline()
+            l = f.readline()
             return False
         except UnicodeDecodeError:
             return True
