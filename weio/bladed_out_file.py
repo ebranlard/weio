@@ -3,9 +3,10 @@ import os
 import numpy as np
 import re
 import pandas as pd
-# from binaryornot.check import is_binary 
 
-class BladedFile:
+from .file import File, isBinary
+
+class BladedFile(File):
     """
     Read a Bladed out put file (current version is only binary files)
     
@@ -36,7 +37,7 @@ class BladedFile:
     def __init__(self, filename=None, **kwargs):
         self.filename = None
         if filename:
-            self.file_name = filename
+            self.filename = filename
             self.read()
         
         
@@ -207,7 +208,7 @@ class BladedFile:
         """
         I comment binary check here and assume it is always binary
         """
-        Binary_test_2 = True #is_binary(os.path.join(self.Folder_in,file_in))
+        Binary_test_2 = isBinary(os.path.join(self.Folder_in,file_in))
         
         if Precision == 4:
             tmp_2 = np.fromfile(fid_2, np.float32)
@@ -262,13 +263,13 @@ class BladedFile:
   
 # %% find all %, $ files:
     
-    def read(self):
-        file_name_0 = self.file_name
-        file_name_1 = file_name_0.replace('\\' , '/')
-        file_name_2 = file_name_1.split('/')
-        pth = self.file_name.replace(file_name_2[-1],'') # remove file name
-        keep_filename = file_name_2[-1][:-4]
-        # keep_filename = file_name_2[-1].replace('.$PJ','')
+    def _read(self):
+        filename_0 = self.filename
+        filename_1 = filename_0.replace('\\' , '/')
+        filename_2 = filename_1.split('/')
+        pth = self.filename.replace(filename_2[-1],'') # remove file name
+        keep_filename = filename_2[-1][:-4]
+        # keep_filename = filename_2[-1].replace('.$PJ','')
         searchName = keep_filename + '.%'
         pth = pth[:-1] #  keep only the path
         files_out = [] 

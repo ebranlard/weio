@@ -64,6 +64,7 @@ def detectFormat(filename):
         The method may simply try to open the file, if that's the case
         the read file is returned. """
     import os
+    import re
     formats=fileFormats()
     ext = os.path.splitext(filename.lower())[1]
     detected = False
@@ -71,6 +72,16 @@ def detectFormat(filename):
     while not detected and i<len(formats):
         myformat = formats[i]
         if ext in myformat.extensions:
+            extMatch = True
+        else:
+            # Try patterns if present
+            extPatterns = [ef.replace('.','\.').replace('$','\$').replace('*','[.]*') for ef in myformat.extensions if '*' in ef]
+            if len(extPatterns)>0:
+                extPatMatch = [re.match(pat, ext) for pat in extPatterns]
+                extMatch = len(extPatMatch)>0
+            else:
+                extMatch = False
+        if extMatch: # we have a match on the extension
             valid, F = myformat.isValid(filename)
             if valid:
                 #print('File detected as :',myformat)

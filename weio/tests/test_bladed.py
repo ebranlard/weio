@@ -16,14 +16,17 @@ from weio.bladed_out_file import BladedFile
 class Test(unittest.TestCase):
  
     def test_001_read_all(self):
-        pass
-        #reading_test('bladed*.*', Read_bladed_file)   
+        reading_test('Bladed_out*.*', BladedFile)   
     
 
     def test_Bladed(self):
-        F = weio.read(MyDir,'Bladed_out_binary.$41')
+        F = weio.read(os.path.join(MyDir,'Bladed_out_binary.$41')) 
+        #F = BladedFile(os.path.join(MyDir,'Bladed_out_binary.$41'))
         DF = F.toDataFrame()
-        self.assertAlmostEqual(DF['0.0m-Blade 1 Fx (Root axes)[0.0m-N]'].values[0],4.27116e+06)
+        self.assertAlmostEqual(DF['0.0m-Blade 1 Fx (Root axes)[0.0m-N]'].values[0],146245.984375)
+
+        F = weio.read(os.path.join(MyDir,'Bladed_out_ascii.$41'))
+        # TODO TODO check that ascii works fine
 
 
 
