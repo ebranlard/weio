@@ -48,7 +48,7 @@ class BladedFile(File):
         i = -1
         
         ## read sensor file line by line (just read up to line 20)
-        while i < 20: 
+        while i < 17: 
             i += 1
             t_line = read_sensor[i]
             # print(i)
@@ -61,8 +61,8 @@ class BladedFile(File):
                 temp_2 = []
         
                 temp =  t_line 
-                temp_2 = str.split(temp,'\t')
-                NDIMENS = int(temp_2[1]);
+                temp_2 = temp.split()
+                NDIMENS = int(temp_2[-1]);
             
             # check what is the size of the matrix
             # for example, it can be 11x52500 or 12x4x52500            
@@ -113,13 +113,16 @@ class BladedFile(File):
             if re.search('AXITICK', t_line):
                 # print(t_line)
                 temp = t_line
-                temp_2 = str.split(temp)
-                SectionList = np.array(temp_2[1:], dtype=float)
+                temp_2 = str.split(temp,'\' \'')
+                SectionList = np.array(temp_2[1:], dtype=str)
+                NoOfSections = len(SectionList)
             
             # Here you can find channel names:    
             if re.search('^VARIAB',t_line):
                 # print(t_line)
                 temp = t_line.split('\t')
+                if len(temp) == 1:
+                    temp = t_line.split()
                 name_tmp = temp[1]
                 name_tmp_2 = name_tmp.split('\'')
                 name_tmp_3 = []
@@ -188,7 +191,7 @@ class BladedFile(File):
             
             self.SensorName = SName
             self.SensorUnit = SUnit
-
+            self.Data_Length_out = DataLength
 
 
 
@@ -232,22 +235,18 @@ class BladedFile(File):
            
             if NDIMENS == 3:
                 tmp_3 = np.loadtxt(filename) 
-                
+
+
+                temp_4 = np.zeros([SensorNumber,NoOfSections,DataLength])
             
-                n_rows = int(tmp_3.shape[0]/len(SectionList))
-                n_cols = int(len(SectionList)*len(ChannelName))
-                temp_4 = np.zeros( [n_rows,n_cols])
+                
                 
                 ## Bladed ascii file is written so stupid when matrix is 3 dimensional: 
-                col_nr = 0 
-                for rr in range(len(SectionList)):
-                    dd = 0
-                    for ss in range(rr,int(tmp_3.shape[0]),len(SectionList)):  
-                        
-                        temp_4[dd, col_nr:int(len(ChannelName))+col_nr] = tmp_3[ss,:]
-                        dd += 1
-                    
-                    col_nr += len(ChannelName)
+                for nsec in range(NoOfSections):
+                    dd_new = 0
+                    for dd in range(nsec,int(tmp_3.shape[0]),NoOfSections):
+                        temp_4[:,nsec,dd_new] = tmp_3[dd,:]
+                        dd_new += 1
                 data_tmp = np.reshape(temp_4,(SensorNumber, NoOfSections, DataLength), order='F')            
         
         self.OrgData(DataLength,SectionList,ChannelName,data_tmp,NDIMENS,ChannelUnit)
@@ -270,6 +269,7 @@ class BladedFile(File):
         pth = pth[:-1] #  keep only the path
         files_out = [] 
         Folder_out = []
+        DataLength_file =[]
         jj = 0
         for Folder, sub_folder, files in os.walk(pth):
             for i in range(len(files)): 
@@ -290,12 +290,15 @@ class BladedFile(File):
                         self.BL_Data = self.DataOut
                         self.BL_SensorNames = self.SensorName
                         self.BL_SensorUnits = self.SensorUnit
+                        DataLength_file.append(self.Data_Length_out)
                     else: # append the rest, but in axis=1
                         # name = files_out[0][:-4]
-                        self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
-                        for ind_s in range(len(self.SensorName)):
-                            self.BL_SensorNames.append(self.SensorName[ind_s])
-                            self.BL_SensorUnits.append(self.SensorUnit[ind_s])
+                        # skip the file if data length (dimension) is different with the rest:
+                        if DataLength_file[0] == self.Data_Length_out: 
+                            self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
+                            for ind_s in range(len(self.SensorName)):
+                                self.BL_SensorNames.append(self.SensorName[ind_s])
+                                self.BL_SensorUnits.append(self.SensorUnit[ind_s])
             
             self.BL_ChannelUnit =[]
             for jjj, name_unit in enumerate(self.BL_SensorNames):
