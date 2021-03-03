@@ -48,7 +48,7 @@ class BladedFile(File):
         i = -1
         
         ## read sensor file line by line (just read up to line 20)
-        while i < 20: 
+        while i < 17: 
             i += 1
             t_line = read_sensor[i]
             # print(i)
@@ -61,8 +61,8 @@ class BladedFile(File):
                 temp_2 = []
         
                 temp =  t_line 
-                temp_2 = str.split(temp,'\t')
-                NDIMENS = int(temp_2[1]);
+                temp_2 = temp.split()
+                NDIMENS = int(temp_2[-1]);
             
             # check what is the size of the matrix
             # for example, it can be 11x52500 or 12x4x52500            
@@ -80,6 +80,9 @@ class BladedFile(File):
                 elif NDIMENS == 2:
                     temp =  t_line 
                     temp_2 = str.split(temp,'\t')
+                    if len(temp_2) == 1:
+                        temp_2 = str.split(temp)
+                    
                     SensorNumber = int(temp_2[1])
                     DataLength = int(temp_2[2])  
                     NoOfSections = 1
@@ -113,18 +116,26 @@ class BladedFile(File):
             if re.search('AXITICK', t_line):
                 # print(t_line)
                 temp = t_line
-                temp_2 = str.split(temp)
-                SectionList = np.array(temp_2[1:], dtype=float)
+                temp_2 = str.split(temp,'\' \'')
+                temp_2[0] = temp_2[0].replace('AXITICK\t','')
+                SectionList = np.array(temp_2[:], dtype=str)
+                NoOfSections = len(SectionList)
             
             # Here you can find channel names:    
             if re.search('^VARIAB',t_line):
                 # print(t_line)
                 temp = t_line.split('\t')
-                name_tmp = temp[1]
+                if len(temp) == 1:
+                    temp = t_line.split('   ') # use 3 space instead of TAB
+                try:    
+                    name_tmp = temp[1]
+                except:
+                    name_tmp = temp[0]
+                    
                 name_tmp_2 = name_tmp.split('\'')
                 name_tmp_3 = []
                 for j in range(len(name_tmp_2)):
-                    if name_tmp_2[j] != ' ' and name_tmp_2[j] != '' and name_tmp_2[j] != '\n':
+                    if name_tmp_2[j] != ' ' and name_tmp_2[j] != '' and name_tmp_2[j] != '\n' and name_tmp_2[j] != 'VARIAB ':
                         # print( name_tmp_2[j])
                         name_tmp_3.append(name_tmp_2[j]) 
                 
@@ -133,10 +144,13 @@ class BladedFile(File):
                 
             # Here you can find channel units:         
             if re.search('VARUNIT', t_line):
-                temp = t_line.split('\t')
-                name_tmp = temp[1]
-                name_tmp_2 = name_tmp.split(' ')
-                name_tmp_2[-1] = name_tmp_2[-1].replace('\n','')
+                # temp = t_line.split('\t')
+                # if len(temp)<2:
+                temp = t_line.split()
+                name_tmp_2 = temp[1:]
+                # name_tmp = temp[1]
+                # name_tmp_2 = name_tmp.split(' ')
+                # name_tmp_2[-1] = name_tmp_2[-1].replace('\n','')
                 name_tmp_4 = name_tmp_2
                 for j in range(len(name_tmp_2)):
                     ## rename stupid unit's names of Bladed to SI unit's name
@@ -188,7 +202,7 @@ class BladedFile(File):
             
             self.SensorName = SName
             self.SensorUnit = SUnit
-
+            self.Data_Length_out = DataLength
 
 
 
@@ -227,28 +241,38 @@ class BladedFile(File):
         else:
             # print('it is ascii')
             if NDIMENS == 2:
-               tmp_3 = np.loadtxt(filename) 
-               data_tmp = np.reshape(tmp_3,(SensorNumber, DataLength), order='F')
+                try:
+                    tmp_3 = np.loadtxt(filename) 
+                    data_tmp = np.transpose(tmp_3)#np.reshape(tmp_3,(SensorNumber, DataLength), order='F')
+                except:
+                    ####  I am getting tired of bladed, so just leave it empty if it is not possible to read it.
+                    data_tmp = np.empty((SensorNumber, DataLength)) * np.nan
+
+                    # data_tmp =[] #
            
             if NDIMENS == 3:
-                tmp_3 = np.loadtxt(filename) 
-                
-            
-                n_rows = int(tmp_3.shape[0]/len(SectionList))
-                n_cols = int(len(SectionList)*len(ChannelName))
-                temp_4 = np.zeros( [n_rows,n_cols])
-                
-                ## Bladed ascii file is written so stupid when matrix is 3 dimensional: 
-                col_nr = 0 
-                for rr in range(len(SectionList)):
-                    dd = 0
-                    for ss in range(rr,int(tmp_3.shape[0]),len(SectionList)):  
-                        
-                        temp_4[dd, col_nr:int(len(ChannelName))+col_nr] = tmp_3[ss,:]
-                        dd += 1
+                try:
+                    tmp_3 = np.loadtxt(filename) 
+                    #print(file_in)
                     
-                    col_nr += len(ChannelName)
-                data_tmp = np.reshape(temp_4,(SensorNumber, NoOfSections, DataLength), order='F')            
+                
+                    temp_4 = np.zeros([SensorNumber,NoOfSections,DataLength])
+                    
+                     
+                    
+                    ## Bladed ascii file is written so stupid when matrix is 3 dimensional: 
+                    for nsec in range(NoOfSections):
+                        # print('nsec',nsec)
+                        dd_new = 0
+                        for dd in range(nsec,int(tmp_3.shape[0]),NoOfSections): #enumerate(np.arange(nsec,int(tmp_3.shape[0]),NoOfSections)):
+                            # print('dd',dd)
+                            # print(dd_new)
+                            temp_4[:,nsec,dd_new] = tmp_3[dd,:]
+                            dd_new += 1 # it should go up to "DataLength"
+                    data_tmp = np.reshape(temp_4,(SensorNumber, NoOfSections, DataLength), order='F') 
+                    
+                except:
+                    data_tmp = np.empty((SensorNumber, NoOfSections, DataLength)) * np.nan
         
         self.OrgData(DataLength,SectionList,ChannelName,data_tmp,NDIMENS,ChannelUnit)
 
@@ -262,14 +286,22 @@ class BladedFile(File):
     def _read(self):
         filename_0 = self.filename
         filename_1 = filename_0.replace('\\' , '/')
-        filename_2 = filename_1.split('/')
-        pth = self.filename.replace(filename_2[-1],'') # remove file name
-        keep_filename = filename_2[-1][:-4]
+        filename_2 = os.path.splitext(filename_1)
+        
+        pth = os.path.dirname(filename_1)
+        # pth = self.filename.replace(filename_2[-1],'') # remove file name
+        
+        filename_3 = filename_2[0].split('/')
+        
+        keep_filename = filename_3[-1]
+              
         # keep_filename = filename_2[-1].replace('.$PJ','')
         searchName = keep_filename + '.%'
-        pth = pth[:-1] #  keep only the path
+        
+        # pth = pth[:-1] #  keep only the path
         files_out = [] 
         Folder_out = []
+        DataLength_file =[]
         jj = 0
         for Folder, sub_folder, files in os.walk(pth):
             for i in range(len(files)): 
@@ -290,12 +322,15 @@ class BladedFile(File):
                         self.BL_Data = self.DataOut
                         self.BL_SensorNames = self.SensorName
                         self.BL_SensorUnits = self.SensorUnit
+                        DataLength_file.append(self.Data_Length_out)
                     else: # append the rest, but in axis=1
                         # name = files_out[0][:-4]
-                        self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
-                        for ind_s in range(len(self.SensorName)):
-                            self.BL_SensorNames.append(self.SensorName[ind_s])
-                            self.BL_SensorUnits.append(self.SensorUnit[ind_s])
+                        # skip the file if data length (dimension) is different with the rest:
+                        if DataLength_file[0] == self.Data_Length_out: 
+                            self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
+                            for ind_s in range(len(self.SensorName)):
+                                self.BL_SensorNames.append(self.SensorName[ind_s])
+                                self.BL_SensorUnits.append(self.SensorUnit[ind_s])
             
             self.BL_ChannelUnit =[]
             for jjj, name_unit in enumerate(self.BL_SensorNames):
