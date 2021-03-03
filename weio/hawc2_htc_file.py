@@ -32,6 +32,51 @@ class HAWC2HTCFile(File):
         s='<{} object> with attribute `data`\n'.format(type(self).__name__)
         return s
 
+    def bodyByName(self, bodyname):
+        """ return body inputs given a body name"""
+        struct = self.data.new_htc_structure
+        bodyKeys = [k for k in struct.keys() if k.startswith('main_body')]
+        bdies = [struct[k] for k in bodyKeys if struct[k].name[0]==bodyname]
+        if len(bdies)==1:
+            return bdies[0]
+        elif len(bdies)==0:
+            raise Exception('No body found with name {} in file {}'.format(bodyname,self.filename))
+        else:
+            raise Exception('Several bodies found with name {} in file {}'.format(bodyname,self.filename))
+
+    def bodyC2(self, bdy):
+        """ return body C2_def given body inputs"""
+        try:
+            nsec = bdy.c2_def.nsec[0]
+        except:
+            raise Exception('body has no c2_def section')
+        val = np.array([bdy.c2_def[k].values[0:] for k in bdy.c2_def.keys() if k.startswith('sec')])
+        val = val.reshape((-1,5)).astype(float)
+        val = val[np.argsort(val[:,0]),:]
+        return val
+
+    def setBodyC2(self, bdy, val):
+        """ set body C2_def given body inputs and new c2def"""
+        # TODO different number of section
+        nsec     = bdy.c2_def.nsec[0]
+        nsec_new = val.shape[0]
+        sec_keys = [k for k in bdy.c2_def.keys() if k.startswith('sec')]
+        bdy.c2_def.nsec = nsec_new
+        if nsec != nsec_new:
+            if nsec_new<nsec:
+                for k in sec_keys[nsec_new:]:
+                    del bdy.c2_def.k
+                    del bdy.c2_def.contents[k]
+                sec_keys = sec_keys[:nsec_new]
+                # we delete
+            else:
+                raise NotImplementedError('Setting c2_def with different number of sections')
+        for i, k in enumerate(sec_keys):
+            bdy.c2_def[k].values[0] = int(val[i][0])
+            bdy.c2_def[k].values[1:] = val[i][1:]
+        pass
+
+
     def _toDataFrame(self):
         dfs ={}
         j=0
@@ -42,12 +87,12 @@ class HAWC2HTCFile(File):
         bodyKeys = [k for k in self.data.new_htc_structure.keys() if k.startswith('main_body')]
         for k in bodyKeys:
             bdy = self.data.new_htc_structure[k]
-            nsec = bdy.c2_def.nsec
-            val = np.array([bdy.c2_def[k].values[0:] for k in bdy.c2_def.keys() if k.startswith('sec')])
-            val = val.reshape((-1,5))
-            val = val[np.argsort(val[:,0]),:]
-            val = val[:,[3,1,2,4]]
+            try:
+                val = self.bodyC2(bdy)
+            except:
+                continue
             name = bdy.name[0]
+            val = val[:,[3,1,2,4]]
             dfs[name+'_c2'] = pd.DataFrame(data=val, columns=['z_[m]', 'x_[m]', 'y_[m]','twist_[deg]'])
             # potentially open st files..
             if "timoschenko_input" in bdy:

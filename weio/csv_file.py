@@ -78,7 +78,7 @@ class CSVFile(File):
             if self.sep==r'\s+':
                 return s.strip().split()
             else:
-                return s.strip().split(self.sep)
+                return [c.strip() for c in s.strip().split(self.sep)]
         def strIsFloat(s):
             try:
                 float(s)
@@ -142,6 +142,8 @@ class CSVFile(File):
                     self.sep=','
                 elif head[1].find(';')>0:
                     self.sep=';'
+                elif head[1].find('\t')>0:
+                    self.sep='\t'
                 else:
                     self.sep='\s+'
             except:
@@ -211,7 +213,9 @@ class CSVFile(File):
         if (self.commentLines is not None) and len(self.commentLines)>0:
             skiprows = skiprows + self.commentLines
         skiprows =list(sorted(set(skiprows)))
-        #print(self)
+        if self.sep is not None:
+            if self.sep=='\t':
+                self.sep='\s+'
         #print(skiprows)
         try:
 #             self.data = pd.read_csv(self.filename,sep=self.sep,skiprows=skiprows,header=None,comment=self.commentChar,encoding=self.encoding)
