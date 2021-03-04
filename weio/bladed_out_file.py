@@ -3,7 +3,7 @@ import os
 import numpy as np
 import re
 import pandas as pd
-
+import glob
 from .file import File, isBinary
 
 class BladedFile(File):
@@ -60,7 +60,7 @@ class BladedFile(File):
                 temp = []
                 temp_2 = []
         
-                temp =  t_line 
+                temp =  t_line[7:].strip() 
                 temp_2 = temp.split()
                 NDIMENS = int(temp_2[-1]);
             
@@ -71,20 +71,24 @@ class BladedFile(File):
                 temp = []
                 temp_2 = []
                 if NDIMENS == 3:
-                    temp =  t_line 
-                    temp_2 = str.split(temp,'\t')
-                    SensorNumber = int(temp_2[1])
-                    DataLength = int(temp_2[3])
+                    temp =  t_line[6:].strip()
+                    temp_2 = temp.split()
+                    #temp =  t_line   
+                    #temp_2 = str.split(temp,'\t')
+                    SensorNumber = int(temp_2[0])
+                    DataLength = int(temp_2[2])
                     
                     
                 elif NDIMENS == 2:
-                    temp =  t_line 
-                    temp_2 = str.split(temp,'\t')
-                    if len(temp_2) == 1:
-                        temp_2 = str.split(temp)
+                    #temp =  t_line 
+                    #temp_2 = str.split(temp,'\t')
+                    #if len(temp_2) == 1:
+                    #    temp_2 = str.split(temp)
                     
-                    SensorNumber = int(temp_2[1])
-                    DataLength = int(temp_2[2])  
+                    temp =  t_line[6:].strip()
+                    temp_2 = temp.split()
+                    SensorNumber = int(temp_2[0])
+                    DataLength = int(temp_2[1])  
                     NoOfSections = 1
                     SectionList = []
             
@@ -303,38 +307,39 @@ class BladedFile(File):
         Folder_out = []
         DataLength_file =[]
         jj = 0
-        for Folder, sub_folder, files in os.walk(pth):
-            for i in range(len(files)): 
-                if searchName in files[i]:
+        files = glob.glob(os.path.join(pth, searchName+'*') )
+        
+        for i in range(len(files)): 
+            if searchName in files[i]:
+                
+                jj +=1 # check if it is the first file
+                files_out.append(files[i])
+                Folder_out.append(pth)    
+                
+                
+                # Call "Read_bladed_file" function to Read and store data:
+                self.DataValue(pth, files[i])    
+                
+                # gather all channel files together:
+                if jj == 1: # for the 1st index, create a variable with file name
                     
-                    jj +=1 # check if it is the first file
-                    files_out.append(files[i])
-                    Folder_out.append(Folder)    
-                    
-                    
-                    # Call "Read_bladed_file" function to Read and store data:
-                    self.DataValue(Folder, files[i])    
-                    
-                    # gather all channel files together:
-                    if jj == 1: # for the 1st index, create a variable with file name
-                        
-                        # name = files_out[0][:-4]
-                        self.BL_Data = self.DataOut
-                        self.BL_SensorNames = self.SensorName
-                        self.BL_SensorUnits = self.SensorUnit
-                        DataLength_file.append(self.Data_Length_out)
-                    else: # append the rest, but in axis=1
-                        # name = files_out[0][:-4]
-                        # skip the file if data length (dimension) is different with the rest:
-                        if DataLength_file[0] == self.Data_Length_out: 
-                            self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
-                            for ind_s in range(len(self.SensorName)):
-                                self.BL_SensorNames.append(self.SensorName[ind_s])
-                                self.BL_SensorUnits.append(self.SensorUnit[ind_s])
-            
-            self.BL_ChannelUnit =[]
-            for jjj, name_unit in enumerate(self.BL_SensorNames):
-                self.BL_ChannelUnit.append(self.BL_SensorNames[jjj] + '[' + self.BL_SensorUnits[jjj] + ']')
+                    # name = files_out[0][:-4]
+                    self.BL_Data = self.DataOut
+                    self.BL_SensorNames = self.SensorName
+                    self.BL_SensorUnits = self.SensorUnit
+                    DataLength_file.append(self.Data_Length_out)
+                else: # append the rest, but in axis=1
+                    # name = files_out[0][:-4]
+                    # skip the file if data length (dimension) is different with the rest:
+                    if DataLength_file[0] == self.Data_Length_out: 
+                        self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
+                        for ind_s in range(len(self.SensorName)):
+                            self.BL_SensorNames.append(self.SensorName[ind_s])
+                            self.BL_SensorUnits.append(self.SensorUnit[ind_s])
+        
+        self.BL_ChannelUnit =[]
+        for jjj, name_unit in enumerate(self.BL_SensorNames):
+            self.BL_ChannelUnit.append(self.BL_SensorNames[jjj] + '[' + self.BL_SensorUnits[jjj] + ']')
             
             ## outputs are:
             ## self.BL_Data
