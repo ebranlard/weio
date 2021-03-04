@@ -30,7 +30,7 @@ class Test(unittest.TestCase):
         ## check for ASCII
         F = weio.read(os.path.join(MyDir,'Bladed_out_ascii.$41'))
         DF = F.toDataFrame()
-        self.assertAlmostEqual(DF['0.0m-Blade 1 Fx (Root axes)[0.0m-N]'].values[0]==146363.8)
+        self.assertAlmostEqual(DF['0.0m-Blade 1 Fx (Root axes)[0.0m-N]'].values[0],146363.8)
 
         # TODO TODO check that ascii works fine
 
