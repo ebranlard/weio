@@ -48,9 +48,10 @@ class BladedFile(File):
         i = -1
         
         ## read sensor file line by line (just read up to line 20)
-        while i < 17: 
+        #while i < 17: 
+        for ll in range(len(read_sensor)):
             i += 1
-            t_line = read_sensor[i]
+            t_line = read_sensor[ll]
             # print(i)
             
             # check what is matrix dimension of the file. For blade & tower,  
@@ -96,7 +97,10 @@ class BladedFile(File):
             if re.search('FORMAT', t_line):
                 # print(t_line)
                 temp = t_line.split()
-                Precision = int(temp[-1][-1])
+                if temp[-1] == 'n/a' or len(temp)==1: # if Format is not define in BLADED:
+                    Precision = 0
+                else:
+                    Precision = int(temp[-1][-1])
             
             # check the category of the file you are reading:
             if re.search('GENLAB', t_line):
@@ -136,7 +140,11 @@ class BladedFile(File):
                 except:
                     name_tmp = temp[0]
                     
-                name_tmp_2 = name_tmp.split('\'')
+                name_tmp_2 = name_tmp.split('\'') 
+                # if delimiter for channel names is different from above then use this method:
+                if len(name_tmp_2)==1:
+                    name_tmp_2 = name_tmp.split()
+                    
                 name_tmp_3 = []
                 for j in range(len(name_tmp_2)):
                     if name_tmp_2[j] != ' ' and name_tmp_2[j] != '' and name_tmp_2[j] != '\n' and name_tmp_2[j] != 'VARIAB ':
@@ -170,7 +178,14 @@ class BladedFile(File):
 
                         
                         
-        # remember to keep it out of while loop        
+        # remember to keep it out of while loop
+        if len(ChannelName) != SensorNumber:
+            ChannelName = []
+            # if number of channel names are not matching with Sensor number then create dummy ones:
+            for ss in range(SensorNumber):
+                # print(ss)
+                ChannelName.append('Channel' + str(ss))
+                
         return ChannelName, Precision, SectionList,NoOfSections,category,DataLength,SensorNumber, NDIMENS, ChannelUnit                
                 
 ##  ----- a function to organize data -------------------------------- 
@@ -230,6 +245,8 @@ class BladedFile(File):
                 tmp_2 = np.fromfile(fid_2, np.float32)
             elif Precision == 8:
                 tmp_2 = np.fromfile(fid_2, np.float64)
+            else:
+                tmp_2 = np.fromfile(fid_2, np.float32)
             
         if Binary_test_2:            # it is binary            
             if NDIMENS == 3:
@@ -291,6 +308,8 @@ class BladedFile(File):
         filename_0 = self.filename
         filename_1 = filename_0.replace('\\' , '/')
         filename_2 = os.path.splitext(filename_1)
+        ext = filename_2[1]
+        ext = ext.replace('$','%') # replace extension of $ with % 
         
         pth = os.path.dirname(filename_1)
         # pth = self.filename.replace(filename_2[-1],'') # remove file name
@@ -300,7 +319,8 @@ class BladedFile(File):
         keep_filename = filename_3[-1]
               
         # keep_filename = filename_2[-1].replace('.$PJ','')
-        searchName = keep_filename + '.%'
+        searchName = keep_filename + '.%' # find all files in the folder
+        #searchName = keep_filename + ext # read a single file
         
         # pth = pth[:-1] #  keep only the path
         files_out = [] 
