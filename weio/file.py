@@ -25,10 +25,7 @@ class File(dict):
         self._size=None
         self._encoding=None
         if filename:
-            ### If there is a new filename, replace the object variable
-            self.filename = filename
-            ### If the filename is provided, read the file
-            self.read(**kwargs)
+            self.read(filename, **kwargs)
         else:
             self.filename = None
 

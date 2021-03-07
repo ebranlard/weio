@@ -4,7 +4,173 @@ import numpy as np
 import re
 import pandas as pd
 import glob
-from .file import File, isBinary
+import shlex
+# try:
+from .file import File, WrongFormatError, BrokenFormatError, isBinary
+# except:
+#     EmptyFileError    = type('EmptyFileError', (Exception,),{})
+#     WrongFormatError  = type('WrongFormatError', (Exception,),{})
+#     BrokenFormatError = type('BrokenFormatError', (Exception,),{})
+#     File=dict
+
+        
+# --------------------------------------------------------------------------------}
+# --- Helper functions 
+# --------------------------------------------------------------------------------{
+def read_bladed_sensor_file(sensorfile):        
+    """ 
+    Extract relevant informations from a bladed sensor file
+    """
+    with open(sensorfile, 'r') as fid:
+        sensorLines = fid.readlines()
+
+    dat=dict() # relevant info in sensor file
+    
+    ## read sensor file line by line (just read up to line 20)
+    #while i < 17: 
+    for i, t_line in enumerate(sensorLines):
+        if i>20:
+            break
+        
+        if t_line.startswith('NDIMENS'):
+            # check what is matrix dimension of the file. For blade & tower,  
+            # the matrix is 3-dimensional. 
+            temp =  t_line[7:].strip().split()
+            dat['NDIMENS'] = int(temp[-1]);
+
+        elif t_line.startswith('DIMENS'):
+            # check what is the size of the matrix
+            # for example, it can be 11x52500 or 12x4x52500            
+            temp =  t_line[6:].strip().split()
+            dat['nSensors'] = int(temp[0])
+            dat['nMajor']  = int(temp[dat['NDIMENS']-1])
+            if dat['NDIMENS'] == 2:
+                dat['nSections'] = 1
+                dat['SectionList'] = []
+
+        elif t_line.startswith('FORMAT'):
+            # precision: n/a, R*4, R*8, I*4 
+            temp = t_line[7:].strip()
+            dat['Precision'] = np.float32
+            if temp[-1] == '8':
+                dat['Precision'] = np.float64
+
+        elif t_line.startswith('GENLAB'):
+            # category of the file you are reading:
+            dat['category'] = t_line[6:].strip().replace('\'','')
+
+        elif t_line.startswith('AXIVAL'):
+            # what is section on the 3rd dimension you are reading
+            # sometimes, the info is written on "AXITICK"
+            #print(t_line))
+            temp = t_line[7:].split()
+            dat['SectionList'] = np.array(temp, dtype=float)
+            dat['nSections'] = len(dat['SectionList'])
+
+        elif t_line.startswith('AXITICK'):
+            # what is section on the 3rd dimension you are reading
+            # sometimes, the info is written on "AXIVAL"
+            # print(t_line)
+            temp = t_line[7:].strip().strip('\'')
+            temp = temp.split('\' \'')
+            dat['SectionList'] = np.array(temp, dtype=str)
+            dat['nSections'] = len(dat['SectionList'])
+
+        elif t_line.startswith('VARIAB'):
+            # channel names, NOTE: either quoted, non-quoted, and a mix of both
+            dat['ChannelName'] = shlex.split(t_line[6:])
+
+        elif t_line.startswith('VARUNIT'):
+            # channel units:         
+            def repUnits(s):
+                s = s.replace('TT','s^2').replace('T','s').replace('A','rad')
+                s = s.replace('P','W').replace('L','m').replace('F','N').replace('M','kg')
+                return s
+            dat['ChannelUnit']=[repUnits(s) for s in t_line[7:].strip().split()]
+
+        elif t_line.startswith('MIN'):
+            dat['MIN'] = float(t_line[3:].strip()) # Start time?
+
+        elif t_line.startswith('STEP'):
+            dat['STEP'] = float(t_line[4:].strip()) # DT?
+
+                
+    if len(dat['ChannelName']) != dat['nSensors']:
+        # if number of channel names are not matching with Sensor number then create dummy ones:
+        dat['ChannelName'] = ['Channel' + str(ss) for ss in range(nSensors)]
+            
+    return dat
+            
+def OrgData(data, **info):
+    """ Flatten 3D field into 2D table"""
+    # since some of the matrices are 3 dimensional, we want to make all 
+    # to 2d matrix, so I am organizing them here:
+    if info['NDIMENS'] == 3:
+        SName = []
+        SUnit = []
+        dataOut = np.zeros( (info['nMajor'],len(info['SectionList'])*len(info['ChannelName'])) ) 
+        
+        col_vec = -1
+        for isec,sec in enumerate(info['SectionList']):
+            for ichan,(chan,unit) in enumerate(zip(info['ChannelName'], info['ChannelUnit'])):
+                SName.append(str(info['SectionList'][isec]) + 'm-' + chan)
+                SUnit.append(unit)
+                col_vec +=1
+                dataOut[:,col_vec] = data[:,isec,ichan]
+
+        data = dataOut
+        info['ChannelName'] = SName
+        info['ChannelUnit'] = SUnit
+    else:
+        pass # Nothing to do for 2D
+
+    return data, info
+
+
+
+def read_bladed_output(sensorFilename):
+    """
+    read a bladed sensor file and data file, reorganize a 3D file into 2D table
+    """
+    # --- Read sensor file and extract relevant informations
+    sensorInfo = read_bladed_sensor_file(sensorFilename)
+    nSensors   = sensorInfo['nSensors']
+    nMajor = sensorInfo['nMajor']
+    nSections  = sensorInfo['nSections']
+    
+    # --- Read data file
+    dataFilename = sensorFilename.replace('%','$')
+    if isBinary(dataFilename):            # it is binary            
+
+        with open(os.path.join(dataFilename), 'rb') as fid_2:
+            data = np.fromfile(fid_2, sensorInfo['Precision'])
+
+        if sensorInfo['NDIMENS'] == 3:
+            data = np.reshape(data,(nMajor, nSections, nSensors), order='C')
+
+        elif sensorInfo['NDIMENS'] == 2:
+            data = np.reshape(data,(nMajor,nSensors), order='C')
+            
+    else:
+        #print('it is ascii', NDIMENS)
+        if sensorInfo['NDIMENS'] == 2:
+            try:
+                # Data is stored as time, signal, we reshape to signal, time
+                data = np.loadtxt(dataFilename)
+            except:
+                data = np.empty((nMajor, nSensors)) * np.nan
+                print('>>> Failed to read 2d file: {}'.format(dataFilename))
+       
+        elif sensorInfo['NDIMENS'] == 3:
+            try:
+                # Data is stored as sections, time, signal, we reshape to signal, section, time
+                data = np.loadtxt(dataFilename).reshape((nMajor, nSections, nSensors),order='C')
+            except:
+                data = np.empty((nSensors, nSections, nMajor)) * np.nan
+                print('>>> Failed to read 3d file: {}'.format(dataFilename))
+
+    return OrgData(data, **sensorInfo)
+
 
 class BladedFile(File):
     """
@@ -12,16 +178,16 @@ class BladedFile(File):
     
     Main methods:
         read: it finds all % and $ files based on selected .$PJ file and calls "DataValue" to read data from all those files
-        DataValue: it calls "SensorLib" method to find information about each %, $ file, and then read data based on those info
-        OrgData: is is called by "DataValue" to sort channels and values
         toDataFrame: create Pandas dataframe output
         
-        
+    Main data stored:
+         self.dataSets: dictionary of datasets, for each "length" of data
 
     example: 
         filename = r'h:\004_Loads\Sim\Bladed\003\Ramp_up\Bladed_out_ascii.$04'        
-        Output = Read_bladed_file(filename)
-        df = Output.toDataFrame()
+        f = BladedFile(filename)
+        print(f.dataSets.keys())
+        df = f.toDataFrame()
         
     """ 
     @staticmethod
@@ -32,350 +198,115 @@ class BladedFile(File):
     def formatName():
         return 'Bladed output file'
     
-    
-    
     def __init__(self, filename=None, **kwargs):
-        self.filename = None
+        self.filename = filename
+        if filename:
+            self.read(**kwargs)
+        
+    def read(self, filename=None, **kwargs):
+        """ read self, or read filename if provided """
         if filename:
             self.filename = filename
-            self.read()
-        
-        
-  #--- a function to read sensors     
-    def SensorLib(self, sensorfile):        
-        with open(sensorfile, 'r') as fid:
-            read_sensor = fid.readlines()
-        i = -1
-        
-        ## read sensor file line by line (just read up to line 20)
-        #while i < 17: 
-        for ll in range(len(read_sensor)):
-            i += 1
-            t_line = read_sensor[ll]
-            # print(i)
-            
-            # check what is matrix dimension of the file. For blade & tower,  
-            # the matrix is 3-dimensional. 
-            if re.search('^NDIMENS',t_line):
-                
-                temp = []
-                temp_2 = []
-        
-                temp =  t_line[7:].strip() 
-                temp_2 = temp.split()
-                NDIMENS = int(temp_2[-1]);
-            
-            # check what is the size of the matrix
-            # for example, it can be 11x52500 or 12x4x52500            
-            if re.search('^DIMENS',t_line):
-                # print(i) # to debug
-                temp = []
-                temp_2 = []
-                if NDIMENS == 3:
-                    temp =  t_line[6:].strip()
-                    temp_2 = temp.split()
-                    #temp =  t_line   
-                    #temp_2 = str.split(temp,'\t')
-                    SensorNumber = int(temp_2[0])
-                    DataLength = int(temp_2[2])
-                    
-                    
-                elif NDIMENS == 2:
-                    #temp =  t_line 
-                    #temp_2 = str.split(temp,'\t')
-                    #if len(temp_2) == 1:
-                    #    temp_2 = str.split(temp)
-                    
-                    temp =  t_line[6:].strip()
-                    temp_2 = temp.split()
-                    SensorNumber = int(temp_2[0])
-                    DataLength = int(temp_2[1])  
-                    NoOfSections = 1
-                    SectionList = []
-            
-            # check the percision: is it 4 or 8?
-            if re.search('FORMAT', t_line):
-                # print(t_line)
-                temp = t_line.split()
-                if temp[-1] == 'n/a' or len(temp)==1: # if Format is not define in BLADED:
-                    Precision = 0
-                else:
-                    Precision = int(temp[-1][-1])
-            
-            # check the category of the file you are reading:
-            if re.search('GENLAB', t_line):
-                # print(t_line)
-                temp = t_line.split('\t')
-                temp_2 = temp[-1]
-                temp_2.strip() # removing /n from the end
-                category = temp_2.replace('\n','')
-            
-            # what is section on the 3rd dimension you are reading
-            # sometimes, the info is written on "AXITICK"
-            if re.search('^AXIVAL',t_line):
-                # print(t_line)
-                temp = t_line
-                temp_2 = str.split(temp)
-                SectionList = np.array(temp_2[1:], dtype=float)
-                NoOfSections = len(SectionList)
-            
-            # what is section on the 3rd dimension you are reading
-            # sometimes, the info is written on "AXIVAL"
-            if re.search('AXITICK', t_line):
-                # print(t_line)
-                temp = t_line
-                temp_2 = str.split(temp,'\' \'')
-                temp_2[0] = temp_2[0].replace('AXITICK\t','')
-                SectionList = np.array(temp_2[:], dtype=str)
-                NoOfSections = len(SectionList)
-            
-            # Here you can find channel names:    
-            if re.search('^VARIAB',t_line):
-                # print(t_line)
-                temp = t_line.split('\t')
-                if len(temp) == 1:
-                    temp = t_line.split('   ') # use 3 space instead of TAB
-                try:    
-                    name_tmp = temp[1]
-                except:
-                    name_tmp = temp[0]
-                    
-                name_tmp_2 = name_tmp.split('\'') 
-                # if delimiter for channel names is different from above then use this method:
-                if len(name_tmp_2)==1:
-                    name_tmp_2 = name_tmp.split()
-                    
-                name_tmp_3 = []
-                for j in range(len(name_tmp_2)):
-                    if name_tmp_2[j] != ' ' and name_tmp_2[j] != '' and name_tmp_2[j] != '\n' and name_tmp_2[j] != 'VARIAB ':
-                        # print( name_tmp_2[j])
-                        name_tmp_3.append(name_tmp_2[j]) 
-                
-                ChannelName = name_tmp_3
-                
-                
-            # Here you can find channel units:         
-            if re.search('VARUNIT', t_line):
-                # temp = t_line.split('\t')
-                # if len(temp)<2:
-                temp = t_line.split()
-                name_tmp_2 = temp[1:]
-                # name_tmp = temp[1]
-                # name_tmp_2 = name_tmp.split(' ')
-                # name_tmp_2[-1] = name_tmp_2[-1].replace('\n','')
-                name_tmp_4 = name_tmp_2
-                for j in range(len(name_tmp_2)):
-                    ## rename stupid unit's names of Bladed to SI unit's name
-                    name_tmp_4[j] = name_tmp_2[j].replace('T','sec')
-                    name_tmp_4[j] = name_tmp_2[j].replace('A','rad')
-                    name_tmp_4[j] = name_tmp_2[j].replace('P','W')
-                    name_tmp_4[j] = name_tmp_2[j].replace('L','m')
-                    name_tmp_4[j] = name_tmp_2[j].replace('F','N')
-                    name_tmp_4[j] = name_tmp_2[j].replace('M','Kg')
-                ChannelUnit = name_tmp_4
-                    
-                    
-
-                        
-                        
-        # remember to keep it out of while loop
-        if len(ChannelName) != SensorNumber:
-            ChannelName = []
-            # if number of channel names are not matching with Sensor number then create dummy ones:
-            for ss in range(SensorNumber):
-                # print(ss)
-                ChannelName.append('Channel' + str(ss))
-                
-        return ChannelName, Precision, SectionList,NoOfSections,category,DataLength,SensorNumber, NDIMENS, ChannelUnit                
-                
-##  ----- a function to organize data -------------------------------- 
-    def OrgData(self,DataLength,SectionList,ChannelName,data_tmp,NDIMENS,ChannelUnit):
-            
-        # since some of the matrices are 3 dimensional, we want to make all 
-        # to 2d matrix, so I am organizing them here:
-            if NDIMENS == 3:
-                
-                data_T = np.transpose(data_tmp)
-                SName = []
-                SUnit = []
-                self.DataOut = np.ones( (DataLength,len(SectionList)*len(ChannelName)) ) 
-                
-                col_vec = -1
-                for ss in range(len(SectionList)):
-                    for cc in range(len(ChannelName)):                    
-                
-                        SName.append(str(SectionList[ss]) + 'm-' + ChannelName[cc])
-                        SUnit.append(str(SectionList[ss]) + 'm-' + ChannelUnit[cc])
-                        col_vec +=1
-                        self.DataOut[:,col_vec] = data_T[:,ss,cc]
-                        
-            elif NDIMENS == 2:
-                data_T = np.transpose(data_tmp)
-                SName = []
-                self.DataOut = np.ones( (DataLength,len(ChannelName)) ) 
-                col_vec = -1
-                
-                self.DataOut = data_T
-                SName = ChannelName
-                SUnit = ChannelUnit
-            
-            self.SensorName = SName
-            self.SensorUnit = SUnit
-            self.Data_Length_out = DataLength
-
-
-
-# main function to read the data and call other functions:
-    def DataValue(self, rootFolder, sensorfile):
-        
-        # call "find_files" function to find all %, $ files
-        # self.find_files()
-        sensorfile_full=os.path.join(rootFolder, sensorfile)
-        
-        ChannelName, Precision, SectionList, NoOfSections, category, DataLength, SensorNumber, NDIMENS, ChannelUnit  = self.SensorLib(sensorfile_full)
-        
-        ## Read only files that ends with $:
-        file_in = sensorfile.replace('%','$')
-
-        filename = os.path.join(rootFolder, file_in)
-        Binary_test_2 = isBinary(filename)
-        
-        with open(os.path.join(filename), 'r') as fid_2:
-            if Precision == 4:
-                tmp_2 = np.fromfile(fid_2, np.float32)
-            elif Precision == 8:
-                tmp_2 = np.fromfile(fid_2, np.float64)
-            else:
-                tmp_2 = np.fromfile(fid_2, np.float32)
-            
-        if Binary_test_2:            # it is binary            
-            if NDIMENS == 3:
-                tmp_3 = np.reshape(tmp_2,(SensorNumber, NoOfSections, DataLength), order='F')
-                data_tmp = tmp_3
-                # self.data_T = np.transpose(tmp_3)
-               
-                
-            elif NDIMENS == 2:
-                tmp_3 = np.reshape(tmp_2,(SensorNumber, DataLength), order='F')
-                data_tmp = tmp_3
-                
-        else:
-            # print('it is ascii')
-            if NDIMENS == 2:
-                try:
-                    tmp_3 = np.loadtxt(filename) 
-                    data_tmp = np.transpose(tmp_3)#np.reshape(tmp_3,(SensorNumber, DataLength), order='F')
-                except:
-                    ####  I am getting tired of bladed, so just leave it empty if it is not possible to read it.
-                    data_tmp = np.empty((SensorNumber, DataLength)) * np.nan
-
-                    # data_tmp =[] #
-           
-            if NDIMENS == 3:
-                try:
-                    tmp_3 = np.loadtxt(filename) 
-                    #print(file_in)
-                    
-                
-                    temp_4 = np.zeros([SensorNumber,NoOfSections,DataLength])
-                    
-                     
-                    
-                    ## Bladed ascii file is written so stupid when matrix is 3 dimensional: 
-                    for nsec in range(NoOfSections):
-                        # print('nsec',nsec)
-                        dd_new = 0
-                        for dd in range(nsec,int(tmp_3.shape[0]),NoOfSections): #enumerate(np.arange(nsec,int(tmp_3.shape[0]),NoOfSections)):
-                            # print('dd',dd)
-                            # print(dd_new)
-                            temp_4[:,nsec,dd_new] = tmp_3[dd,:]
-                            dd_new += 1 # it should go up to "DataLength"
-                    data_tmp = np.reshape(temp_4,(SensorNumber, NoOfSections, DataLength), order='F') 
-                    
-                except:
-                    data_tmp = np.empty((SensorNumber, NoOfSections, DataLength)) * np.nan
-        
-        self.OrgData(DataLength,SectionList,ChannelName,data_tmp,NDIMENS,ChannelUnit)
-
-    
-    
-  
-    
-  
-# %% find all %, $ files:
+        if not self.filename:
+            raise Exception('No filename provided')
+        if not os.path.isfile(self.filename):
+            raise OSError(2,'File not found:',self.filename)
+        if os.stat(self.filename).st_size == 0:
+            raise EmptyFileError('File is empty:',self.filename)
+        # Calling children function
+        self._read(**kwargs)
     
     def _read(self):
-        filename_0 = self.filename
-        filename_1 = filename_0.replace('\\' , '/')
-        filename_2 = os.path.splitext(filename_1)
-        ext = filename_2[1]
-        ext = ext.replace('$','%') # replace extension of $ with % 
+        """ 
+        Read a bladed output file, data are in *.$II and sensors in *%II. 
+         - If the file is a *$PJ file, all output files are read
+         - Otherwise only the current file is read 
+        """
+
+        basename, ext = os.path.splitext(self.filename)
+        if ext.lower()=='.$pj':
+            searchPattern = basename + '.%[0-9][0-9]*' # find all files in the folder
+        else:
+            searchPattern = basename + ext.replace('$','%') # sensor file name
         
-        pth = os.path.dirname(filename_1)
-        # pth = self.filename.replace(filename_2[-1],'') # remove file name
-        
-        filename_3 = filename_2[0].split('/')
-        
-        keep_filename = filename_3[-1]
-              
-        # keep_filename = filename_2[-1].replace('.$PJ','')
-        searchName = keep_filename + '.%' # find all files in the folder
-        #searchName = keep_filename + ext # read a single file
-        
-        # pth = pth[:-1] #  keep only the path
-        files_out = [] 
-        Folder_out = []
-        DataLength_file =[]
-        jj = 0
-        files = glob.glob(os.path.join(pth, searchName+'*') )
-        
-        for i in range(len(files)): 
-            if searchName in files[i]:
-                
-                jj +=1 # check if it is the first file
-                files_out.append(files[i])
-                Folder_out.append(pth)    
-                
-                
+        # Look for files matching pattern
+        files = glob.glob(searchPattern)
+
+        # We'll store the data in "dataSets",dictionaries
+        dataSets={}
+
+        if len(files)==0:
+            e= FileNotFoundError(searchPattern)
+            e.filename=(searchPattern)
+            raise e
+
+        for i,filename in enumerate(files):
+
+            dataFilename = filename.replace('%','$')
+            try:
                 # Call "Read_bladed_file" function to Read and store data:
-                self.DataValue(pth, files[i])    
-                
-                # gather all channel files together:
-                if jj == 1: # for the 1st index, create a variable with file name
-                    
-                    # name = files_out[0][:-4]
-                    self.BL_Data = self.DataOut
-                    self.BL_SensorNames = self.SensorName
-                    self.BL_SensorUnits = self.SensorUnit
-                    DataLength_file.append(self.Data_Length_out)
-                else: # append the rest, but in axis=1
-                    # name = files_out[0][:-4]
-                    # skip the file if data length (dimension) is different with the rest:
-                    if DataLength_file[0] == self.Data_Length_out: 
-                        self.BL_Data =  np.append(self.BL_Data, self.DataOut, axis=1)
-                        for ind_s in range(len(self.SensorName)):
-                            self.BL_SensorNames.append(self.SensorName[ind_s])
-                            self.BL_SensorUnits.append(self.SensorUnit[ind_s])
-        
-        self.BL_ChannelUnit =[]
-        for jjj, name_unit in enumerate(self.BL_SensorNames):
-            self.BL_ChannelUnit.append(self.BL_SensorNames[jjj] + '[' + self.BL_SensorUnits[jjj] + ']')
+                data, info = read_bladed_output(filename)    
+            except FileNotFoundError as e:
+                if len(files)==1:
+                    raise e
+                else:
+                    print('>>> Missing datafile: {}'.format(e.filename))
+                continue
             
-            ## outputs are:
-            ## self.BL_Data
-            ## self.BL_ChannelUnit
+            # we use number of data as key, but we'll use "name" later
+            key = info['nMajor']
+            
+            if key in dataSets.keys():
+                # dataset with this length are already present, we concatenate
+                dset = dataSets[key]
+                dset['data'] =  np.column_stack((dset['data'], data))
+                dset['sensors'] += info['ChannelName']
+                dset['units']   += info['ChannelUnit']
+
+                dset['name']  = 'Misc_'+str(key)
+            else:
+                # We add a new dataset for this length
+                dataSets[key] = {}
+                dset = dataSets[key]
+                # We force a time vector when possibl
+                if 'MIN' and 'STEP' in info.keys():
+                    time = np.arange(info['nMajor'])*info['STEP'] + info['MIN']
+                    data = np.column_stack((time, data))
+                    info['ChannelName'].insert(0, 'Time')
+                    info['ChannelUnit'].insert(0, 's')
+
+                dset['data']    = data
+                dset['sensors'] = info['ChannelName']
+                dset['units']   = info['ChannelUnit']
+                dset['name']    = info['category']
+
+        # Check if we have "many" misc, if only one, replace by "Misc"
+        keyMisc = [k for k,v in dataSets.items() if v['name'].startswith('Misc_')]
+        if len(keyMisc)==1:
+            dataSets[keyMisc[0]]['name']='Misc'
+
+        # Instead of using nMajor as key, we use the "name"
+        self.dataSets= {v['name']: v for (k, v) in dataSets.items()}
+
                 
     def toDataFrame(self):        
-        df = pd.DataFrame(data=self.BL_Data, columns=self.BL_ChannelUnit)
-        return df
+        dfs={}
+        for k,dset in self.dataSets.items():
+            BL_ChannelUnit = [ name+' ['+unit+']' for name,unit in zip(dset['sensors'],dset['units'])]
+            df = pd.DataFrame(data=dset['data'], columns=BL_ChannelUnit)
+            # remove duplicate columns
+            df = df.loc[:,~df.columns.duplicated()]
+            df.columns.name = k # hack for pyDatView when one dataframe is returned
+            dfs[k] = df
+        if len(dfs)==1:
+            return dfs[next(iter(dfs))]
+        else:
+            return dfs
     
-
-                    
-      
-
-#filename = r'E:\Work_Google Drive\Bladed_Sims\Bladed_out_binary.$41'
-
-#Output = BladedFile(filename)
-#df = Output.toDataFrame()
+if __name__ == '__main__':
+    pass
+    #filename = r'E:\Work_Google Drive\Bladed_Sims\Bladed_out_binary.$41'
+    #Output = BladedFile(filename)
+    #df = Output.toDataFrame()
 
 
