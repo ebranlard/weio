@@ -176,7 +176,13 @@ def isBinary(filename):
     from io import open
     with open(filename, 'r') as f:
         try:
+            # first try to read as string
             l = f.readline()
+            # then look for weird characters
+            for c in l:
+                code = ord(c)
+                if code<10 or (code>14 and code<31):
+                    return True
             return False
         except UnicodeDecodeError:
             return True
