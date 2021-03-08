@@ -106,8 +106,8 @@ class Test(unittest.TestCase):
         F = weio.read(os.path.join(MyDir,'Bladed_out_binary_case2.$46')) 
         DF=F.toDataFrame()
         self.assertEqual(DF.shape, (10, 13))
-        self.assertEqual(DF.columns[1]  , '5.0m-Water particle velocity in X direction [m/s]')
-        self.assertEqual(DF['5.0m-Water particle velocity in X direction [m/s]'].values[-1],-0.25)
+        self.assertEqual(DF.columns[1]  , 'Node 1-Water particle velocity in X direction [m/s]')
+        self.assertEqual(DF['Node 1-Water particle velocity in X direction [m/s]'].values[-1],-0.25)
 
         F = weio.read(os.path.join(MyDir,'Bladed_out_binary_case2.$06')) 
         DF=F.toDataFrame()
@@ -123,9 +123,9 @@ class Test(unittest.TestCase):
 
 
 if __name__ == '__main__':
-     #unittest.main()
+     unittest.main()
      #Test().test_001_read_all()
      #Test().test_Bladed()
-     Test().test_Bladed_case2_project()
+     #Test().test_Bladed_case2_project()
      #Test().test_Bladed_case2_indiv()
     

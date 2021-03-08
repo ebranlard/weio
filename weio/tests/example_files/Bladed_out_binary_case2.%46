@@ -14,7 +14,7 @@ VARUNIT  L/T L/T L/TT L/TT
 AXISLAB  'Tower station height'
 AXIUNIT  L
 AXIMETH  3
-AXIVAL      5.000   50.000   60.000
+AXITICK	'Node 1' 'Node 2' 'Node 3' 
 AXISLAB  'Time'
 AXIUNIT  T
 AXIMETH  2

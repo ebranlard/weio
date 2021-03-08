@@ -126,15 +126,12 @@ def OrgData(data, **info):
         for isec,sec in enumerate(info['SectionList']):
             for ichan,(chan,unit) in enumerate(zip(info['ChannelName'], info['ChannelUnit'])):
                 try:
-                    SName.append(str(np.around(info['SectionList'][isec],2)) + 'm-' + chan)
-                except:
-                    SName.append(str((info['SectionList'][isec],2)) + 'm-' + chan)
+                    SName.append(str(np.around(float(sec),2)) + 'm-' + chan)
+                except ValueError:
+                    SName.append(str(sec) + '-' + chan)
                 SUnit.append(unit)
                 col_vec +=1
-                try:
-                    dataOut[:,col_vec] = data[:,isec,ichan]
-                except:
-                    import pdb; pdb.set_trace()
+                dataOut[:,col_vec] = data[:,isec,ichan]
 
         data = dataOut
         info['ChannelName'] = SName
