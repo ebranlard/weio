@@ -125,7 +125,10 @@ def OrgData(data, **info):
         col_vec = -1
         for isec,sec in enumerate(info['SectionList']):
             for ichan,(chan,unit) in enumerate(zip(info['ChannelName'], info['ChannelUnit'])):
-                SName.append(str(np.around(info['SectionList'][isec],2)) + 'm-' + chan)
+                try:
+                    SName.append(str(np.around(info['SectionList'][isec],2)) + 'm-' + chan)
+                except:
+                    SName.append(str((info['SectionList'][isec],2)) + 'm-' + chan)
                 SUnit.append(unit)
                 col_vec +=1
                 try:
