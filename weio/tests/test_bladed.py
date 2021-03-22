@@ -16,7 +16,7 @@ from weio.bladed_out_file import BladedFile
 class Test(unittest.TestCase):
  
     def test_001_read_all(self):
-        reading_test('Bladed_out*.*', BladedFile)   
+        reading_test('Bladed_out_*.*', BladedFile)   
     
 
     def test_Bladed(self):

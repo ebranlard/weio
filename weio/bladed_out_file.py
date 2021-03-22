@@ -70,17 +70,25 @@ def read_bladed_sensor_file(sensorfile):
         elif t_line.startswith('AXITICK'):
             # Section on the 3rd dimension you are reading
             # sometimes, the info is written on "AXIVAL"
-            temp = t_line[7:].strip().strip('\'')
-            temp = temp.split('\' \'')
+            # Check next line, we concatenate if doesnt start with AXISLAB (Might need more cases)
+            try:
+                nextLine=sensorLines[i+1].strip()
+                if not nextLine.startswith('AXISLAB'):
+                    t_line = t_line.strip()+' '+nextLine
+            except:
+                pass
+
+            temp = t_line[7:].strip()
+            temp = temp.strip('\'').split('\' \'')
             dat['SectionList'] = np.array(temp, dtype=str)
             dat['nSections'] = len(dat['SectionList'])
 
         elif t_line.startswith('VARIAB'):
             # channel names, NOTE: either quoted, non-quoted, and a mix of both
-            # being nice for some corner cases where labels continue on next line..
+            # Check next line, we concatenate if doesnt start with AXISLAB (Might need more cases)
             try:
                 nextLine=sensorLines[i+1].strip()
-                if nextLine[0]=='\'':
+                if not nextLine.startswith('VARUNIT'):
                     t_line = t_line.strip()+' '+nextLine
             except:
                 pass
