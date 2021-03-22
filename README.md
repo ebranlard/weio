@@ -11,6 +11,7 @@ This library is for instance used by the GUI tool [pyDatView](https://github.com
 - Simple Excel files
 - FAST input and output files (including some turbulence files)
 - HAWC2 and HawcStab2 input and output files (still some missing)
+- Bladed output files
 - FLEX output files
 - NetCDF files (partial support for 1D and 2D data for now)
 
@@ -97,9 +98,18 @@ python setup.py install
 
 
 ## Adding more file formats
-File formats can be added by implementing a subclass of `weio/File.py`, for instance `weio/VTKFile.py`. Existing examples are found in the folder `weio`.
-Once implemented the fileformat needs to be registered in `weio/__init__.py` by adding an import line at the beginning of this script and adding a line in the function `fileFormats()` of the form `formats.append(FileFormat(VTKFile))`
+Additional file formats can be added as follows: 
 
+- Copy paste the template file `_weio/_NEWFILE_TEMPLATE.py`, for instance to `weio/MyFormatFile.py`
+- Adjust the classname, the default extensions, and implement the reader (function `_read()`) and optionally the writer. 
+- Register the fileformat in `weio/__init__.py` by adding an import line in the function `fileFormats()`.
+Registering the fileformat is useful when using `weio` with `pyDatView`, or, when using the automatic reader functionality: `weio.read('any_file.ext')` 
+
+That's it. If possible, add some unittests and examples files:
+
+-  Unittests are found in the folder `weio/tests/`. You can create a file `test_myformat.py` in this folder, using existing tests for inspiration. 
+- Examples files can be placed in the folder `weio/tests/example_files/`. Try to use a minimal size for the example files (e.g. a couple of bytes/Kb). 
+- To run your test from the repository root, type `python -m weio.tests.tests_myformat`. 
 
 
 ## Contributing
