@@ -96,6 +96,13 @@ def read_bladed_sensor_file(sensorfile):
 
         elif t_line.startswith('VARUNIT'):
             # channel units:         
+            # Check next line, we concatenate if doesnt start with AXISLAB (Might need more cases)
+            try:
+                nextLine=sensorLines[i+1].strip()
+                if not nextLine.startswith('AXISLAB'):
+                    t_line = t_line.strip()+' '+nextLine
+            except:
+                pass
             def repUnits(s):
                 s = s.replace('TT','s^2').replace('T','s').replace('A','rad')
                 s = s.replace('P','W').replace('L','m').replace('F','N').replace('M','kg')
