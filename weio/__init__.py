@@ -37,6 +37,7 @@ def fileFormats():
     formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(TecplotFile))
     formats.append(FileFormat(ExcelFile))
+    formats.append(FileFormat(BladedFile))
     formats.append(FileFormat(FASTInputFile))
     formats.append(FileFormat(FASTOutputFile))
     formats.append(FileFormat(FASTWndFile))
@@ -59,7 +60,6 @@ def fileFormats():
     formats.append(FileFormat(NetCDFFile))
     formats.append(FileFormat(VTKFile))
     formats.append(FileFormat(TDMSFile)) 
-    formats.append(FileFormat(BladedFile))
     return formats
 
 
@@ -81,8 +81,8 @@ def detectFormat(filename):
             # Try patterns if present
             extPatterns = [ef.replace('.','\.').replace('$','\$').replace('*','[.]*') for ef in myformat.extensions if '*' in ef]
             if len(extPatterns)>0:
-                extPatMatch = [re.match(pat, ext) for pat in extPatterns]
-                extMatch = len(extPatMatch)>0
+                extPatMatch = [re.match(pat, ext) is not None for pat in extPatterns]
+                extMatch = any(extPatMatch)
             else:
                 extMatch = False
         if extMatch: # we have a match on the extension
