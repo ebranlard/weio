@@ -34,11 +34,11 @@ def fileFormats():
     from .vtk_file import VTKFile
     from .bladed_out_file         import BladedFile
     formats = []
+    formats.append(FileFormat(FASTInputFile))
     formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(TecplotFile))
     formats.append(FileFormat(ExcelFile))
     formats.append(FileFormat(BladedFile))
-    formats.append(FileFormat(FASTInputFile))
     formats.append(FileFormat(FASTOutputFile))
     formats.append(FileFormat(FASTWndFile))
     formats.append(FileFormat(FASTLinearizationFile))
