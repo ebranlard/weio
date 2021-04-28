@@ -90,6 +90,19 @@ class CSVFile(File):
             self.sep=r'\s+'
 
         iStartLine=0
+        
+        # --- Exclude some files from the CSV reader ---
+        line=readline(iStartLine)
+        words=line.split()
+        if len(words)>1:
+            try:
+                int(words[0])
+                word0int = True
+            except:
+                word0int = False
+            if word0int and words[1].isalpha():
+                raise WrongFormatError('Input File {}: '.format(self.filename) + 'is not likely a CSV file' )
+                
         # --- Headers (i.e. comments)
         # TODO: read few headers lines instead of multiple read below..
 
