@@ -1,6 +1,5 @@
 from .file  import File, WrongFormatError, BrokenFormatError, FileNotFoundError, EmptyFileError
 from .file_formats  import FileFormat
-# User defined formats
 
 class FormatNotDetectedError(Exception):
     pass

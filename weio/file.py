@@ -1,7 +1,4 @@
 import os
-# for encoding detection:
-import codecs
-import chardet 
 
 class WrongFormatError(Exception):
     pass
@@ -62,7 +59,9 @@ class File(dict):
         return self._size
 
     @property
-    def encoding(self):
+    def encoding(self):	
+        import codecs
+        import chardet 
         """  Detects encoding"""
         if self._encoding is None:
             byts = min(32, self.size)

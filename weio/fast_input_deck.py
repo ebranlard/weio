@@ -202,8 +202,9 @@ class FASTInputDeck(dict):
         # --- Backward compatibility
         self.fst = self.fst_vt['Fst']
         self.ED  = self.fst_vt['ElastoDyn']
-        self.AD.Bld1 = self.fst_vt['AeroDynBlade']
-        self.AD.AF  = self.fst_vt['af_data']
+        if self.AD is not None:
+            self.AD.Bld1 = self.fst_vt['AeroDynBlade']
+            self.AD.AF  = self.fst_vt['af_data']
         self.IW  = self.fst_vt['InflowWind']
         self.BD  = self.fst_vt['BeamDyn']
 
