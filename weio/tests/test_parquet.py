@@ -1,4 +1,6 @@
 import unittest
+import os
+
 from .helpers_for_test import MyDir, reading_test 
 try:
     from weio.parquet_file import ParquetFile
@@ -15,11 +17,11 @@ class Test(unittest.TestCase):
         return ParquetFile(os.path.join(MyDir,FN)).toDataFrame()
  
     def test_ParquetFile(self):
-        df=self.DF('Parquet.out')
-        self.assertEqual(df.columns,["Column1","Column 2","Column Str"])
+        df=self.DF('ParquetFile_test.parquet')
+        self.assertListEqual(list(df.columns),["Column1","Column 2","Column Str"])
         self.assertEqual(df.shape,(3,3))
-        self.asserEqual(df.loc[0,"Column Str"],'abc')
-        self.asserEqual(df.loc[0, "Column1"], 1)
+        self.assertEqual(df.loc[0,"Column Str"],'abc')
+        self.assertEqual(df.loc[0, "Column1"], 1)
  
 
 
