@@ -1,3 +1,2 @@
 xarray # for netcdf files
 nptdms # for TDMS files
-pyarrow # for parquet files
