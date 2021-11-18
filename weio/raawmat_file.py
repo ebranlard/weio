@@ -29,11 +29,14 @@ def matfile(path_file,output='pandas',path_key=None):
     # flatten the mat file
     data = [[row.flat[0] for row in line] for line in mfile['DataCell']]
 
+    # create time column for easy comparison to simulations (0-600 seconds)
+    time50hz = np.arange(600,step=0.02)
+    time1hz = np.arange(600,step=1)
+    names_50hz = ['time']
+    names_1hz  = ['time']
+    dat_50hz   = [time50hz]
+    dat_1hz    = [time1hz]
     # start data reorganization into lists to be converted into pandas
-    names_50hz = []
-    dat_50hz = []
-    names_1hz = []
-    dat_1hz = []
     allnames = []
     for signal in range(mfile['DataCell'].size):
         name = data[signal][0][1][0] # get signal name
@@ -53,13 +56,6 @@ def matfile(path_file,output='pandas',path_key=None):
     t0 = pd.to_datetime(tstamp,format='%Y,%m,%d,%H,%M,%S')
     tstamp50hz = pd.date_range(start=t0,periods=30000,freq='20ms')
     tstamp1hz = pd.date_range(start=t0,periods=600,freq='1s')
-    # create time column for easy comparison to simulations (0-600 seconds)
-    time50hz = np.arange(600,step=0.02)
-    time1hz = np.arange(600,step=1)
-    names_50hz.append('time')
-    names_1hz.append('time')
-    dat_50hz.append(time50hz)
-    dat_1hz.append(time1hz)
     
     if not path_key==None:
         # load in list of channels
