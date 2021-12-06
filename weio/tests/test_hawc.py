@@ -7,6 +7,7 @@ try:
 except ImportError:
     from helpers_for_test import MyDir, reading_test 
 
+from weio.hawc2_st_file import HAWC2StFile
 class Test(unittest.TestCase):
  
     def test_001_read_all(self):
@@ -31,7 +32,6 @@ class Test(unittest.TestCase):
         os.remove(os.path.join(MyDir,'HAWC2_out_ascii_TMP2.sel'))
 
     def test_HAWC2_st(self):
-        from weio.hawc2_st_file import HAWC2StFile
         # --- not FPM
         F=HAWC2StFile(os.path.join(MyDir,'HAWC2_st.st'))
         dfs=F.toDataFrame()
