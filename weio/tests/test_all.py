@@ -3,7 +3,10 @@ import glob
 import weio
 import os
 import numpy as np
-from .helpers_for_test import MyDir, reading_test 
+try:
+    from .helpers_for_test import MyDir, reading_test 
+except:
+    from helpers_for_test import MyDir, reading_test 
 
 class Test(unittest.TestCase):
     def test_000_debug(self):
@@ -61,5 +64,5 @@ class Test(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    Test().test_000_debug()
-#     unittest.main()
+    #Test().test_000_debug()
+    unittest.main()

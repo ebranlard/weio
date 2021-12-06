@@ -92,4 +92,7 @@ class Test(unittest.TestCase):
 
 if __name__ == '__main__':
     #Test().test_FASTIn()
+    F=FASTInputFile(os.path.join(MyDir,'FASTIn_SbD_comments.dat'))
+    #F=weio.read(os.path.join(MyDir,'FASTIn_SbD_comments.dat'))
+    F.toDataFrame()
     unittest.main()
