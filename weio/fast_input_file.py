@@ -1182,7 +1182,10 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num',nOffset
                 l = cleanAfterChar(lines[i].lower(),'!')
                 v = l.split()
                 if len(v) != nCols:
-                    print('[WARN] {}: Line {}: number of data different from number of column names'.format(filename, iStart+i+1))
+                    # Discarding SubDyn special cases
+                    if ColNames[-1] not in ['NodeCnt']:
+                        print(ColNames)
+                        print('[WARN] {}: Line {}: number of data different from number of column names'.format(filename, iStart+i+1))
                 if i==nHeaders+nOffset:
                     nCols=len(v)
                     Tab = np.zeros((n, nCols))
@@ -1201,7 +1204,9 @@ def parseFASTNumTable(filename,lines,n,iStart,nHeaders=2,tableType='num',nOffset
                 l = lines[i]
                 v = l.split()
                 if len(v) != nCols:
-                    print('[WARN] {}: Line {}: Number of data is different than number of column names'.format(filename,iStart+1+i))
+                    # Discarding SubDyn special cases
+                    if ColNames[-1] not in ['COSMID']:
+                        print('[WARN] {}: Line {}: Number of data is different than number of column names'.format(filename,iStart+1+i))
                 if i==nHeaders+nOffset:
                     if len(v)>nCols:
                         ColNames = ColNames+['Col']*(len(v)-nCols)
