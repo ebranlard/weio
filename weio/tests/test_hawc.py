@@ -7,7 +7,11 @@ try:
 except ImportError:
     from helpers_for_test import MyDir, reading_test 
 
-from weio.hawc2_st_file import HAWC2StFile
+try:
+    from weio.hawc2_st_file import HAWC2StFile
+except:
+    from weio.weio.hawc2_st_file import HAWC2StFile
+
 class Test(unittest.TestCase):
  
     def test_001_read_all(self):

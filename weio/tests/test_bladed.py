@@ -9,7 +9,10 @@ try:
 except ImportError:
     from helpers_for_test import MyDir, reading_test 
 
-from weio.bladed_out_file import BladedFile
+try:
+    from weio.bladed_out_file import BladedFile
+except:
+    from weio.weio.bladed_out_file import BladedFile
 
 
 
