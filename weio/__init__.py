@@ -36,6 +36,7 @@ def fileFormats():
     from .parquet_file            import ParquetFile
     from .cactus_file             import CactusFile
     from .raawmat_file            import RAAWMatFile
+    from .rosco_performance_file  import ROSCOPerformanceFile
     formats = []
     formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(TecplotFile))
@@ -67,6 +68,7 @@ def fileFormats():
     formats.append(FileFormat(ParquetFile))
     formats.append(FileFormat(CactusFile))
     formats.append(FileFormat(RAAWMatFile))
+    formats.append(FileFormat(ROSCOPerformanceFile))
     return formats
 
 

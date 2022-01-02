@@ -1,5 +1,5 @@
 """ 
-Input/output class for the rosco performance (Cp,Ct,Cq) fileformat 
+Input/output class for the ROSCO performance (Cp,Ct,Cq) fileformat 
 """
 import numpy as np
 import pandas as pd
@@ -13,9 +13,9 @@ except:
     BrokenFormatError = type('BrokenFormatError', (Exception,),{})
     File=dict
 
-class RoscoPerformanceFile(File):
+class ROSCOPerformanceFile(File):
     """ 
-    Read/write a Rosco performance file. The object behaves as a dictionary.
+    Read/write a ROSCO performance file. The object behaves as a dictionary.
     
     Main methods
     ------------
@@ -23,7 +23,7 @@ class RoscoPerformanceFile(File):
     
     Examples
     --------
-        f = RoscoPerformanceFile('Cp_Ct_Cq.txt')
+        f = ROSCOPerformanceFile('Cp_Ct_Cq.txt')
         print(f.keys())
         print(f.toDataFrame().columns)  
     
@@ -37,7 +37,7 @@ class RoscoPerformanceFile(File):
     @staticmethod
     def formatName():
         """ Short string (~100 char) identifying the file format"""
-        return 'Rosco Performance file'
+        return 'ROSCO Performance file'
 
     def __init__(self, filename=None, **kwargs):
         """ Class constructor. If a `filename` is given, the file is read. """
@@ -88,9 +88,10 @@ class RoscoPerformanceFile(File):
     def toDataFrame(self):
         """ Returns object into dictionary of DataFrames"""
         dfs={}
-        dfs['CP'] = pd.DataFrame(self['CP'])
-        dfs['CT'] = pd.DataFrame(self['CT'])
-        dfs['CQ'] = pd.DataFrame(self['CQ'])
+        columns = ['TSR_[-]']+['Pitch_{:.2f}_[deg]'.format(p) for p in self['pitch']]
+        dfs['CP'] = pd.DataFrame(np.column_stack((self['TSR'], self['CP'])), columns=columns)
+        dfs['CT'] = pd.DataFrame(np.column_stack((self['TSR'], self['CT'])), columns=columns)
+        dfs['CQ'] = pd.DataFrame(np.column_stack((self['TSR'], self['CQ'])), columns=columns)
         return dfs
 
     # --- Optional functions
@@ -231,6 +232,8 @@ def write_rotor_performance(txt_filename, pitch, TSR, CP, CT, CQ, WS=None, Turbi
 
 
 if __name__ == '__main__':
-    f = RoscoPerformanceFile('./tests/example_files/RoscoPerformance_CpCtCq.txt')
+    f = ROSCOPerformanceFile('./tests/example_files/RoscoPerformance_CpCtCq.txt')
     print(f)
+    dfs = f.toDataFrame()
+    print(dfs['CP'])
 
