@@ -30,7 +30,7 @@ class MannBoxFile(File):
 
     @staticmethod
     def defaultExtensions():
-        return ['.u','.v','.w']
+        return ['.u','.v','.w','.bin']
 
     @staticmethod
     def formatName():
@@ -41,7 +41,7 @@ class MannBoxFile(File):
         if filename:
             self.read(filename=filename,**kwargs)
 
-    def read(self, filename=None, N=(1024,32,32)):
+    def read(self, filename=None, N=(1024,32,32), dy=1, dz=1, y0=None, z0=0, zMid=None):
         """ read MannBox
              field (nx x ny x nz)
              NOTE: y-coord in Mann Box goes from Ly/2 -> -Ly/2 but we flip this to -Ly/2 -> Ly/2
@@ -56,6 +56,7 @@ class MannBoxFile(File):
             raise EmptyFileError('File is empty:',self.filename)
 
         nx,ny,nz=N
+
         def _read_buffered():
             data=np.zeros((nx,ny,nz),dtype=np.float32)
             with open(self.filename, mode='rb') as f:            
@@ -75,6 +76,11 @@ class MannBoxFile(File):
 
 #         self['field']= _read_nonbuffered()
         self['field']= _read_buffered()
+        self['dy']=dy
+        self['dz']=dz
+        self['y0']=y0
+        self['z0']=z0
+        self['zMid']=zMid
 #         print('1',self['field'][:,-1,0])
 #         print('2',self['field'][0,-1::-1,0])
 #         print('3',self['field'][0,-1,:])
@@ -96,10 +102,49 @@ class MannBoxFile(File):
     
     def __repr__(self):
         s='<{} object> with keys:\n'.format(type(self).__name__)
-        s+=' - filename: {}\n'.format(self.filename)
-        s+=' - field:  shape {}x{}x{}\n'.format(self['field'].shape[0],self['field'].shape[1],self['field'].shape[2])
-        s+='   min: {}, max: {}, mean: {} \n'.format(np.min(self['field']), np.max(self['field']), np.mean(self['field']))
+        s+='| - filename: {}\n'.format(self.filename)
+        s+='| - field:  shape {}x{}x{}\n'.format(self['field'].shape[0],self['field'].shape[1],self['field'].shape[2])
+        s+='|   min: {}, max: {}, mean: {} \n'.format(np.min(self['field']), np.max(self['field']), np.mean(self['field']))
+        s+='| - dy, dz:  {}, {}\n'.format(self['dy'], self['dz'])
+        s+='| - y0, z0 zMid:  {}, {}, {}\n'.format(self['y0'], self['z0'], self['zMid'])
+        s+='|useful getters: y, z, _iMid, fromTurbSim\n'
+        z=self.z
+        y=self.y
+        s+='|   y: [{} ... {}],  dy: {}, n: {} \n'.format(y[0],y[-1],self['dy'],len(y))
+        s+='|   z: [{} ... {}],  dz: {}, n: {} \n'.format(z[0],z[-1],self['dz'],len(z))
         return s
+
+    def _iMid(self):
+        _, ny, nz = self['field'].shape
+        return int(ny/2), int(nz/2)
+
+    @property
+    def z(self):
+        zmax = self['z0'] + (self['field'].shape[2]-1+0.1)*self['dz']
+        z = np.arange(self['z0'], zmax, self['dz'])
+        if self['zMid'] is not None:
+            z+= self['zMid']-np.mean(z)
+        return z
+
+    @property
+    def y(self):
+        if self['y0'] is not None:
+            ymax = self['y0'] + (self['field'].shape[1]-1+0.1)*self['dy']
+            y = np.arange(self['y0'], ymax, self['dy'])
+        else:
+            ymax = (self['field'].shape[1]-1+0.1)*self['dy']
+            y = np.arange(0, ymax, self['dy'])
+            y -= np.mean(y)
+        return y
+
+
+    @property
+    def vertProfile(self):
+        iy, iz = self._iMid()
+        m = np.mean(self['field'][:,iy,:], axis=0)
+        s = np.std (self['field'][:,iy,:], axis=0)
+        return self.z,m,s
+
 
     def toDataFrame(self):
         pass
