@@ -7,7 +7,10 @@ try:
 except ImportError:
     from helpers_for_test import MyDir, reading_test 
 
-from weio.fast_input_deck import FASTInputDeck
+try:
+    from weio.fast_input_deck import FASTInputDeck
+except:
+    from weio.weio.fast_input_deck import FASTInputDeck
 
 class Test(unittest.TestCase):
 
