@@ -20,6 +20,7 @@ def fileFormats():
     from .hawc2_st_file           import HAWC2StFile
     from .hawcstab2_pwr_file      import HAWCStab2PwrFile
     from .hawcstab2_ind_file      import HAWCStab2IndFile
+    from .hawcstab2_cmb_file      import HAWCStab2CmbFile
     from .flex_blade_file         import FLEXBladeFile
     from .flex_profile_file       import FLEXProfileFile
     from .flex_out_file           import FLEXOutFile
@@ -57,6 +58,7 @@ def fileFormats():
     formats.append(FileFormat(HAWC2AEFile))
     formats.append(FileFormat(HAWCStab2PwrFile))
     formats.append(FileFormat(HAWCStab2IndFile))
+    formats.append(FileFormat(HAWCStab2CmbFile))
     formats.append(FileFormat(FLEXBladeFile))
     formats.append(FileFormat(FLEXProfileFile))
     formats.append(FileFormat(FLEXOutFile))
