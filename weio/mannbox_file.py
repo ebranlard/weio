@@ -18,6 +18,7 @@ The field stored in this class has the following properties:
 import pandas as pd
 import numpy as np
 import os
+import re
 import struct
 
 try:
@@ -41,7 +42,7 @@ class MannBoxFile(File):
         if filename:
             self.read(filename=filename,**kwargs)
 
-    def read(self, filename=None, N=(1024,32,32), dy=1, dz=1, y0=None, z0=0, zMid=None):
+    def read(self, filename=None, N=None, dy=1, dz=1, y0=None, z0=0, zMid=None):
         """ read MannBox
              field (nx x ny x nz)
              NOTE: y-coord in Mann Box goes from Ly/2 -> -Ly/2 but we flip this to -Ly/2 -> Ly/2
@@ -55,6 +56,16 @@ class MannBoxFile(File):
         if os.stat(self.filename).st_size == 0:
             raise EmptyFileError('File is empty:',self.filename)
 
+        if N is None:
+            # try to infer N's from filename with format 'stringN1xN2xN3'
+            basename = os.path.splitext(os.path.basename(self.filename))[0]
+            splits = basename.split('x')
+            temp = re.findall(r'\d+', basename)
+            res = list(map(int, temp))
+            if len(res)>=3:
+                N=res[-3:]
+            else:
+                raise BrokenFormatError('Reading a Mann box requires the knowledge of the dimensions. The dimensions can be inferred from the filename, for instance: `filebase_1024x32x32.u`. Try renaming your file such that the three last digits are the dimensions in x, y and z.')
         nx,ny,nz=N
 
         def _read_buffered():
@@ -167,10 +178,11 @@ class MannBoxFile(File):
             self['field'] = u[icomp, :, : ,: ]
 
 if __name__=='__main__':
-    mb = MannBoxFile('mann_bin/mini-u.bin', N=(2,4,8))
-    F1=mb['field'].ravel()
-    mb.write('mann_bin/mini-u-out.bin')
-
-    mb2= MannBoxFile('mann_bin/mini-u-out.bin', N=(2,4,8))
-    F2=mb2['field'].ravel()
+    mb = MannBoxFile('mini-u_1024x32x32.bin')
+#     mb = MannBoxFile('mann_bin/mini-u.bin', N=(2,4,8))
+#     F1=mb['field'].ravel()
+#     mb.write('mann_bin/mini-u-out.bin')
+# 
+#     mb2= MannBoxFile('mann_bin/mini-u-out.bin', N=(2,4,8))
+#     F2=mb2['field'].ravel()
 #     print(F1-F2)
