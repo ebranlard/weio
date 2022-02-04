@@ -1,5 +1,5 @@
 """ 
-Input/output class for the fileformat XXX
+Input/output class for the BModes output files
 """
 import numpy as np
 import pandas as pd
