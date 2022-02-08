@@ -38,6 +38,7 @@ def fileFormats():
     from .cactus_file             import CactusFile
     from .raawmat_file            import RAAWMatFile
     from .rosco_performance_file  import ROSCOPerformanceFile
+    from .matlab_statistics_file  import MatlabStatisticsFile   
     formats = []
     formats.append(FileFormat(CSVFile))
     formats.append(FileFormat(TecplotFile))
@@ -71,6 +72,7 @@ def fileFormats():
     formats.append(FileFormat(CactusFile))
     formats.append(FileFormat(RAAWMatFile))
     formats.append(FileFormat(ROSCOPerformanceFile))
+    formats.append(FileFormat(MatlabStatisticsFile))
     return formats
 
 
