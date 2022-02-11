@@ -13,7 +13,7 @@ class UserFormatImportError(Exception):
 
 _FORMATS=None
 
-def fileFormats(userpath=None, ignoreErrors=False):
+def fileFormats(userpath=None, ignoreErrors=False, verbose=False):
     """ return list of fileformats supported by the library
     If userpath is provided, 
 
@@ -95,7 +95,7 @@ def fileFormats(userpath=None, ignoreErrors=False):
     addFormat(70, FileFormat(RAAWMatFile))
 
     # --- User defined formats from user path
-    UserClasses, UserPaths, UserModules, UserModuleNames, errors = userFileClasses(userpath, ignoreErrors, verbose=True)
+    UserClasses, UserPaths, UserModules, UserModuleNames, errors = userFileClasses(userpath, ignoreErrors, verbose=verbose)
     for cls, f in zip(UserClasses, UserPaths):
         try:
             ff = FileFormat(cls)
