@@ -166,12 +166,16 @@ def defaultUserDataDir():
     # windows: C:/Users/<USER>/AppData/Roaming
     """
     home = os.path.expanduser('~')
-    if sys.platform == "win32":
+    ptfm = sys.platform
+    if ptfm == "win32":
         return os.path.join(home , 'AppData','Roaming')
-    elif sys.platform == "linux":
+    elif ptfm == "linux":
         return os.path.join(home, '.local', 'share')
-    elif sys.platform == "darwin":
+    elif ptfm == "darwin":
         return os.path.join(home, 'Library','Application Support')
+    else:
+        print('>>>>>>>>>>>>>>>>> Platform', sys.platform)
+        return './UserData'
 
 
 
