@@ -164,6 +164,9 @@ class TurbSimFile(File):
                     f.write(out[:,it,:,:].tostring(order='F'))
                     f.write(outTwr[:,it,:].tostring(order='F'))
 
+    # --------------------------------------------------------------------------------}
+    # --- Extracting relevant data 
+    # --------------------------------------------------------------------------------{
     def hubValues(self, zHub=None):
         if zHub is None:
             try:
@@ -248,6 +251,9 @@ class TurbSimFile(File):
         return u, v, w
 
 
+    # --------------------------------------------------------------------------------}
+    # --- Computation of useful quantities
+    # --------------------------------------------------------------------------------{
     def crosscorr_y(ts, iy0=None, iz0=None):
         """ Cross correlation along y
         If no index is provided, computed at mid box 
@@ -358,7 +364,43 @@ class TurbSimFile(File):
         _ , coh_ww_y2 = sig.coherence(w,wd, fs=fs)
 
 
+    # --------------------------------------------------------------------------------}
+    # --- Modifierss
+    # --------------------------------------------------------------------------------{
+    def scale(self, new_mean=None, new_std=None, component=0, reference='mid', y_ref=0, z_ref=None):
+        """ 
+        TODO needs more thinking
+        """
+        # mean/std values for each points in the plane (averaged with time)
+        old_plane_mean = np.mean(self['u'][component,:,:,:],axis=0)
+        old_plane_std  = np.std( self['u'][component,:,:,:],axis=0)
+        if reference=='mid':
+            iy,iz = self._iMid()
+            old_mean = np.mean(self['u'][component,:,iy,iz])
+            old_std  = np.std (self['u'][component,:,iy,iz])
+        elif reference=='point':
+            iy, iz = self.closestPoint(y_ref, z_ref)
+            old_mean = np.mean(self['u'][component,:,iy,iz])
+            old_std  = np.std (self['u'][component,:,iy,iz])
+        else:
+            raise NotImplementedError(reference)
+        # Scaling standard deviation without affecting the mean
+        self['u'][component,:,:,:] -= old_plane_mean
+        if new_std is not None:
+            self['u'][component,:,:,:] *= new_std/old_std
+        self['u'][component,:,:,:] += old_plane_mean
 
+        # Scaling mean
+        if new_mean is not None:
+            self['u'][component,:,:,:] += -old_mean+new_mean
+
+        # Sanity check
+        new_mean2= np.mean(self['u'][component,:,iy,iz])
+        new_std2 = np.std(self['u'][component,:,iy,iz])
+        if new_mean is not None:
+            print('New mean: {:7.3f}  (target: {:7.3f}, old: {:7.3f})'.format(new_mean2, new_mean, old_mean))
+        if new_std is not None:
+            print('New std : {:7.3f}  (target: {:7.3f}, old: {:7.3f})'.format(new_std2 , new_std , old_std))
 
     def makePeriodic(self):
         """ Make the box periodic by mirroring it """
@@ -452,7 +494,20 @@ class TurbSimFile(File):
         u = self['u'][:,:,iy,iz]
         cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
         data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
-        dfs['MidLine'] = pd.DataFrame(data = data ,columns = cols)
+        dfs['ZMidLine'] = pd.DataFrame(data = data ,columns = cols)
+
+
+        # ZMid YStart time series
+        u = self['u'][:,:,0,iz]
+        cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
+        data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
+        dfs['ZMidYStartLine'] = pd.DataFrame(data = data ,columns = cols)
+
+        # ZMid YEnd time series
+        u = self['u'][:,:,-1,iz]
+        cols=['t_[s]','u_[m/s]','v_[m/s]','w_[m/s]']
+        data = np.column_stack((self['t'],u[0,:],u[1,:],u[2,:]))
+        dfs['ZMidYEndLine'] = pd.DataFrame(data = data ,columns = cols)
 
         # Mid crosscorr y
         y, rho_uu_y, rho_vv_y, rho_ww_y = self.crosscorr_y()
