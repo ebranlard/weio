@@ -6,7 +6,7 @@ import pandas as pd
 import os
 
 try:
-    from .file import File, WrongFormatError, BrokenFormatError
+    from weio.file import File, WrongFormatError, BrokenFormatError
 except:
     EmptyFileError    = type('EmptyFileError', (Exception,),{})
     WrongFormatError  = type('WrongFormatError', (Exception,),{})
@@ -38,6 +38,10 @@ class XXXFile(File):
     def formatName():
         """ Short string (~100 char) identifying the file format"""
         return 'XXX file'
+
+    @staticmethod
+    def priority(): return 60 # Priority in weio.read fileformat list between 0=high and 100:low
+
 
     def __init__(self, filename=None, **kwargs):
         """ Class constructor. If a `filename` is given, the file is read. """

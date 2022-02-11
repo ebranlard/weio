@@ -95,11 +95,48 @@ def fileFormats(userpath=None, ignoreErrors=False):
     addFormat(70, FileFormat(RAAWMatFile))
 
     # --- User defined formats from user path
+    UserClasses, UserPaths, UserModules, UserModuleNames, errors = userFileClasses(userpath, ignoreErrors, verbose=True)
+    for cls, f in zip(UserClasses, UserPaths):
+        try:
+            ff = FileFormat(cls)
+        except Exception as e:
+            s='Error registering a user fileformat.\n\nThe module location was: {}\n\nThe class name was: {}\n\nMake sure the class has `defaultExtensions` and `formatName` as static methods.\n\nThe exception was:\n{}'.format(f, cls.__name__, e)
+            if ignoreErrors:
+                errors.append(s)
+                continue
+            else:
+                raise UserFormatImportError(s)
+        # Use class.priority 
+        try:
+            priority = cls.priority()
+        except:
+            priority=2
+        addFormat(priority, ff)
+
+    # --- Sort fileformats by priorities
+    formats = np.asarray(formats)[np.argsort(priorities, kind='stable')]
+
+    _FORMATS=formats
+    if ignoreErrors:
+        return formats, errors
+    else:
+        return formats
+
+
+
+def userFileClasses(userpath=None, ignoreErrors=False, verbose=True):
+    """ return list of user file class in UserData folder"""
     if userpath is None:
         dataDir = defaultUserDataDir()
         userpath = os.path.join(dataDir, 'weio')
-    errors=[]
+    errors          = []
+    UserClasses     = []
+    UserPaths       = []
+    UserModules     = []
+    UserModuleNames = []
     if os.path.exists(userpath):
+        if verbose:
+            print('>>> Looking for user modules in folder:',userpath)
         import glob
         from importlib.machinery import SourceFileLoader
         import inspect
@@ -110,6 +147,8 @@ def fileFormats(userpath=None, ignoreErrors=False):
                 continue
             mod_name = os.path.basename(os.path.splitext(f)[0])
             try:
+                if verbose:
+                    print('>>> Trying to load user module:',f)
                 module = SourceFileLoader(mod_name,f).load_module()
             except Exception as e:
                 s='Error importing a user module.\n\nThe module location was: {}\n\nTry importing this module to debug it.\n\nThe Exception was:\n{}'.format(f, e)
@@ -123,23 +162,13 @@ def fileFormats(userpath=None, ignoreErrors=False):
                 if inspect.isclass(obj):
                     classname = obj.__name__.lower()
                     if classname!='file' and classname.find('file')>=0 and classname.find('error')<0:
-                        try:
-                            ff = FileFormat(obj)
-                        except Exception as e:
-                            found=True
-                            s='Error registering a user fileformat.\n\nThe module location was: {}\n\nThe class name was: {}\n\nMake sure the class has `defaultExtensions` and `formatName` as static methods.\n\nThe exception was:\n{}'.format(f, obj.__name__, e)
-                            if ignoreErrors:
-                                errors.append(s)
-                                break
-                            else:
-                                raise UserFormatImportError(s)
-                        # Use class.priority 
-                        try:
-                            priority = obj.priority()
-                        except:
-                            priority=2
-                        addFormat(priority, ff)
-                        found=True
+                        if verbose:
+                            print('    Found File class with name:',obj.__name__)
+                        UserClasses.append(obj)
+                        UserPaths.append(f)
+                        UserModules.append(module)
+                        UserModuleNames.append(mod_name)
+                        found=True # allowing only one class per file for now..
                         break
             if not found:
                 s='Error finding a class named "*File" in the user module.\n\nThe module location was: {}\n\nNo class containing the string "File" in its name was found.'.format(f)
@@ -147,14 +176,7 @@ def fileFormats(userpath=None, ignoreErrors=False):
                     errors.append(s)
                 else:
                     raise UserFormatImportError(s)
-    # Concatenate
-    formats = np.asarray(formats)[np.argsort(priorities, kind='stable')]
-
-    _FORMATS=formats
-    if ignoreErrors:
-        return formats, errors
-    else:
-        return formats
+    return UserClasses, UserPaths, UserModules, UserModuleNames, errors
 
 
 def defaultUserDataDir():

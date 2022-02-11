@@ -98,10 +98,13 @@ python setup.py install
 
 
 ## Adding more file formats
-Additional file formats can be added as follows: 
+There are two ways to add a file formats. If your file format is fairly generic (e.g. CSV, Excel) you can add it directly to weio (see Option 1 below). Otherwise, it is recommended to use Option 2 below. 
 
-- Copy paste the template file `_weio/_NEWFILE_TEMPLATE.py`, for instance to `weio/MyFormatFile.py`
-- Adjust the classname, the default extensions, and implement the reader (function `_read()`) and optionally the writer. 
+### Option 1: Adding a generic/wind energy file format to this repository
+Additional file formats (that are either generic, or commonly used by the wind energy community) can be added as follows: 
+
+- Copy paste the template file `weio/_NEWFILE_TEMPLATE.py`, to, for instance `weio/my_format_file.py`
+- Edit this file.  Adjust the classname and the default extensions. Implement the reader (function `_read()`) and optionally the writer. Look for XXX in this file and replace them with appropriate value for your file format.
 - Register the fileformat in `weio/__init__.py` by adding an import line in the function `fileFormats()`.
 Registering the fileformat is useful when using `weio` with `pyDatView`, or, when using the automatic reader functionality: `weio.read('any_file.ext')` 
 
@@ -110,6 +113,24 @@ That's it. If possible, add some unittests and examples files:
 -  Unittests are found in the folder `weio/tests/`. You can create a file `test_myformat.py` in this folder, using existing tests for inspiration. 
 - Examples files can be placed in the folder `weio/tests/example_files/`. Try to use a minimal size for the example files (e.g. a couple of bytes/Kb). 
 - To run your test from the repository root, type `python -m weio.tests.tests_myformat`. 
+
+### Option 2: Adding specific/confidential file formats
+Specific file formats can be added in the `<UserData>` folder of weio.
+Depending on your platform, the `<UserData>` directory will be:
+
+- `C:/Users/<USERNAME>/AppData/Roaming/weio` on Windows
+- `<HOME>/.local/share/weio/` on Linux
+- `<HOME>/Library/Application Support/weio/` on MacOS
+
+To add specfic file formats, follow the following steps:
+
+- Create the `<UserData>` directory if it doesn't exist.
+
+- Copy paste the template file `weio/_NEWFILE_TEMPLATE.py`, to, for instance `<UserData>/my_format_file.py`. 
+
+- Edit this file.  Adjust the classname and the default extensions. Implementing the reader (function `_read()`) and optionally the writer. Look for XXX in this file and replace them with appropriate values for your file format. NOTE: it's important to have "File" in your classname, for instance the class name could be "MyFormatFile". You can also adjust the priority level (the priority static method), which will define how early the fileformat will be tried in the list of fileformats.
+
+The fileformats should now be available within weio. The function `weio.read` will loop through all available file formats and attempt to read a given file. You can call `weio.fileFormats` to see the list of supported fileformats and see where your newly added format is located in this list. The added class may be accessed as follows `from weio.user import MyFormatFile". 
 
 
 ## Contributing
