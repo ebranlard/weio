@@ -117,7 +117,7 @@ def fileFormats(userpath=None, ignoreErrors=False):
                     errors.append(s)
                     continue
                 else:
-                    raise UserFormatImportError(s) from None
+                    raise UserFormatImportError(s)
             found=False
             for name, obj in inspect.getmembers(module):
                 if inspect.isclass(obj):
@@ -132,7 +132,7 @@ def fileFormats(userpath=None, ignoreErrors=False):
                                 errors.append(s)
                                 break
                             else:
-                                raise UserFormatImportError(s) from None
+                                raise UserFormatImportError(s)
                         # Use class.priority 
                         try:
                             priority = obj.priority()
