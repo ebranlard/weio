@@ -68,9 +68,7 @@ Bld.write('AeroDyn_Blade_Modified.dat')
 ```
 
 ## Requirements
-The library is compatible python 2.7 and python 3.
-The script relies on the following python packages: `numpy`, `pandas`, `xarray`
-
+The library is compatible python 2.7 and python 3, and has limited requirements.
 If you have pip installed on your system, you can install them by typing in a terminal: 
 ```bash
 pip install -r requirements.txt
@@ -98,7 +96,7 @@ python setup.py install
 
 
 ## Adding more file formats
-There are two ways to add a file formats. If your file format is fairly generic (e.g. CSV, Excel) you can add it directly to weio (see Option 1 below). Otherwise, it is recommended to use Option 2 below. 
+There are two ways to add a file format. If your file format is fairly generic (e.g. CSV, Excel) you can add it directly to weio (see Option 1 below). Otherwise, it is recommended to use Option 2 below. 
 
 ### Option 1: Adding a generic/wind energy file format to this repository
 Additional file formats (that are either generic, or commonly used by the wind energy community) can be added as follows: 
@@ -131,7 +129,6 @@ To add specfic file formats, follow the following steps:
 - Edit this file.  Adjust the classname and the default extensions. Implementing the reader (function `_read()`) and optionally the writer. Look for XXX in this file and replace them with appropriate values for your file format. NOTE: it's important to have "File" in your classname, for instance the class name could be "MyFormatFile". You can also adjust the priority level (the priority static method), which will define how early the fileformat will be tried in the list of fileformats.
 
 The fileformats should now be available within weio. The function `weio.read` will loop through all available file formats and attempt to read a given file. You can call `weio.fileFormats` to see the list of supported fileformats and see where your newly added format is located in this list. The added class may be accessed as follows `from weio.user import MyFormatFile". 
-
 
 ## Contributing
 Any contributions to this project are welcome! If you find this project useful, you can also buy me a coffee (donate a small amount) with the link below:
