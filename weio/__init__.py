@@ -169,12 +169,12 @@ def defaultUserDataDir():
     ptfm = sys.platform
     if ptfm == "win32":
         return os.path.join(home , 'AppData','Roaming')
-    elif ptfm == "linux":
+    elif ptfm.startswith("linux"):
         return os.path.join(home, '.local', 'share')
     elif ptfm == "darwin":
         return os.path.join(home, 'Library','Application Support')
     else:
-        print('>>>>>>>>>>>>>>>>> Platform', sys.platform)
+        print('>>>>>>>>>>>>>>>>> Unknown Platform', sys.platform)
         return './UserData'
 
 
