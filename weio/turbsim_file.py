@@ -27,7 +27,7 @@ class TurbSimFile(File):
 
     Main methods
     ------------
-    - read, write, toDataFrame, keys, makePeriodic, checkPeriodic, closestPoint
+    - read, write, toDataFrame, keys, valuesAt, makePeriodic, checkPeriodic, closestPoint
 
     Examples
     --------
@@ -35,6 +35,7 @@ class TurbSimFile(File):
         ts = TurbSimFile('Turb.bts')
         print(ts.keys())
         print(ts['u'].shape)  
+        u,v,w = ts.valuesAt(y=10.5, z=90)
 
 
     """
@@ -165,12 +166,40 @@ class TurbSimFile(File):
                     f.write(outTwr[:,it,:].tostring(order='F'))
 
     # --------------------------------------------------------------------------------}
+    # --- Convenient properties (matching Mann Box interface as well)
+    # --------------------------------------------------------------------------------{
+    @property
+    def z(self): return self['z']
+
+    @property
+    def y(self): return self['y']
+
+    @property
+    def t(self): return self['t']
+
+    # --------------------------------------------------------------------------------}
     # --- Extracting relevant data 
     # --------------------------------------------------------------------------------{
+    def valuesAt(self, y, z, method='nearest'):
+        """ return wind speed time series at a point """
+        if method == 'nearest':
+            iy, iz = self.closestPoint(y, z)
+            u = self['u'][0,:,iy,iz]
+            v = self['u'][0,:,iy,iz]
+            w = self['u'][0,:,iy,iz]
+        else:
+            raise NotImplementedError()
+        return u, v, w
+
+    def closestPoint(self, y, z):
+        iy = np.argmin(np.abs(self['y']-y))
+        iz = np.argmin(np.abs(self['z']-z))
+        return iy,iz
+
     def hubValues(self, zHub=None):
         if zHub is None:
             try:
-                zHub=self['zHub']
+                zHub=float(self['zHub'])
                 bHub=True
             except:
                 bHub=False
@@ -179,7 +208,7 @@ class TurbSimFile(File):
         else:
             bHub=True
         try:
-            uHub=self['uHub']
+            uHub=float(self['uHub'])
         except:
             iz = np.argmin(np.abs(self['z']-zHub))
             iy = np.argmin(np.abs(self['y']-(self['y'][0]+self['y'][-1])/2))
@@ -249,6 +278,13 @@ class TurbSimFile(File):
             v -= np.mean(v)
             w -= np.mean(w)
         return u, v, w
+
+    @property
+    def vertProfile(self):
+        iy, iz = self._iMid()
+        m = np.mean(self['u'][:,:,iy,:], axis=1)
+        s = np.std( self['u'][:,:,iy,:], axis=1)
+        return self.z, m, s
 
 
     # --------------------------------------------------------------------------------}
@@ -483,11 +519,10 @@ class TurbSimFile(File):
         iy,iz = self._iMid()
 
         # Mean vertical profile
-        m = np.mean(self['u'][:,:,iy,:], axis=1)
-        s = np.std( self['u'][:,:,iy,:], axis=1)
+        z, m, s = self.vertProfile
         ti = s/m*100
         cols=['z_[m]','u_[m/s]','v_[m/s]','w_[m/s]','sigma_u_[m/s]','sigma_v_[m/s]','sigma_w_[m/s]','TI_[%]']
-        data = np.column_stack((self['z'],m[0,:],m[1,:],m[2,:],s[0,:],s[1,:],s[2,:],ti[0,:]))
+        data = np.column_stack((z, m[0,:],m[1,:],m[2,:],s[0,:],s[1,:],s[2,:],ti[0,:]))
         dfs['VertProfile'] = pd.DataFrame(data = data ,columns = cols)
 
         # Mid time series
@@ -551,6 +586,54 @@ class TurbSimFile(File):
         #except:
         #    pass
         return dfs
+
+
+    # Useful converters
+    def fromMannBox(self, u, v, w, dx, U, y, z, addU=None):
+        """ 
+        Convert current TurbSim file into one generated from MannBox
+        Assumes: 
+             u, v, w (nt x ny x nz)
+
+             y: goes from -ly/2 to ly/2  this is an IMPORTANT subtlety
+                The field u needs to respect this convention!
+                (fields from weio.mannbox_file do respect this convention
+                but when exported to binary files, the y axis is flipped again)
+        
+        INPUTS:
+          - u, v, w : mann box fields
+          - dx: axial spacing of mann box (to compute time)
+          - U: reference speed of mann box (to compute time)
+          - y: y coords of mann box
+          - z: z coords of mann box
+        """
+        nt,ny,nz = u.shape
+        dt       = dx/U
+        t        = np.arange(0, dt*(nt-0.5), dt)
+        nt       = len(t)
+        if y[0]>y[-1]:
+            raise Exception('y is assumed to go from - to +')
+
+        self['u']=np.zeros((3, nt, ny, nz))
+        self['u'][0,:,:,:] = u 
+        self['u'][1,:,:,:] = u
+        self['u'][2,:,:,:] = u
+        if addU is not None:
+            self['u'][0,:,:,:] += addU
+        self['t']  = t
+        self['y']  = y
+        self['z']  = z
+        self['dt'] = dt
+        # TODO
+        self['ID'] = 7 # ...
+        self['info'] = 'Converted from MannBox fields {:s}.'.format(time.strftime('%d-%b-%Y at %H:%M:%S', time.localtime()))
+#         self['zTwr'] = np.array([])
+#         self['uTwr'] = np.array([])
+        self['zHub'] = None
+        self['uHub'] = None
+        self['zHub'], self['uHub'], bHub = self.hubValues()
+
+
 
 if __name__=='__main__':
     ts = TurbSimFile('../_tests/TurbSim.bts')

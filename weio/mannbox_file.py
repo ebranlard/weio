@@ -126,9 +126,6 @@ class MannBoxFile(File):
         s+='|   z: [{} ... {}],  dz: {}, n: {} \n'.format(z[0],z[-1],self['dz'],len(z))
         return s
 
-    def _iMid(self):
-        _, ny, nz = self['field'].shape
-        return int(ny/2), int(nz/2)
 
     @property
     def z(self):
@@ -149,6 +146,34 @@ class MannBoxFile(File):
             y -= np.mean(y)
         return y
 
+    def t(self, dx, U):
+        # 1.5939838     dx          - distance (in meters) between points in the x direction    (m)
+        # 99.5          RefHt_Hawc  - reference height; the height (in meters) of the vertical center of the grid (m)
+        # 6.26          URef        - Mean u-component wind speed at the reference height (m/s)
+        dt = dx/U
+        nt = self['field'].shape[0]
+        return np.arange(0, dt*(nt-0.5), dt)
+
+    # --------------------------------------------------------------------------------}
+    # --- Extracting relevant data 
+    # --------------------------------------------------------------------------------{
+    def valuesAt(self, y, z, method='nearest'):
+        """ return wind speed time series at a point """
+        if method == 'nearest':
+            iy, iz = self.closestPoint(y, z)
+            u = self['field'][:,iy,iz]
+        else:
+            raise NotImplementedError()
+        return u
+
+    def closestPoint(self, y, z):
+        iy = np.argmin(np.abs(self.y-y))
+        iz = np.argmin(np.abs(self.z-z))
+        return iy,iz
+
+    def _iMid(self):
+        _, ny, nz = self['field'].shape
+        return int(ny/2), int(nz/2)
 
     @property
     def vertProfile(self):
@@ -230,7 +255,7 @@ class MannBoxFile(File):
 
 
     # Useful converters
-    def fromTurbSim(self,u,icomp=0, removeConstant=None, removeAllMean=False):
+    def fromTurbSim(self, u, icomp=0, removeConstant=None, removeAllMean=False):
         """ 
         Assumes: 
              u (3 x nt x ny x nz)
@@ -245,6 +270,7 @@ class MannBoxFile(File):
                 self['field'] = u[icomp, :, : ,: ]
         else:
             self['field'] = u[icomp, :, : ,: ]
+        return self
 
 if __name__=='__main__':
     mb = MannBoxFile('mini-u_1024x32x32.bin')
