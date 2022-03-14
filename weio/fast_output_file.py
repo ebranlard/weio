@@ -12,8 +12,22 @@ standard_library.install_aliases()
 
 from itertools import takewhile
 
-from .file import File, WrongFormatError, BrokenReaderError, EmptyFileError
+# try:
 from .csv_file import CSVFile
+from .file import File, WrongFormatError, BrokenReaderError, EmptyFileError
+# except:
+#     # --- Allowing this file to be standalone..
+#     class WrongFormatError(Exception):
+#         pass
+#     class WrongReaderError(Exception):
+#         pass
+#     class EmptyFileError(Exception):
+#         pass
+#     File = dict
+try:
+    from .csv_file import CSVFile
+except:
+    print('CSVFile not available')
 import numpy as np
 import pandas as pd
 import struct
@@ -58,8 +72,6 @@ class FASTOutputFile(File):
                         return line.strip()
                     elif i>=iLine:
                         break
-
-
 
         ext = os.path.splitext(self.filename.lower())[1]
         self.info={}
@@ -117,6 +129,8 @@ class FASTOutputFile(File):
 
         return df
 
+    def writeDataframe(self, df, filename, binary=True):
+        writeDataframe(df, filename, binary=binary)
 
 # --------------------------------------------------------------------------------
 # --- Helper low level functions 
@@ -341,6 +355,40 @@ def load_binary_output(filename, use_buffer=True):
             'attribute_units': ChanUnit}
     return data, info
 
+
+def writeDataframe(df, filename, binary=True):
+    channels  = df.values
+    # attempt to extract units from channel names
+    chanNames=[]
+    chanUnits=[]
+    for c in df.columns:
+        c     = c.strip()
+        name  = c
+        units = ''
+        if c[-1]==']':
+            chars=['[',']']
+        elif c[-1]==')':
+            chars=['(',')']
+        else:
+            chars=[]
+        if len(chars)>0:
+            op,cl = chars
+            iu=c.rfind(op)
+            if iu>1:
+                name = c[:iu]
+                unit = c[iu+1:].replace(cl,'')
+                if name[-1]=='_':
+                    name=name[:-1]
+                
+        chanNames.append(name)
+        chanUnits.append(unit)
+
+    if binary:
+        writeBinary(filename, channels, chanNames, chanUnits)
+    else:
+        NotImplementedError()
+
+
 def writeBinary(fileName, channels, chanNames, chanUnits, fileID=2, descStr=''):
     """
     Write an OpenFAST binary file.
@@ -441,8 +489,8 @@ def writeBinary(fileName, channels, chanNames, chanUnits, fileID=2, descStr=''):
 
 
 if __name__ == "__main__":
-    B=FASTOutFile('Turbine.outb')
-    print(B.data)
-
+    B=FASTOutputFile('tests/example_files/FASTOutBin.outb')
+    df=B.toDataFrame()
+    B.writeDataframe(df, 'tests/example_files/FASTOutBin_OUT.outb')
 
 
