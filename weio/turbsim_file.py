@@ -1,5 +1,7 @@
 """Read/Write TurbSim File
 
+Part of weio library: https://github.com/ebranlard/weio
+
 """
 import pandas as pd
 import numpy as np
@@ -616,8 +618,8 @@ class TurbSimFile(File):
 
         self['u']=np.zeros((3, nt, ny, nz))
         self['u'][0,:,:,:] = u 
-        self['u'][1,:,:,:] = u
-        self['u'][2,:,:,:] = u
+        self['u'][1,:,:,:] = v
+        self['u'][2,:,:,:] = w
         if addU is not None:
             self['u'][0,:,:,:] += addU
         self['t']  = t
@@ -632,6 +634,79 @@ class TurbSimFile(File):
         self['zHub'] = None
         self['uHub'] = None
         self['zHub'], self['uHub'], bHub = self.hubValues()
+
+    def toMannBox(self, base=None, removeUConstant=None, removeAllUMean=False):
+        """ 
+        removeUConstant: float,  will be removed from all values of the U box
+        removeAllUMean: If true, the time-average of each y-z points will be substracted
+        """
+        try:
+            from weio.mannbox_file import MannBoxFile
+        except:
+            try:
+                from .mannbox_file import MannBoxFile
+            except:
+                from mannbox_file import MannBoxFile
+        # filename
+        if base is None:
+            base = os.path.splitext(self.filename)[0]
+        base = base+'_{}x{}x{}'.format(*self['u'].shape[1:])
+
+        mn = MannBoxFile()
+        mn.fromTurbSim(self['u'], 0, removeConstant=removeUConstant, removeAllMean=removeAllUMean)
+        mn.write(base+'.u')
+
+        mn.fromTurbSim(self['u'], 1)
+        mn.write(base+'.v')
+
+        mn.fromTurbSim(self['u'], 2)
+        mn.write(base+'.w')
+
+    # --- Useful IO
+    def writeInfo(ts, filename):
+        """ Write info to txt """
+        import scipy.optimize as so
+        def fit_powerlaw_u_alpha(x, y, z_ref=100, p0=(10,0.1)):
+            """ 
+            p[0] : u_ref
+            p[1] : alpha
+            """
+            pfit, _ = so.curve_fit(lambda x, *p : p[0] * (x / z_ref) ** p[1], x, y, p0=p0)
+            y_fit = pfit[0] * (x / z_ref) ** pfit[1]
+            coeffs_dict={'u_ref':pfit[0],'alpha':pfit[1]}
+            formula = '{u_ref} * (z / {z_ref}) ** {alpha}'
+            fitted_fun = lambda xx: pfit[0] * (xx / z_ref) ** pfit[1]
+            return y_fit, pfit, {'coeffs':coeffs_dict,'formula':formula,'fitted_function':fitted_fun}
+        infofile = filename
+        with open(filename,'w') as f:
+            f.write(str(ts))
+            zMid =(ts['z'][0]+ts['z'][-1])/2
+            f.write('Middle height of box: {:.3f}\n'.format(zMid))
+
+            iy,_ = ts._iMid()
+            u = np.mean(ts['u'][0,:,iy,:], axis=0)
+            z=ts['z']
+            f.write('\n')
+            y_fit, pfit, model =  fit_powerlaw_u_alpha(z, u, z_ref=zMid, p0=(10,0.1))
+            f.write('Power law: alpha={:.5f}  -  u={:.5f}  at z={:.5f}\n'.format(pfit[1],pfit[0],zMid))
+            f.write('Periodic: {}\n'.format(ts.checkPeriodic(sigmaTol=1.5, aTol=0.5)))
+
+
+
+    def writeProbes(ts, probefile, yProbe, zProbe):
+        # Creating csv file with data at some probe locations
+        Columns=['Time_[s]']
+        Data   = ts['t']
+        for y in yProbe:
+            for z in zProbe:
+                iy = np.argmin(np.abs(ts['y']-y))
+                iz = np.argmin(np.abs(ts['z']-z))
+                lbl = '_y{:.0f}_z{:.0f}'.format(ts['y'][iy], ts['z'][iz])
+                Columns+=['{}{}_[m/s]'.format(c,lbl) for c in['u','v','w']]
+                DataSub = np.column_stack((ts['u'][0,:,iy,iz],ts['u'][1,:,iy,iz],ts['u'][2,:,iy,iz]))
+                Data    = np.column_stack((Data, DataSub))
+        np.savetxt(probefile, Data, header=','.join(Columns), delimiter=',')
+
 
 
 
