@@ -391,7 +391,10 @@ class TurbSimFile(File):
         """ Compute lateral cross spectral density
         If no index is provided, computed at mid box 
         """
-        import scipy.signal as sig
+        try:
+            import scipy.signal as sig
+        except:
+            import pydatview.tools.spectral as sig
         u, v, w = ts._latline(ix0=ix0, iz0=iz0, removeMean=True)
         t       = ts['t']
         dt      = t[1]-t[0]
@@ -405,7 +408,10 @@ class TurbSimFile(File):
         """ Compute vertical cross spectral density
         If no index is provided, computed at mid box 
         """
-        import scipy.signal as sig
+        try:
+            import scipy.signal as sig
+        except:
+            import pydatview.tools.spectral as sig
         t       = ts['t']
         dt      = t[1]-t[0]
         fs      = 1/dt
@@ -423,7 +429,10 @@ class TurbSimFile(File):
         """ Coherence on a longitudinal line for different delta y and delta z
         compared to a given point with index iy0,iz0
         """
-        import scipy.signal as sig
+        try:
+            import scipy.signal as sig
+        except:
+            import pydatview.tools.spectral as sig
         if iy0 is None:
             iy0,iz0 = ts.iMid
         u, v, w = ts._longiline(iy0=iy0, iz0=iz0, removeMean=True)
@@ -620,6 +629,8 @@ class TurbSimFile(File):
             dfs['Mid_csd_vert'] = pd.DataFrame(data = data ,columns = cols)
         except ModuleNotFoundError:
             print('Module scipy.signal not available')
+        except ImportError:
+            print('Likely issue with fftpack')
 
 
         # Hub time series
