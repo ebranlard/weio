@@ -189,6 +189,7 @@ class FASTLinearizationFile(File):
             s = s.replace('IfW ','');
             s = s.replace('Extended input: ','')
             s = s.replace('1st tower ','qt1');
+            s = s.replace('2nd tower ','qt2');
             if s.find('First time derivative of ')>=0:
                 s = s.replace('First time derivative of '     ,'');
                 s = 'd_'+s.strip()
@@ -287,9 +288,15 @@ class FASTLinearizationFile(File):
     def xdescr(self):
         return self.short_descr(self['x_info']['Description'])
     def ydescr(self):
-        return self.short_descr(self['y_info']['Description'])
+        if 'y_info' in self.keys():
+            return self.short_descr(self['y_info']['Description'])
+        else:
+            return []
     def udescr(self):
-        return self.short_descr(self['u_info']['Description'])
+        if 'u_info' in self.keys():
+            return self.short_descr(self['u_info']['Description'])
+        else:
+            return []
 
     def _toDataFrame(self):
         dfs={}
