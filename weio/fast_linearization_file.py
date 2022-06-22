@@ -89,7 +89,10 @@ class FASTLinearizationFile(File):
 
         def readMat(fid, n, m):
             vals=[f.readline().strip().split() for i in np.arange(n)]
+#             try:
             return np.array(vals).astype(float)
+#             except ValueError:
+#                 import pdb; pdb.set_trace()
 
         # Reading 
         with open(self.filename, 'r', errors="surrogateescape") as f:
@@ -170,9 +173,11 @@ class FASTLinearizationFile(File):
             s = s.replace('(m/s^2)' , '_[m/s^2]');
             s = s.replace('(deg/s^2)','_[deg/s^2]');
             s = s.replace('(m)'     , '_[m]'    );
+            s = s.replace(', m/s/s','_[m/s^2]');
             s = s.replace(', m/s^2','_[m/s^2]');
             s = s.replace(', m/s','_[m/s]');
             s = s.replace(', m','_[m]');
+            s = s.replace(', rad/s/s','_[rad/s^2]');
             s = s.replace(', rad/s^2','_[rad/s^2]');
             s = s.replace(', rad/s','_[rad/s]');
             s = s.replace(', rad','_[rad]');
@@ -186,13 +191,18 @@ class FASTLinearizationFile(File):
             s = s.replace('(3)','3')
             s= re.sub(r'\([^)]*\)','', s) # remove parenthesis
             s = s.replace('ED ','');
+            s = s.replace('BD_','BD_B');
             s = s.replace('IfW ','');
             s = s.replace('Extended input: ','')
             s = s.replace('1st tower ','qt1');
             s = s.replace('2nd tower ','qt2');
-            if s.find('First time derivative of ')>=0:
+            nd = s.count('First time derivative of ')
+            if nd>=0:
                 s = s.replace('First time derivative of '     ,'');
-                s = 'd_'+s.strip()
+                if nd==1:
+                    s = 'd_'+s.strip()
+                elif nd==2:
+                    s = 'dd_'+s.strip()
             s = s.replace('Variable speed generator DOF ','psi_rot'); # NOTE: internally in FAST this is the azimuth of the rotor
             s = s.replace('fore-aft bending mode DOF '    ,'FA'     );
             s = s.replace('side-to-side bending mode DOF','SS'     );
@@ -287,6 +297,10 @@ class FASTLinearizationFile(File):
 
     def xdescr(self):
         return self.short_descr(self['x_info']['Description'])
+
+    def xdotdescr(self):
+        return self.short_descr(self['xdot_info']['Description'])
+
     def ydescr(self):
         if 'y_info' in self.keys():
             return self.short_descr(self['y_info']['Description'])
@@ -301,9 +315,10 @@ class FASTLinearizationFile(File):
     def _toDataFrame(self):
         dfs={}
 
-        xdescr_short = self.xdescr()
-        ydescr_short = self.ydescr()
-        udescr_short = self.udescr()
+        xdescr_short    = self.xdescr()
+        xdotdescr_short = self.xdotdescr()
+        ydescr_short    = self.ydescr()
+        udescr_short    = self.udescr()
 
         if 'A' in self.keys():
             dfs['A'] = pd.DataFrame(data = self['A'], index=xdescr_short, columns=xdescr_short)
@@ -315,6 +330,8 @@ class FASTLinearizationFile(File):
             dfs['D'] = pd.DataFrame(data = self['D'], index=ydescr_short, columns=udescr_short)
         if 'x' in self.keys():
             dfs['x'] = pd.DataFrame(data = np.asarray(self['x']).reshape((1,-1)), columns=xdescr_short)
+        if 'xdot' in self.keys():
+            dfs['xdot'] = pd.DataFrame(data = np.asarray(self['xdot']).reshape((1,-1)), columns=xdotdescr_short)
         if 'u' in self.keys():
             dfs['u'] = pd.DataFrame(data = np.asarray(self['u']).reshape((1,-1)), columns=udescr_short)
         if 'y' in self.keys():
