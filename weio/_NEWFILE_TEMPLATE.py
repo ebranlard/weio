@@ -6,7 +6,7 @@ import pandas as pd
 import os
 
 try:
-    from weio.file import File, WrongFormatError, BrokenFormatError
+    from .file import File, WrongFormatError, BrokenFormatError
 except:
     EmptyFileError    = type('EmptyFileError', (Exception,),{})
     WrongFormatError  = type('WrongFormatError', (Exception,),{})
