@@ -1,2 +1,0 @@
-xarray # for netcdf files
-nptdms # for TDMS files

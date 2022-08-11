@@ -44,7 +44,10 @@ python -m unittest discover -v  # run test
         'pandas',
         'pyarrow',
         'scipy',
-        'chardet'],
+        'chardet'
+        'xarray',
+        'nptdms'
+        ],
     zip_safe=False,
     classifiers=[
               'Development Status :: 5 - Production/Stable',

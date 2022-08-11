@@ -5,3 +5,5 @@ pandas
 pyarrow # for parquet files
 scipy
 chardet
+xarray # for netcdf files
+nptdms # for TDMS files
