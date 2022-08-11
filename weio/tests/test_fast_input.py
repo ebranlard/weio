@@ -32,6 +32,7 @@ class Test(unittest.TestCase):
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         self.assertEqual(F['RotSpeed'],0.2)
+        F.comment = 'ElastoDyn file'
 
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED_twr.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
@@ -160,7 +161,7 @@ if __name__ == '__main__':
     #Test().test_FASTEDBld()
     #Test().test_FASTADBld()
     #Test().test_FASTADPol()
-    Test().test_FASTADPolMulti()
+    #Test().test_FASTADPolMulti()
     #Test().test_FASTExt()
     #Test().test_FASTIn()
-    #unittest.main()
+    unittest.main()

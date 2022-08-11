@@ -61,12 +61,27 @@ class FASTInputFile(File):
             return self._fixedfile
         else:
             return self.basefile
+
     @property
     def module(self):
         if self._fixedfile is None:
             return self.basefile.module
         else:
             return self._fixedfile.module
+
+    @property
+    def hasNodal(self):
+        if self._fixedfile is None:
+            return self.basefile.hasNodal
+        else:
+            return self._fixedfile.hasNodal
+
+    def getID(self, label):
+        return self.basefile.getID(label)
+
+    @property
+    def data(self):
+        return self.basefile.data
 
     def fixedFormat(self):
         # --- Creating a dedicated Child
@@ -112,7 +127,7 @@ class FASTInputFile(File):
 
     @comment.setter
     def comment(self,comment):
-        self.fixedfile.comment(comment)
+        self.fixedfile.comment = comment
 
     def __iter__(self):
         return self.fixedfile.__iter__()
@@ -1568,17 +1583,28 @@ class ADPolarFile(FASTInputFileBase):
             alpha = df['Alpha_[deg]'].values*np.pi/180.
             Cl    = df['Cl_[-]'].values
             Cd    = df['Cd_[-]'].values
-            Cd0   = self['Cd0'+labOffset]
-            # Cn (with or without Cd0)
-            Cn1 = Cl*np.cos(alpha)+ (Cd-Cd0)*np.sin(alpha) 
+
+            # Cn with Cd0
+            try:
+                Cd0   = self['Cd0'+labOffset]
+                # Cn (with or without Cd0)
+                Cn1 = Cl*np.cos(alpha)+ (Cd-Cd0)*np.sin(alpha) 
+                df['Cn_Cd0off_[-]'] = Cn1
+            except:
+                pass
+
+            # Regular Cn
             Cn  = Cl*np.cos(alpha)+ Cd*np.sin(alpha) 
             df['Cn_[-]'] = Cn
-            df['Cn_Cd0off_[-]'] = Cn1
 
-            CnLin = self['C_nalpha'+labOffset]*(alpha-self['alpha0'+labOffset]*np.pi/180.)
-            CnLin[alpha<-20*np.pi/180]=np.nan
-            CnLin[alpha> 30*np.pi/180]=np.nan
-            df['Cn_pot_[-]'] = CnLin
+            # Linear Cn
+            try:
+                CnLin = self['C_nalpha'+labOffset]*(alpha-self['alpha0'+labOffset]*np.pi/180.)
+                CnLin[alpha<-20*np.pi/180]=np.nan
+                CnLin[alpha> 30*np.pi/180]=np.nan
+                df['Cn_pot_[-]'] = CnLin
+            except:
+                pass
 
             # Highlighting points surrounding 0 1 2 Cn points
             CnPoints = Cn*np.nan
