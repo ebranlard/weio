@@ -44,7 +44,7 @@ python -m unittest discover -v  # run test
         'pandas',
         'pyarrow',
         'scipy',
-        'chardet'
+        'chardet',
         'xarray',
         'nptdms'
         ],
