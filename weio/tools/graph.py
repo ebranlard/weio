@@ -314,7 +314,6 @@ class GraphModel(object):
         propset=elem.propset
         propIDs=elem.propIDs
         # USING PROPID 0!!!
-        print('>>>> SET ELEM NODAL', self.getNodeProperty(propset, propIDs[0]).data)
         elem.setData(self.getNodeProperty(propset, propIDs[0]).data)
         # TODO average the two maybe..
 
