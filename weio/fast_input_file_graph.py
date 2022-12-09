@@ -27,7 +27,7 @@ def fastToGraph(data, **kwargs):
 # --------------------------------------------------------------------------------}
 # --- SubDyn
 # --------------------------------------------------------------------------------{
-def subdynToGraph(sd, propToNodes=False):
+def subdynToGraph(sd, propToNodes=False, propToElem=False):
     """
     sd: dict-like object as returned by weio
 
@@ -87,6 +87,8 @@ def subdynToGraph(sd, propToNodes=False):
         if propToNodes:
             # NOTE: this is disallowed by default because a same node can have two different diameters in SubDyn (it's by element)
             Graph.setElementNodalProp(elem, propset=PropSets[Type-1], propIDs=E[3:5])
+        if propToElem:
+            Graph.setElementNodalPropToElem(elem) # TODO, this shouldn't be needed
 
     # --- Concentrated Masses (in global coordinates), node data
     for iC, CM in enumerate(sd['ConcentratedMasses']):
@@ -132,12 +134,14 @@ def subdynToGraph(sd, propToNodes=False):
 # --------------------------------------------------------------------------------}
 # --- HydroDyn
 # --------------------------------------------------------------------------------{
-def hydrodynToGraph(hd, propToNodes=False):
+def hydrodynToGraph(hd, propToNodes=False, propToElem=False):
     """
      hd: dict-like object as returned by weio
 
     -propToNodes: if True, the element properties are also transferred to the nodes for convenience.
                  NOTE: this is not the default because a same node can have two different diameters in SubDyn (it's by element)
+
+    - propToElem: This might be due to misunderstanding of graph..
     """
     def type2Color(Pot):
         if Pot:
@@ -227,8 +231,12 @@ def hydrodynToGraph(hd, propToNodes=False):
         Graph.addElement(elem)
         # Nodal prop data NOTE: can't do that anymore for memebrs with different diameters at the same node
         if propToNodes:
+            print('>>>>>> PROP TO NODE')
             # NOTE: not by default because of feature with members with different diameters at the same node
             Graph.setElementNodalProp(elem, propset='Section', propIDs=EE[3:5])
+        if propToElem:
+            Graph.setElementNodalPropToElem(elem) # TODO, this shouldn't be needed
+
         if Type==1:
             # Simple
             Graph.setElementNodalProp(elem, propset='SimpleCoefs', propIDs=[1,1])
