@@ -232,7 +232,6 @@ def hydrodynToGraph(hd, propToNodes=False, propToElem=False):
         Graph.addElement(elem)
         # Nodal prop data NOTE: can't do that anymore for memebrs with different diameters at the same node
         if propToNodes:
-            print('>>>>>> PROP TO NODE')
             # NOTE: not by default because of feature with members with different diameters at the same node
             Graph.setElementNodalProp(elem, propset='Section', propIDs=EE[3:5])
         if propToElem:
