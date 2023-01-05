@@ -251,7 +251,7 @@ def hydrodynToGraph(hd, propToNodes=False, propToElem=False):
 # --------------------------------------------------------------------------------}
 # --- SubDyn Summary file 
 # --------------------------------------------------------------------------------{
-def subdynSumToGraph(data):
+def subdynSumToGraph(data, Graph=None):
     """ 
      data: dict-like object as returned by weio
     """
@@ -267,7 +267,8 @@ def subdynSumToGraph(data):
     DOF2Nodes = data['DOF2Nodes']
     nDOF      = data['nDOF_red']
 
-    Graph = GraphModel()
+    if Graph is None:
+        Graph = GraphModel()
 
     # --- Nodes and DOFs
     Nodes = data['Nodes']
