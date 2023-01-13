@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Read/Write TurbSim File
 
 Part of weio library: https://github.com/ebranlard/weio
@@ -840,9 +839,3 @@ if __name__=='__main__':
     ts = TurbSimFile('../_tests/TurbSim.bts')
 
 
-
-if __name__=='__main__':
-    ts = TurbSimFile('../_tests/TurbSim.bts')
-
-
->>>>>>> amr2bts
