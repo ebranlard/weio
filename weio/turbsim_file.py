@@ -117,7 +117,11 @@ class TurbSimFile(File):
 
         da = {}
         for component,direction,velname in zip([0,1,2],["x","y","z"],["u","v","w"]):
-            velocity = self["u"][component,...].copy()
+            try:
+                isAMR    = self.AMRFields
+                velocity = self["u"][component,...].copy()
+            except:
+                velocity = np.swapaxes(self["u"][component,...],1,2)     
             da[velname] = DataArray(velocity, 
                          coords={"time":time,"y":y,"z":z}, 
                          dims=["time","y","z"], 
@@ -669,7 +673,7 @@ class TurbSimFile(File):
 
 
     # Useful converters
-    def getAMRfields(self, filename, timestep, output_frequency, sampling_identifier, verbose=1, zref=None, xloc=None):
+    def getAMRfields(self, filename, timestep, output_frequency, sampling_identifier, verbose=1, fileout=None, zref=None, xloc=None):
         """
         Reads a AMRWind netcdf file, grabs a group of sampling planes (e.g. p_slice), 
         
@@ -696,6 +700,7 @@ class TurbSimFile(File):
                 
         obj = AMRWind(filename,timestep,output_frequency)
         obj.read(sampling_identifier)
+        self.AMRFields = True
 
         self["u"]          = np.ndarray((3,obj.nt,obj.ny,obj.nz)) 
         
@@ -723,7 +728,7 @@ class TurbSimFile(File):
         self['uRef'] = float(obj.data.u.sel(x=xloc).sel(y=0).sel(z=self["zRef"]).mean().values)
         self['zRef'], self['uRef'], bHub = self.hubValues()
         
-        fileout = filename.replace(".nc",".bts")
+        fileout = filename.replace(".nc",".bts") if fileout is None else fileout
         print("===> {0}".format(fileout))
         self.write(fileout)    
     
@@ -746,7 +751,7 @@ class TurbSimFile(File):
         """
         import xarray as xr
         
-        # read in sampling data plane
+        
         ds = xr.open_dataset(filename,
                               engine='netcdf4',
                               group=plane_label)
