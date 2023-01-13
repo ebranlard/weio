@@ -102,33 +102,7 @@ class TurbSimFile(File):
         self['t']    = np.arange(nt)*dt
         self['zTwr'] =-np.arange(nTwr)*dz + zBottom
         self['zRef'] = zHub
-        self['uRef'] = uHub
-
-    def to_Dataset(self):
-        """
-        Convert the data that was read in into a xarray Dataset
-        """
-        from xarray import IndexVariable, DataArray, Dataset
-
-        y      = IndexVariable("y", self.y, attrs={"description":"lateral coordinate","units":"m"})
-        zround = np.asarray([np.round(zz,6) for zz in self.z]) #the open function here returns something like *.0000000001 which is annoying
-        z      = IndexVariable("z", zround, attrs={"description":"vertical coordinate","units":"m"})
-        time   = IndexVariable("time", self.t, attrs={"description":"time since start of simulation","units":"s"})
-
-        da = {}
-        for component,direction,velname in zip([0,1,2],["x","y","z"],["u","v","w"]):
-            try:
-                isAMR    = self.AMRFields
-                velocity = self["u"][component,...].copy()
-            except:
-                velocity = np.swapaxes(self["u"][component,...],1,2)     
-            da[velname] = DataArray(velocity, 
-                         coords={"time":time,"y":y,"z":z}, 
-                         dims=["time","y","z"], 
-                         name="velocity", 
-                         attrs={"description":"velocity along {0}".format(direction),"units":"m/s"})
-
-        return Dataset(data_vars=da, coords={"time":time,"y":y,"z":z})   
+        self['uRef'] = uHub 
 
     def write(self, filename=None):
         """ 
@@ -671,9 +645,31 @@ class TurbSimFile(File):
         #    pass
         return dfs
 
+    def toDataset(self):
+        """
+        Convert the data that was read in into a xarray Dataset
+        """
+        from xarray import IndexVariable, DataArray, Dataset
+
+        y      = IndexVariable("y", self.y, attrs={"description":"lateral coordinate","units":"m"})
+        zround = np.asarray([np.round(zz,6) for zz in self.z]) #the open function here returns something like *.0000000001 which is annoying
+        z      = IndexVariable("z", zround, attrs={"description":"vertical coordinate","units":"m"})
+        time   = IndexVariable("time", self.t, attrs={"description":"time since start of simulation","units":"s"})
+
+        da = {}
+        for component,direction,velname in zip([0,1,2],["x","y","z"],["u","v","w"]):
+            # the dataset produced here has y/z axes swapped relative to data stored in original object
+            velocity = np.swapaxes(self["u"][component,...],1,2)     
+            da[velname] = DataArray(velocity, 
+                         coords={"time":time,"y":y,"z":z}, 
+                         dims=["time","y","z"], 
+                         name="velocity", 
+                         attrs={"description":"velocity along {0}".format(direction),"units":"m/s"})
+
+        return Dataset(data_vars=da, coords={"time":time,"y":y,"z":z})      
 
     # Useful converters
-    def getAMRfields(self, filename, timestep, output_frequency, sampling_identifier, verbose=1, fileout=None, zref=None, xloc=None):
+    def fromAMRWind_PD(self, filename, timestep, output_frequency, sampling_identifier, verbose=1, fileout=None, zref=None, xloc=None):
         """
         Reads a AMRWind netcdf file, grabs a group of sampling planes (e.g. p_slice), 
         
@@ -699,17 +695,16 @@ class TurbSimFile(File):
                 from amrwind_file import AMRWind
                 
         obj = AMRWind(filename,timestep,output_frequency)
-        obj.read(sampling_identifier)
-        self.AMRFields = True
+        obj.read(sampling_identifier)        
 
         self["u"]          = np.ndarray((3,obj.nt,obj.ny,obj.nz)) 
         
         xloc = float(obj.data.x[0]) if xloc is None else xloc
         if verbose:
             print("Grabbing the slice at x={0} m".format(xloc))
-        self['u'][0,:,:,:] = obj.data.u.sel(x=xloc).values
-        self['u'][1,:,:,:] = obj.data.v.sel(x=xloc).values
-        self['u'][2,:,:,:] = obj.data.w.sel(x=xloc).values        
+        self['u'][0,:,:,:] = np.swapaxes(obj.data.u.sel(x=xloc).values,1,2)
+        self['u'][1,:,:,:] = np.swapaxes(obj.data.v.sel(x=xloc).values,1,2)
+        self['u'][2,:,:,:] = np.swapaxes(obj.data.w.sel(x=xloc).values,1,2)        
         self['t']          = obj.data.t.values
 
         self['y']  = obj.data.y.values
