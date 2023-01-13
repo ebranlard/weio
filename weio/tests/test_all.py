@@ -3,10 +3,7 @@ import glob
 import weio
 import os
 import numpy as np
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except:
-    from helpers_for_test import MyDir, reading_test 
+from weio.tests.helpers_for_test import MyDir, reading_test 
 
 class Test(unittest.TestCase):
     def test_000_debug(self):
