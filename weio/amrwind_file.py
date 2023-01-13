@@ -1,7 +1,5 @@
 """Read AMR-Wind NETCDF file
 
-Part of weio library: https://github.com/ebranlard/weio
-
 """
 import xarray as xr
 import numpy as np
