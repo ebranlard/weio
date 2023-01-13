@@ -32,6 +32,10 @@ class Test(unittest.TestCase):
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         self.assertEqual(F['RotSpeed'],0.2)
+
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED_bld.dat'))
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
+        self.assertEqual(F['BldEdgSh(6)'],-0.6952)
         F.comment = 'ElastoDyn file'
 
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_ED_twr.dat'))
@@ -41,6 +45,10 @@ class Test(unittest.TestCase):
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_AD15.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         self.assertTrue(F['TipLoss'])
+
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_ExtPtfm_SubSef.dat'))
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
+        self.assertEqual(F['StiffnessMatrix'][2,2],1.96653266e+09)
 
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_HD.dat'))
         #F.test_ascii(bCompareWritesOnly=True,bDelete=True) # TODO
@@ -60,11 +68,6 @@ class Test(unittest.TestCase):
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
         self.assertEqual(F['PitManRat(1)'],2)
         
-        F=FASTInputFile(os.path.join(MyDir,'FASTIn_MD.dat'))
-        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
-        self.assertEqual(float(F['LineTypes'][0,1]),0.02)
-
-
     def test_FASTADBld(self):
         F=FASTInputFile(os.path.join(MyDir,'FASTIn_AD15_bld.dat'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
@@ -156,6 +159,33 @@ class Test(unittest.TestCase):
         graph = F.toGraph()
 #         self.assertEqual(len(graph.Nodes), 2)
 #         self.assertEqual(len(graph.Elements), 1)
+    def test_FASTInMoorDyn(self):
+        # MoorDyn version 1
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_MD-v1.dat'))
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
+        self.assertEqual(float(F['LineTypes'][0,1]),0.02)
+
+        # MoorDyn version 2
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_MD-v2.dat'))
+        #F.write(os.path.join(MyDir,'FASTIn_MD-v2.dat---OUT'))
+        self.assertTrue('Points'    in F.keys())
+        self.assertTrue('LineTypes' in F.keys())
+        self.assertTrue('LineProp'  in F.keys())
+        self.assertEqual(F['LineProp'].shape   , (3,7))
+        self.assertEqual(F['LineTypes'].shape  , (1,10))
+        self.assertEqual(F['Points'].shape  , (6,9))
+        self.assertEqual(len(F['Outlist'])  , 6)
+        self.assertEqual(F['Outlist'][0]  , 'FairTen1')
+        self.assertEqual(F['LineProp'][0,0] , '1')
+        self.assertEqual(F['LineProp'][0,1] , 'main')
+        self.assertEqual(F['LineProp'][0,6] , '-')
+
+    def test_FASTInAirfoil(self):
+        F=FASTInputFile(os.path.join(MyDir,'FASTIn_AD15_arfl.dat'))
+        F.test_ascii(bCompareWritesOnly=True,bDelete=True)
+        self.assertTrue('InterpOrd'  in F.keys())
+        self.assertTrue('AFCoeff'    in F.keys())
+        self.assertEqual(F['AFCoeff'].shape, (30,4))
 
 if __name__ == '__main__':
     #Test().test_FASTEDBld()
