@@ -29,7 +29,10 @@ class TurbSimFile(File):
 
     Main methods
     ------------
-    - read, write, toDataFrame, keys, valuesAt, makePeriodic, checkPeriodic, closestPoint
+    - read, write, toDataFrame, keys
+    - valuesAt, vertProfile, horizontalPlane, verticalPlane, closestPoint
+    - fitPowerLaw
+    - makePeriodic, checkPeriodic
 
     Examples
     --------
@@ -50,7 +53,7 @@ class TurbSimFile(File):
     def formatName():
         return 'TurbSim binary'
 
-    def __init__(self,filename=None, **kwargs):
+    def __init__(self, filename=None, **kwargs):
         self.filename = None
         if filename:
             self.read(filename, **kwargs)
@@ -102,7 +105,7 @@ class TurbSimFile(File):
         self['t']    = np.arange(nt)*dt
         self['zTwr'] =-np.arange(nTwr)*dz + zBottom
         self['zRef'] = zHub
-        self['uRef'] = uHub 
+        self['uRef'] = uHub
 
     def write(self, filename=None):
         """ 
@@ -171,13 +174,32 @@ class TurbSimFile(File):
     # --- Convenient properties (matching Mann Box interface as well)
     # --------------------------------------------------------------------------------{
     @property
-    def z(self): return self['z']
+    def z(self): return self['z'] # np.arange(nz)*dz +zBottom
 
     @property
-    def y(self): return self['y']
+    def y(self): return self['y'] # np.arange(ny)*dy  - np.mean( np.arange(ny)*dy )
+ 
+    @property
+    def t(self): return self['t'] # np.arange(nt)*dt
+
+    # NOTE: it would be best to use dz and dy as given in the file to avoid numerical issues
+    @property
+    def dz(self): return self['z'][1]-self['z'][0]
 
     @property
-    def t(self): return self['t']
+    def dy(self): return self['y'][1]-self['y'][0]
+
+    @property
+    def dt(self): return self['t'][1]-self['t'][0]
+
+    @property
+    def nz(self): return len(self.z)
+
+    @property
+    def ny(self): return len(self.y)
+
+    @property
+    def nt(self): return len(self.t)
 
     # --------------------------------------------------------------------------------}
     # --- Extracting relevant "Line" data at one point
@@ -187,8 +209,8 @@ class TurbSimFile(File):
         if method == 'nearest':
             iy, iz = self.closestPoint(y, z)
             u = self['u'][0,:,iy,iz]
-            v = self['u'][0,:,iy,iz]
-            w = self['u'][0,:,iy,iz]
+            v = self['u'][1,:,iy,iz]
+            w = self['u'][2,:,iy,iz]
         else:
             raise NotImplementedError()
         return u, v, w
@@ -324,11 +346,21 @@ class TurbSimFile(File):
     # --------------------------------------------------------------------------------}
     # --- Extracting average data
     # --------------------------------------------------------------------------------{
-    @property
-    def vertProfile(self):
-        iy, iz = self.iMid
-        m = np.mean(self['u'][:,:,iy,:], axis=1)
-        s = np.std( self['u'][:,:,iy,:], axis=1)
+    def vertProfile(self, y_span='full'):
+        """ Vertical profile of the box
+        INPUTS:
+         - y_span: if 'full', average the vertical profile accross all y-values
+                   if 'mid', average the vertical profile at the middle y value
+        """
+        if y_span=='full':
+            m = np.mean(np.mean(self['u'][:,:,:,:], axis=1), axis=1)
+            s = np.std( np.std( self['u'][:,:,:,:], axis=1), axis=1)
+        elif y_span=='mid':
+            iy, iz = self.iMid
+            m = np.mean(self['u'][:,:,iy,:], axis=1)
+            s = np.std( self['u'][:,:,iy,:], axis=1)
+        else:
+            raise NotImplementedError()
         return self.z, m, s
 
 
@@ -493,7 +525,7 @@ class TurbSimFile(File):
             print('New std : {:7.3f}  (target: {:7.3f}, old: {:7.3f})'.format(new_std2 , new_std , old_std))
 
     def makePeriodic(self):
-        """ Make the box periodic by mirroring it """
+        """ Make the box periodic in the streamwise direction by mirroring it """
         nDim, nt0, ny, nz = self['u'].shape
         u = self['u'].copy()
         del self['u']
@@ -572,7 +604,7 @@ class TurbSimFile(File):
         iy,iz = self.iMid
 
         # Mean vertical profile
-        z, m, s = self.vertProfile
+        z, m, s = self.vertProfile()
         ti = s/m*100
         cols=['z_[m]','u_[m/s]','v_[m/s]','w_[m/s]','sigma_u_[m/s]','sigma_v_[m/s]','sigma_w_[m/s]','TI_[%]']
         data = np.column_stack((z, m[0,:],m[1,:],m[2,:],s[0,:],s[1,:],s[2,:],ti[0,:]))
@@ -746,7 +778,7 @@ class TurbSimFile(File):
         """
         import xarray as xr
         
-        
+        # read in sampling data plane
         ds = xr.open_dataset(filename,
                               engine='netcdf4',
                               group=plane_label)
@@ -848,36 +880,25 @@ class TurbSimFile(File):
     # --- Useful IO
     def writeInfo(ts, filename):
         """ Write info to txt """
-        import scipy.optimize as so
-        def fit_powerlaw_u_alpha(x, y, z_ref=100, p0=(10,0.1)):
-            """ 
-            p[0] : u_ref
-            p[1] : alpha
-            """
-            pfit, _ = so.curve_fit(lambda x, *p : p[0] * (x / z_ref) ** p[1], x, y, p0=p0)
-            y_fit = pfit[0] * (x / z_ref) ** pfit[1]
-            coeffs_dict={'u_ref':pfit[0],'alpha':pfit[1]}
-            formula = '{u_ref} * (z / {z_ref}) ** {alpha}'
-            fitted_fun = lambda xx: pfit[0] * (xx / z_ref) ** pfit[1]
-            return y_fit, pfit, {'coeffs':coeffs_dict,'formula':formula,'fitted_function':fitted_fun}
         infofile = filename
         with open(filename,'w') as f:
             f.write(str(ts))
             zMid =(ts['z'][0]+ts['z'][-1])/2
             f.write('Middle height of box: {:.3f}\n'.format(zMid))
-
-            iy,_ = ts.iMid
-            u = np.mean(ts['u'][0,:,iy,:], axis=0)
-            z=ts['z']
-            f.write('\n')
-            y_fit, pfit, model =  fit_powerlaw_u_alpha(z, u, z_ref=zMid, p0=(10,0.1))
+            y_fit, pfit, model, _ = ts.fitPowerLaw(z_ref=zMid, y_span='mid', U_guess=10, alpha_guess=0.1)
             f.write('Power law: alpha={:.5f}  -  u={:.5f}  at z={:.5f}\n'.format(pfit[1],pfit[0],zMid))
             f.write('Periodic: {}\n'.format(ts.checkPeriodic(sigmaTol=1.5, aTol=0.5)))
 
 
 
     def writeProbes(ts, probefile, yProbe, zProbe):
-        # Creating csv file with data at some probe locations
+        """ Create a CSV file with wind speed data at given probe locations
+        defined by the vectors yProbe and zProbe. All combinations of y and z are extracted.
+        INPUTS:
+         - probefile: filename of CSV file to be written
+         - yProbe: array like of y locations
+         - zProbe: array like of z locations
+        """
         Columns=['Time_[s]']
         Data   = ts['t']
         for y in yProbe:
@@ -890,8 +911,120 @@ class TurbSimFile(File):
                 Data    = np.column_stack((Data, DataSub))
         np.savetxt(probefile, Data, header=','.join(Columns), delimiter=',')
 
+    def fitPowerLaw(ts, z_ref=None, y_span='full', U_guess=10, alpha_guess=0.1):
+        """ 
+        Fit power law to vertical profile
+        INPUTS:
+         - z_ref: reference height used to define the "U_ref"
+         - y_span: if 'full', average the vertical profile accross all y-values
+                   if 'mid', average the vertical profile at the middle y value
+        """
+        if z_ref is None:
+            # use mid height for z_ref
+            z_ref =(ts['z'][0]+ts['z'][-1])/2
+        # Average time series
+        z, u, _ = ts.vertProfile(y_span=y_span)
+        u = u[0,:]
+        u_fit, pfit, model =  fit_powerlaw_u_alpha(z, u, z_ref=z_ref, p0=(U_guess, alpha_guess))
+        return u_fit, pfit, model, z_ref
+
+# Functions from BTS_File.py to be ported here
+#     def TI(self,y=None,z=None,j=None,k=None):       
+#         """
+#         If no argument is given, compute TI over entire grid and return array of size (ny,nz). Else, compute TI at the specified point.
+#         
+#         Parameters
+#         ----------
+#         y : float,
+#             cross-stream position [m]
+#         z : float,
+#             vertical position AGL [m]
+#         j : int,
+#             grid index along cross-stream
+#         k : int,
+#             grid index along vertical
+#         """
+#         if ((y==None) & (j==None)):
+#             return np.std(self.U,axis=0) / np.mean(self.U,axis=0)
+#         if ((y==None) & (j!=None)):
+#             return (np.std(self.U[:,j,k])/np.mean(self.U[:,j,k]))
+#         if ((y!=None) & (j==None)):
+#             uSeries = self.U[:,self.y2j(y),self.z2k(z)]
+#             return np.std(uSeries)/np.mean(uSeries)
+#     
+#     def visualize(self,component='U',time=0):
+#         """
+#         Quick peak at the data for a given component, at a specific time.
+#         """
+#         data    = getattr(self,component)[time,:,:]
+#         plt.figure() ; 
+#         plt.imshow(data) ; 
+#         plt.colorbar()   
+#         plt.show()
+#      
+#     def spectrum(self,component='u',y=None,z=None):
+#         """
+#         Calculate spectrum of a specific component, given time series at ~ hub.
+#         
+#         Parameters
+#         ----------
+#         component : string,
+#             which component to use
+#         y : float,
+#             y coordinate [m] of specific location
+#         z : float,
+#             z coordinate [m] of specific location
+# 
+#         """
+#         if y==None:
+#             k = self.kHub
+#             j = self.jHub
+#         data    = getattr(self,component)      
+#         data    = data[:,j,k]
+#         N       = data.size
+#         freqs   = fftpack.fftfreq(N,self.dT)[1:N/2]
+#         psd     = (np.abs(fftpack.fft(data,N)[1:N/2]))**2
+#         return [freqs, psd]        
+# 
+#     def getRotorPoints(self):
+#         """
+#         In the square y-z slice, return which points are at the edge of the rotor in the horizontal and vertical directions.
+#         
+#         Returns
+#         -------
+#         jLeft : int,
+#             index for grid point that matches the left side of the rotor (when looking towards upstream)
+#         jRight : int,
+#             index for grid point that matches the right side of the rotor (when looking towards upstream)
+#         kBot : int,
+#             index for grid point that matches the bottom of the rotor
+#         kTop : int,
+#             index for grid point that matches the top of the rotor
+#         """
+#         self.zBotRotor      = self.zHub - self.R
+#         self.zTopRotor      = self.zHub + self.R
+#         self.yLeftRotor     = self.yHub - self.R
+#         self.yRightRotor    = self.yHub + self.R        
+#         self.jLeftRotor  = self.y2j(self.yLeftRotor)
+#         self.jRightRotor = self.y2j(self.yRightRotor)
+#         self.kBotRotor   = self.z2k(self.zBotRotor)
+#         self.kTopRotor   = self.z2k(self.zTopRotor)
+#         
 
 
+
+def fit_powerlaw_u_alpha(x, y, z_ref=100, p0=(10,0.1)):
+    """ 
+    p[0] : u_ref
+    p[1] : alpha
+    """
+    import scipy.optimize as so
+    pfit, _ = so.curve_fit(lambda x, *p : p[0] * (x / z_ref) ** p[1], x, y, p0=p0)
+    y_fit = pfit[0] * (x / z_ref) ** pfit[1]
+    coeffs_dict={'u_ref':pfit[0],'alpha':pfit[1]}
+    formula = '{u_ref} * (z / {z_ref}) ** {alpha}'
+    fitted_fun = lambda xx: pfit[0] * (xx / z_ref) ** pfit[1]
+    return y_fit, pfit, {'coeffs':coeffs_dict,'formula':formula,'fitted_function':fitted_fun}
 
 if __name__=='__main__':
     ts = TurbSimFile('../_tests/TurbSim.bts')
