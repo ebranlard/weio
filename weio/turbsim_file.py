@@ -29,10 +29,7 @@ class TurbSimFile(File):
 
     Main methods
     ------------
-    - read, write, toDataFrame, keys
-    - valuesAt, vertProfile, horizontalPlane, verticalPlane, closestPoint
-    - fitPowerLaw
-    - makePeriodic, checkPeriodic
+    - read, write, toDataFrame, keys, valuesAt, makePeriodic, checkPeriodic, closestPoint
 
     Examples
     --------
@@ -106,6 +103,28 @@ class TurbSimFile(File):
         self['zTwr'] =-np.arange(nTwr)*dz + zBottom
         self['zRef'] = zHub
         self['uRef'] = uHub
+
+    def to_Dataset(self):
+        """
+        Convert the data that was read in into a xarray Dataset
+        """
+        from xarray import IndexVariable, DataArray, Dataset
+
+        y      = IndexVariable("y", self.y, attrs={"description":"lateral coordinate","units":"m"})
+        zround = np.asarray([np.round(zz,6) for zz in self.z]) #the open function here returns something like *.0000000001 which is annoying
+        z      = IndexVariable("z", zround, attrs={"description":"vertical coordinate","units":"m"})
+        time   = IndexVariable("time", self.t, attrs={"description":"time since start of simulation","units":"s"})
+
+        da = {}
+        for component,direction,velname in zip([0,1,2],["x","y","z"],["u","v","w"]):
+            velocity = self["u"][component,...].copy()
+            da[velname] = DataArray(velocity, 
+                         coords={"time":time,"y":y,"z":z}, 
+                         dims=["time","y","z"], 
+                         name="velocity", 
+                         attrs={"description":"velocity along {0}".format(direction),"units":"m/s"})
+
+        return Dataset(data_vars=da, coords={"time":time,"y":y,"z":z})   
 
     def write(self, filename=None):
         """ 
@@ -190,8 +209,8 @@ class TurbSimFile(File):
         if method == 'nearest':
             iy, iz = self.closestPoint(y, z)
             u = self['u'][0,:,iy,iz]
-            v = self['u'][1,:,iy,iz]
-            w = self['u'][2,:,iy,iz]
+            v = self['u'][0,:,iy,iz]
+            w = self['u'][0,:,iy,iz]
         else:
             raise NotImplementedError()
         return u, v, w
@@ -327,21 +346,11 @@ class TurbSimFile(File):
     # --------------------------------------------------------------------------------}
     # --- Extracting average data
     # --------------------------------------------------------------------------------{
-    def vertProfile(self, y_span='full'):
-        """ Vertical profile of the box
-        INPUTS:
-         - y_span: if 'full', average the vertical profile accross all y-values
-                   if 'mid', average the vertical profile at the middle y value
-        """
-        if y_span=='full':
-            m = np.mean(np.mean(self['u'][:,:,:,:], axis=1), axis=1)
-            s = np.std( np.std( self['u'][:,:,:,:], axis=1), axis=1)
-        elif y_span=='mid':
-            iy, iz = self.iMid
-            m = np.mean(self['u'][:,:,iy,:], axis=1)
-            s = np.std( self['u'][:,:,iy,:], axis=1)
-        else:
-            raise NotImplementedError()
+    @property
+    def vertProfile(self):
+        iy, iz = self.iMid
+        m = np.mean(self['u'][:,:,iy,:], axis=1)
+        s = np.std( self['u'][:,:,iy,:], axis=1)
         return self.z, m, s
 
 
@@ -506,7 +515,7 @@ class TurbSimFile(File):
             print('New std : {:7.3f}  (target: {:7.3f}, old: {:7.3f})'.format(new_std2 , new_std , old_std))
 
     def makePeriodic(self):
-        """ Make the box periodic in the streamwise direction by mirroring it """
+        """ Make the box periodic by mirroring it """
         nDim, nt0, ny, nz = self['u'].shape
         u = self['u'].copy()
         del self['u']
@@ -585,7 +594,7 @@ class TurbSimFile(File):
         iy,iz = self.iMid
 
         # Mean vertical profile
-        z, m, s = self.vertProfile()
+        z, m, s = self.vertProfile
         ti = s/m*100
         cols=['z_[m]','u_[m/s]','v_[m/s]','w_[m/s]','sigma_u_[m/s]','sigma_v_[m/s]','sigma_w_[m/s]','TI_[%]']
         data = np.column_stack((z, m[0,:],m[1,:],m[2,:],s[0,:],s[1,:],s[2,:],ti[0,:]))
@@ -734,25 +743,36 @@ class TurbSimFile(File):
     # --- Useful IO
     def writeInfo(ts, filename):
         """ Write info to txt """
+        import scipy.optimize as so
+        def fit_powerlaw_u_alpha(x, y, z_ref=100, p0=(10,0.1)):
+            """ 
+            p[0] : u_ref
+            p[1] : alpha
+            """
+            pfit, _ = so.curve_fit(lambda x, *p : p[0] * (x / z_ref) ** p[1], x, y, p0=p0)
+            y_fit = pfit[0] * (x / z_ref) ** pfit[1]
+            coeffs_dict={'u_ref':pfit[0],'alpha':pfit[1]}
+            formula = '{u_ref} * (z / {z_ref}) ** {alpha}'
+            fitted_fun = lambda xx: pfit[0] * (xx / z_ref) ** pfit[1]
+            return y_fit, pfit, {'coeffs':coeffs_dict,'formula':formula,'fitted_function':fitted_fun}
         infofile = filename
         with open(filename,'w') as f:
             f.write(str(ts))
             zMid =(ts['z'][0]+ts['z'][-1])/2
             f.write('Middle height of box: {:.3f}\n'.format(zMid))
-            y_fit, pfit, model, _ = ts.fitPowerLaw(z_ref=zMid, y_span='mid', U_guess=10, alpha_guess=0.1)
+
+            iy,_ = ts.iMid
+            u = np.mean(ts['u'][0,:,iy,:], axis=0)
+            z=ts['z']
+            f.write('\n')
+            y_fit, pfit, model =  fit_powerlaw_u_alpha(z, u, z_ref=zMid, p0=(10,0.1))
             f.write('Power law: alpha={:.5f}  -  u={:.5f}  at z={:.5f}\n'.format(pfit[1],pfit[0],zMid))
             f.write('Periodic: {}\n'.format(ts.checkPeriodic(sigmaTol=1.5, aTol=0.5)))
 
 
 
     def writeProbes(ts, probefile, yProbe, zProbe):
-        """ Create a CSV file with wind speed data at given probe locations
-        defined by the vectors yProbe and zProbe. All combinations of y and z are extracted.
-        INPUTS:
-         - probefile: filename of CSV file to be written
-         - yProbe: array like of y locations
-         - zProbe: array like of z locations
-        """
+        # Creating csv file with data at some probe locations
         Columns=['Time_[s]']
         Data   = ts['t']
         for y in yProbe:
@@ -765,37 +785,8 @@ class TurbSimFile(File):
                 Data    = np.column_stack((Data, DataSub))
         np.savetxt(probefile, Data, header=','.join(Columns), delimiter=',')
 
-    def fitPowerLaw(ts, z_ref=None, y_span='full', U_guess=10, alpha_guess=0.1):
-        """ 
-        Fit power law to vertical profile
-        INPUTS:
-         - z_ref: reference height used to define the "U_ref"
-         - y_span: if 'full', average the vertical profile accross all y-values
-                   if 'mid', average the vertical profile at the middle y value
-        """
-        if z_ref is None:
-            # use mid height for z_ref
-            z_ref =(ts['z'][0]+ts['z'][-1])/2
-        # Average time series
-        z, u, _ = ts.vertProfile(y_span=y_span)
-        u = u[0,:]
-        u_fit, pfit, model =  fit_powerlaw_u_alpha(z, u, z_ref=z_ref, p0=(U_guess, alpha_guess))
-        return u_fit, pfit, model, z_ref
 
-def fit_powerlaw_u_alpha(x, y, z_ref=100, p0=(10,0.1)):
-    """ 
-    p[0] : u_ref
-    p[1] : alpha
-    """
-    import scipy.optimize as so
-    pfit, _ = so.curve_fit(lambda x, *p : p[0] * (x / z_ref) ** p[1], x, y, p0=p0)
-    y_fit = pfit[0] * (x / z_ref) ** pfit[1]
-    coeffs_dict={'u_ref':pfit[0],'alpha':pfit[1]}
-    formula = '{u_ref} * (z / {z_ref}) ** {alpha}'
-    fitted_fun = lambda xx: pfit[0] * (xx / z_ref) ** pfit[1]
-    return y_fit, pfit, {'coeffs':coeffs_dict,'formula':formula,'fitted_function':fitted_fun}
+
 
 if __name__=='__main__':
     ts = TurbSimFile('../_tests/TurbSim.bts')
-
-
