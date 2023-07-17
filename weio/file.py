@@ -13,6 +13,9 @@ class BrokenFormatError(Exception):
 class BrokenReaderError(Exception):
     pass
 
+class OptionalImportError(Exception):
+    pass
+
 try: #Python3
     FileNotFoundError=FileNotFoundError
 except NameError: # Python2
