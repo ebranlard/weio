@@ -67,7 +67,6 @@ class PickleFile(File):
 
     def read(self, filename=None, **kwargs):
         """ Reads the file self.filename, or `filename` if provided """
-        
         # --- Standard tests and exceptions (generic code)
         if filename:
             self.filename = filename

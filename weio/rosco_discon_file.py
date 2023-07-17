@@ -257,7 +257,7 @@ def read_DISCON(DISCON_filename, DISCON_in = None):
 
 
 if __name__ == '__main__':
-    filename = 'C:/Work/DigiTwin-Stiesdal/simulations/06-aero/2-Controller/SWT-3p6-130-ROSCO_Model/DISCON-ROSCO-DEV-SWT-3p6-130-GENERATED.IN'
+    filename = 'DISCON.in'
     rd = ROSCODISCONFile(filename)
     #print(rd.keys())
 #     print(rd.toString())
