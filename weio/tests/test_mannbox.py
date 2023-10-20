@@ -1,8 +1,9 @@
 import unittest
 import os
 import numpy as np
-from weio.mannbox_file import MannBoxFile
 from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.mannbox_file import MannBoxFile
+
 
 class Test(unittest.TestCase):
 

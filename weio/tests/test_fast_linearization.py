@@ -1,11 +1,8 @@
 import unittest
 import os
 import numpy as np
-from .helpers_for_test import MyDir, reading_test 
-try:
-    from weio.fast_linearization_file import FASTLinearizationFile
-except:
-    from weio.weio.fast_linearization_file import FASTLinearizationFile
+from weio.tests.helpers_for_test import MyDir, reading_test
+from weio.fast_linearization_file import FASTLinearizationFile
 
 class Test(unittest.TestCase):
 

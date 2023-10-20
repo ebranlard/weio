@@ -1,11 +1,7 @@
 import unittest
 import os
-
-from .helpers_for_test import MyDir, reading_test 
-try:
-    from weio.parquet_file import ParquetFile
-except:
-    from weio.weio.parquet_file import ParquetFile
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.parquet_file import ParquetFile
 
 class Test(unittest.TestCase):
 

@@ -1,11 +1,8 @@
 import unittest
 import os
 import numpy as np
-from .helpers_for_test import MyDir, reading_test 
-try:
-    from weio.fast_output_file import FASTOutputFile
-except:
-    from weio.weio.fast_output_file import FASTOutputFile
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.fast_output_file import FASTOutputFile
 
 class Test(unittest.TestCase):
 

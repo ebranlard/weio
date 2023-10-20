@@ -1,15 +1,8 @@
 import unittest
 import os
 import numpy as np
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except ImportError:
-    from helpers_for_test import MyDir, reading_test 
-try:
-    from weio.fast_summary_file import FASTSummaryFile
-except ImportError:
-    from weio.weio.fast_summary_file import FASTSummaryFile
-
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.fast_summary_file import FASTSummaryFile
 
 class Test(unittest.TestCase):
 

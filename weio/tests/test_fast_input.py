@@ -1,13 +1,13 @@
 import unittest
 import os
 import numpy as np
-import weio
 from weio.tests.helpers_for_test import MyDir, reading_test 
-
 from weio.fast_input_file import FASTInputFile
 from weio.fast_input_file import ExtPtfmFile
 from weio.fast_input_file import ADPolarFile
 from weio.fast_input_file import EDBladeFile
+from weio.fast_wind_file  import FASTWndFile
+
 
 class Test(unittest.TestCase):
  
@@ -144,7 +144,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(df['InpF_Fx_[N]'].values[-1], 1660.749680)
 
     def test_FASTWnd(self):
-        F=weio.read(os.path.join(MyDir,'FASTWnd.wnd'))
+        F=FASTWndFile(os.path.join(MyDir,'FASTWnd.wnd'))
         F.test_ascii(bCompareWritesOnly=True,bDelete=True)
 
     def test_FASTInGraph(self):
