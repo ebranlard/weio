@@ -144,6 +144,22 @@ class ROSCOPerformanceFile(File):
         dfs['CQ'] = pd.DataFrame(np.column_stack((self['TSR'], self['CQ'])), columns=columns)
         return dfs
 
+    def to2DFields(self, **kwargs):
+        import xarray as xr
+        if len(kwargs.keys())>0:
+            print('[WARN] RoscoPerformance_CpCtCq: to2DFields: ignored keys: ',kwargs.keys())
+        s1 = 'TSR'
+        s2 = 'pitch'
+        ds = xr.Dataset(coords={s1: self['TSR'], s2: self['pitch']})
+        ds[s1].attrs['unit'] = '-'
+        ds[s2].attrs['unit'] = 'deg'
+        for var in ['CP','CT','CQ']:
+            M = self[var].copy()
+            M[M<0] = 0
+            ds[var] = ([s1, s2], M)
+            ds[var].attrs['unit'] = '-'
+        return ds
+
     # --- Optional functions
     def toAeroDisc(self, filename, R, csv=False, WS=None, omegaRPM=10):
         """ Convert to AeroDisc Format 
@@ -250,8 +266,7 @@ class ROSCOPerformanceFile(File):
         CP[CP<0]=0 # 
         CP_max, tsr_max, pitch_max = self.CPmax()
         # plot
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
+        fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
         surf = ax.plot_surface(LAMBDA, PITCH, np.transpose(CP), cmap=cm.coolwarm, linewidth=0, antialiased=True,alpha=0.8, label='$C_p$')
         if plotMax:
             ax.scatter(tsr_max, pitch_max, CP_max, c='k', marker='o', s=50, label=r'$C_{p,max}$')
