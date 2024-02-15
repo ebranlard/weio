@@ -36,7 +36,7 @@ python -m pip install -e .      # install
 python -m unittest discover -v  # run test
 """,
     long_description_content_type = 'text/markdown',
-    packages=find_packages(include=['weio'],exclude=['./__init__.py']),
+    packages=find_packages(include=['weio', 'weio.wetb*', 'weio.tools'],exclude=['./__init__.py']),
     install_requires=[
         'matplotlib',
         'openpyxl',
