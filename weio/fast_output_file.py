@@ -151,7 +151,8 @@ class FASTOutputFile(File):
                 cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(info['attribute_names'], info['attribute_units'])]
         else:
             cols=info['attribute_names']
-
+        self.description = info.get('description', '')
+        self.description = r'\n'.join(self.description) if isinstance(self.description,list) else self.description
         if isinstance(self.data, pd.DataFrame):
             self.data.columns = cols
         else:
@@ -175,6 +176,7 @@ class FASTOutputFile(File):
         else:
             # ascii output
             with open(self.filename,'w') as f:
+                f.write(self.description) # add description to the begining of the file
                 f.write('\t'.join(['{:>10s}'.format(c)         for c in self.channels])+'\n')
                 f.write('\t'.join(['{:>10s}'.format('('+u+')') for u in self.units])+'\n')
                 # TODO better..
