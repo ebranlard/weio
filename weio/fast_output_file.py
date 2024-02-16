@@ -181,7 +181,7 @@ class FASTOutputFile(File):
                 f.write('\t'.join(['{:>10s}'.format('('+u+')') for u in self.units])+'\n')
                 # TODO better..
                 if self.data is not None and isinstance(self.data, pd.DataFrame) and not self.data.empty:
-                    f.write('\n'.join(['\t'.join(['{:10.4f}'.format(y[0])]+['{: .5e}'.format(x) for x in y[1:]]) for _, y in self.data.iterrows()]))
+                    f.write('\n'.join(['\t'.join(['{:10.4f}'.format(y.iloc[0])]+['{: .5e}'.format(x) for x in y.iloc[1:]]) for _, y in self.data.iterrows()]))
 
     @property
     def channels(self):
