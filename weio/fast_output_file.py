@@ -152,7 +152,7 @@ class FASTOutputFile(File):
         else:
             cols=info['attribute_names']
         self.description = info.get('description', '')
-        self.description = r'\n'.join(self.description) if isinstance(self.description,list) else self.description
+        self.description = ''.join(self.description) if isinstance(self.description,list) else self.description
         if isinstance(self.data, pd.DataFrame):
             self.data.columns = cols
         else:
@@ -180,7 +180,8 @@ class FASTOutputFile(File):
                 f.write('\t'.join(['{:>10s}'.format(c)         for c in self.channels])+'\n')
                 f.write('\t'.join(['{:>10s}'.format('('+u+')') for u in self.units])+'\n')
                 # TODO better..
-                f.write('\n'.join(['\t'.join(['{:10.4f}'.format(y[0])]+['{:10.3e}'.format(x) for x in y[1:]]) for y in self.data]))
+                if self.data is not None and isinstance(self.data, pd.DataFrame) and not self.data.empty:
+                    f.write('\n'.join(['\t'.join(['{:10.4f}'.format(y[0])]+['{: .5e}'.format(x) for x in y[1:]]) for _, y in self.data.iterrows()]))
 
     @property
     def channels(self):
