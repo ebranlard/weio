@@ -68,12 +68,12 @@ Bld.write('AeroDyn_Blade_Modified.dat')
 ```
 
 ## Requirements
-The library is compatible python 2.7 and python 3, and has limited requirements.
+The library is compatible python 3, and has limited requirements.
 If you have pip installed on your system, you can install them by typing in a terminal: 
 ```bash
 pip install -r requirements.txt
 ```
-or type `make dep` from the main directory.
+
 
 
 ## Download 

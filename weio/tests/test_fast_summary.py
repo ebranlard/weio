@@ -1,15 +1,8 @@
 import unittest
 import os
 import numpy as np
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except ImportError:
-    from helpers_for_test import MyDir, reading_test 
-try:
-    from weio.fast_summary_file import FASTSummaryFile
-except ImportError:
-    from weio.weio.fast_summary_file import FASTSummaryFile
-
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.fast_summary_file import FASTSummaryFile
 
 class Test(unittest.TestCase):
 
@@ -21,7 +14,7 @@ class Test(unittest.TestCase):
         np.testing.assert_almost_equal(f['CB_frequencies'].ravel(),[2.571561E-02,5.154897E+00,3.448768E+01,3.639185E+01,9.826435E+01], 5)
 
         # Test toDataFrame
-        df=f.toDataFrame()
+        df=f.toDataFrame(sortDim=2)
         np.testing.assert_almost_equal(df['z_[m]'].values,[-6,-1,0])
         np.testing.assert_almost_equal(df['GuyanMode1x_[m]'].values[0],0.6)
 

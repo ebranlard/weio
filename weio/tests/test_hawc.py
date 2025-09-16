@@ -1,27 +1,15 @@
 import unittest
 import os
 import numpy as np
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except ImportError:
-    from helpers_for_test import MyDir, reading_test 
+import weio
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.hawc2_dat_file import HAWC2DatFile
+from weio.hawc2_ae_file import HAWC2AEFile
+from weio.hawc2_pc_file import HAWC2PCFile
+from weio.hawc2_st_file import HAWC2StFile
+from weio.hawcstab2_ind_file import HAWCStab2IndFile
+from weio.hawcstab2_pwr_file import HAWCStab2PwrFile
 
-try:
-    import weio
-    from weio.hawc2_dat_file import HAWC2DatFile
-    from weio.hawc2_ae_file import HAWC2AEFile
-    from weio.hawc2_pc_file import HAWC2PCFile
-    from weio.hawc2_st_file import HAWC2StFile
-    from weio.hawcstab2_ind_file import HAWCStab2IndFile
-    from weio.hawcstab2_pwr_file import HAWCStab2PwrFile
-except:
-    import weio.weio as weio
-    from weio.weio.hawc2_dat_file import HAWC2DatFile
-    from weio.weio.hawc2_ae_file import HAWC2AEFile
-    from weio.weio.hawc2_pc_file import HAWC2PCFile
-    from weio.weio.hawc2_st_file import HAWC2StFile
-    from weio.weio.hawcstab2_ind_file import HAWCStab2IndFile
-    from weio.weio.hawcstab2_pwr_file import HAWCStab2PwrFile
 
 class Test(unittest.TestCase):
  

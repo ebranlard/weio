@@ -1,14 +1,9 @@
 import unittest
 import os
 import numpy as np
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except ImportError:
-    from helpers_for_test import MyDir, reading_test 
-try:
-    from weio.vtk_file import VTKFile
-except ImportError:
-    from weio.weio.vtk_file import VTKFile
+from weio.tests.helpers_for_test import MyDir, reading_test
+from weio.vtk_file import VTKFile
+
 
 
 class Test(unittest.TestCase):

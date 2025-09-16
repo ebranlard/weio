@@ -1,20 +1,8 @@
-from __future__ import division
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import absolute_import
-from io import open
-from builtins import map
-from builtins import range
-from builtins import chr
-from builtins import str
-from future import standard_library
-standard_library.install_aliases()
-import os 
 import numpy as np
+import pandas as pd
+import os 
 
 from .file import File, WrongFormatError, FileNotFoundError
-import pandas as pd
-
 from .wetb.hawc2.Hawc2io import ReadHawc2
 
 
@@ -115,7 +103,7 @@ class HAWC2DatFile(File):
         nChannels = self.data.shape[1]
         SimTime   = self.data[-1,0] #-self.data[0,0]
         # --- dat file
-        np.savetxt(datfilename, self.data, fmt=b'%16.8e')
+        np.savetxt(datfilename, self.data, fmt='%16.8e')
         # --- Sel file
         with open(selfilename, 'w') as f:
             if self.bHawc:

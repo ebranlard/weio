@@ -1,11 +1,8 @@
 import unittest
 import os
 import numpy as np
-from .helpers_for_test import MyDir, reading_test 
-try:
-    from weio.turbsim_file import TurbSimFile
-except:
-    from weio.weio.turbsim_file import TurbSimFile
+from weio.tests.helpers_for_test import MyDir, reading_test
+from weio.turbsim_file import TurbSimFile
 
 class Test(unittest.TestCase):
 

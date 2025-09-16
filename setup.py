@@ -1,18 +1,11 @@
 from setuptools import setup, find_packages
 
-VERSION='1.0.0'
+VERSION='2.0.0'
 
+with open('requirements.txt') as f:
+    REQUIREMENTS = f.read().splitlines()
 
-setup(
-    name='weio',
-    version=VERSION,
-    url='http://github.com/elmanuelito/weio/',
-    author='Emmanuel Branlard',
-    author_email='lastname@gmail.com',
-    license='MIT',
-    python_requires=">=2.7",
-    description='Library to read and write files for wind energy',
-    long_description="""
+DESCRIPTION="""
 weio is a library to read and write files, in particular files used by the Wind Energy community. 
 This library is for instance used by the GUI tool [pyDatView](https://github.com/ebranlard/pydatview/) to plot, export and compare these different files. 
 
@@ -34,21 +27,24 @@ cd weio
 python -m pip install --user -r requirements.txt  
 python -m pip install -e .      # install
 python -m unittest discover -v  # run test
+"""
+
+
+
+setup(
+    name='weio',
+    version=VERSION,
+    url='http://github.com/ebranlard/weio/',
+    author='Emmanuel Branlard',
+    author_email='lastname@gmail.com',
+    license='MIT',
+    python_requires=">=3.6",
+    description='Library to read and write files for wind energy',
+    long_description="""
 """,
     long_description_content_type = 'text/markdown',
-    packages=find_packages(include=['weio'],exclude=['./__init__.py']),
-    install_requires=[
-        'matplotlib',
-        'future',
-        'chardet',
-        'openpyxl ;    python_version>"3.0"',
-        'numpy>=1.16.5; python_version>"3.0"',
-        'numpy        ; python_version<"3.0"',
-        'pandas>=1.0.1; python_version>"3.0"',
-        'pandas; python_version<="3.0"',
-        'xlrd==1.2.0; python_version<"3.0"',
-        'pyarrow',
-        'scipy'],
+    packages=find_packages(include=['weio', 'weio.wetb*', 'weio.tools'],exclude=['./__init__.py']),
+    install_requires=REQUIREMENTS,
     zip_safe=False,
     classifiers=[
               'Development Status :: 5 - Production/Stable',

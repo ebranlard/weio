@@ -1,16 +1,8 @@
 import unittest
 import os
 import numpy as np
-import weio
-try:
-    from .helpers_for_test import MyDir, reading_test 
-except ImportError:
-    from helpers_for_test import MyDir, reading_test 
-
-try:
-    from weio.fast_input_deck import FASTInputDeck
-except:
-    from weio.weio.fast_input_deck import FASTInputDeck
+from weio.tests.helpers_for_test import MyDir, reading_test 
+from weio.fast_input_deck import FASTInputDeck
 
 class Test(unittest.TestCase):
 

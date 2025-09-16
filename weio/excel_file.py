@@ -1,9 +1,3 @@
-from __future__ import division,unicode_literals,print_function,absolute_import
-from builtins import map, range, chr, str
-from io import open
-from future import standard_library
-standard_library.install_aliases()
-
 from .file import File, WrongFormatError, BrokenFormatError
 import numpy as np
 import pandas as pd
@@ -24,10 +18,7 @@ class ExcelFile(File):
     def _read(self):
         self.data=dict()
         # Reading all sheets
-        try:
-            xls = pd.ExcelFile(self.filename,  engine='openpyxl')
-        except:
-            xls = pd.ExcelFile(self.filename)
+        xls = pd.ExcelFile(self.filename,  engine='openpyxl')
         dfs = {}
         for sheet_name in xls.sheet_names:
             # Reading sheet
@@ -76,13 +67,15 @@ class ExcelFile(File):
         writer.save()
 
     def __repr__(self):
-        s ='Class XXXX (attributes: data)\n'
+        s ='Class ExcelFile (attributes: data)\n'
         return s
 
 
     def _toDataFrame(self):
-        #cols=['Alpha_[deg]','Cl_[-]','Cd_[-]','Cm_[-]']
-        #dfs[name] = pd.DataFrame(data=..., columns=cols)
-        #df=pd.DataFrame(data=,columns=) 
-        return self.data
+        if len(self.data)==1:
+            # Return a single dataframe
+            return self.data[list(self.data.keys())[0]]
+        else:
+            # Return dictionary
+            return self.data
 
