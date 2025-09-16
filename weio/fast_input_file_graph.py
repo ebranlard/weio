@@ -3,10 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Local 
-try:
-    from .tools.graph import *
-except ImportError:
-    from welib.FEM.graph import *
+from weio.tools.graph import *
+
 
 
 # --------------------------------------------------------------------------------}

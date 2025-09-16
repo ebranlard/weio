@@ -240,7 +240,7 @@ class FASTOutputFile(File):
 
     def to2DFields(self, DeltaAzi=5, nPeriods=3, rcoords=None, kinds=['(t,r)','(psi,r)'], **kwargs):
         raise Exception('to2DFields is not available in weio')
-        import welib.fast.postpro as fastlib 
+
 
         def insertName(ds, name, dims):
             for var in ds.variables:
