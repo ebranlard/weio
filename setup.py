@@ -40,8 +40,7 @@ setup(
     license='MIT',
     python_requires=">=3.6",
     description='Library to read and write files for wind energy',
-    long_description="""
-""",
+    long_description=DESCRIPTION,
     long_description_content_type = 'text/markdown',
     packages=find_packages(include=['weio', 'weio.wetb*', 'weio.tools'],exclude=['./__init__.py']),
     install_requires=REQUIREMENTS,
