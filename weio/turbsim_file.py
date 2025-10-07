@@ -535,7 +535,7 @@ class TurbSimFile(File):
             print('New std : {:7.3f}  (target: {:7.3f}, old: {:7.3f})'.format(new_std2 , new_std , old_std))
 
     def makePeriodic(self):
-        """ Make the box periodic in the streamwise direction by mirroring it """
+        """ Make the box periodic in the streamwise direction by mirroring it - Periodic is ID=8"""
         nDim, nt0, ny, nz = self['u'].shape
         u = self['u'].copy()
         del self['u']
