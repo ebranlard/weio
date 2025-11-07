@@ -73,14 +73,85 @@ class XXXFile(File):
         # Calling (children) function to write
         self._write()
 
-    def _read(self):
-        """ Reads self.filename and stores data into self. Self is (or behaves like) a dictionary"""
-        # --- Example: 
+    def _read(self, streaming=False, **kwargs):
+        """
+        Reads self.filename and stores data into self. Self is (or behaves like) a dictionary
+
+        Parameters
+        ----------
+        streaming : bool
+            If True, read only headers and keep file open for later reading.
+            Requires context manager. Default: False (read entire file)
+        """
+        # --- Example (normal mode - read everything):
         #self['data']=[]
         #with open(self.filename, 'r', errors="surrogateescape") as f:
         #    for i, line in enumerate(f):
         #        self['data'].append(line)
+
+        # --- Example (with streaming support):
+        # if streaming:
+        #     # Read headers only, keep file open
+        #     self._fid = open(self.filename, 'r', errors="surrogateescape")
+        #     # Read header lines
+        #     self['header_line'] = self._fid.readline()
+        #     # Parse header info
+        #     self['attribute_names'] = self['header_line'].split()
+        #     # File is now positioned at start of data
+        # else:
+        #     # Normal mode: read entire file
+        #     self['data']=[]
+        #     with open(self.filename, 'r', errors="surrogateescape") as f:
+        #         f.readline()  # skip header
+        #         for i, line in enumerate(f):
+        #             self['data'].append(line)
         raise NotImplementedError()
+
+    def _readAll(self):
+        """
+        Read all remaining data after header in streaming mode.
+        Only called when streaming=True and readAll() is invoked.
+        """
+        # --- Example:
+        # if self._fid is None:
+        #     raise RuntimeError("No open file handle")
+        #
+        # # Read all remaining lines from current position
+        # self['data'] = []
+        # for line in self._fid:
+        #     self['data'].append(line.strip())
+        raise NotImplementedError(f"{self.__class__.__name__} does not support readAll()")
+
+    def _readChunk(self, nlines=None, **kwargs):
+        """
+        Read a chunk of data from current position in streaming mode.
+        Only called when streaming=True and readChunk() is invoked.
+
+        Parameters
+        ----------
+        nlines : int
+            Number of lines to read. If None, use default chunk size.
+
+        Returns
+        -------
+        chunk : data
+            The chunk of data read, or None if end of file
+        """
+        # --- Example:
+        # if self._fid is None:
+        #     raise RuntimeError("No open file handle")
+        #
+        # if nlines is None:
+        #     nlines = 1000  # default chunk size
+        #
+        # chunk = []
+        # for i in range(nlines):
+        #     line = self._fid.readline()
+        #     if not line:
+        #         return None if not chunk else chunk
+        #     chunk.append(line.strip())
+        # return chunk
+        raise NotImplementedError(f"{self.__class__.__name__} does not support readChunk()")
 
     def _write(self):
         """ Writes to self.filename"""

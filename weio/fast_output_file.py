@@ -79,27 +79,56 @@ class FASTOutputFile(File):
     def formatName():
         return 'FAST output file'
 
-    def __init__(self, filename=None, **kwargs):
+    def __enter__(self):
+        """Context manager entry."""
+        self._in_context = True
+        if self.filename:
+            self.read(streaming=self.streaming)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Context manager exit - close file handle if open."""
+        if self._fid is not None:
+            self._fid.close()
+            self._fid = None
+        self._in_context = False
+        return False  # Propagate exceptions
+
+    def __init__(self, filename=None, streaming=False, **kwargs):
         """ Class constructor. If a `filename` is given, the file is read. """
         # Data
         self.filename    = filename
         self.data        = None  # pandas.DataFrame
         self.description = ''    # string
-        if filename:
-            self.read(**kwargs)
+        self.streaming   = streaming
+        self._in_context = False
+        self._fid        = None
+        self._data_start_pos = None
+        # Only read if not streaming (streaming requires context manager)
+        if filename and not streaming:
+            self.read(streaming=streaming, **kwargs)
 
-    def read(self, filename=None, **kwargs):
+    def read(self, filename=None, streaming=None, **kwargs):
         """ Reads the file self.filename, or `filename` if provided """
-        
+
         # --- Standard tests and exceptions (generic code)
         if filename:
             self.filename = filename
+        if streaming is not None:
+            self.streaming = streaming
         if not self.filename:
             raise Exception('No filename provided')
         if not os.path.isfile(self.filename):
             raise OSError(2,'File not found:',self.filename)
         if os.stat(self.filename).st_size == 0:
             raise EmptyFileError('File is empty:',self.filename)
+
+        # Enforce context manager for streaming
+        if self.streaming and not self._in_context:
+            raise RuntimeError(
+                "streaming=True requires using a context manager ('with' statement) "
+                "to ensure the file is closed. Use: `with FASTOutputFile(...) as reader:`"
+            )
 
         # --- Actual reading
         def readline(iLine):
@@ -113,52 +142,92 @@ class FASTOutputFile(File):
         ext = os.path.splitext(self.filename.lower())[1]
         info={}
         self['binary']=False
-        try:
-            if ext in ['.out','.elev','.dbg','.dbg2']:
-                self.data, info = load_ascii_output(self.filename, **kwargs)
-            elif ext=='.outb':
-                self.data, info = load_binary_output(self.filename, **kwargs)
-                self['binary']=True
-            elif ext=='.elm':
-                F=CSVFile(filename=self.filename, sep=' ', commentLines=[0,2],colNamesLine=1)
-                self.data = F.data
-                del F
-                info['attribute_units']=readline(3).replace('sec','s').split()
-                info['attribute_names']=self.data.columns.values
-            else:
-                if isBinary(self.filename):
+
+        if self.streaming:
+            # Streaming mode: read headers only, keep file open
+            try:
+                if ext=='.outb' or (ext not in ['.out','.elev','.dbg','.dbg2','.elm'] and isBinary(self.filename)):
+                    # Binary file - read header only
+                    self._fid, info = load_binary_output_header(self.filename, **kwargs)
+                    self['binary']=True
+                elif ext in ['.out','.elev','.dbg','.dbg2'] or (ext not in ['.outb','.elm']):
+                    # ASCII file - read header only
+                    self._fid, info = load_ascii_output_header(self.filename, **kwargs)
+                    self['binary']=False
+                elif ext=='.elm':
+                    # .elm files not supported in streaming mode yet
+                    raise NotImplementedError('Streaming mode not yet supported for .elm files')
+
+                self.data = None  # No data loaded yet in streaming mode
+            except Exception as e:
+                raise WrongFormatError('FAST Out File {}: {}'.format(self.filename,e.args))
+        else:
+            # Normal mode: read entire file
+            try:
+                if ext in ['.out','.elev','.dbg','.dbg2']:
+                    self.data, info = load_ascii_output(self.filename, **kwargs)
+                elif ext=='.outb':
                     self.data, info = load_binary_output(self.filename, **kwargs)
                     self['binary']=True
+                elif ext=='.elm':
+                    F=CSVFile(filename=self.filename, sep=' ', commentLines=[0,2],colNamesLine=1)
+                    self.data = F.data
+                    del F
+                    info['attribute_units']=readline(3).replace('sec','s').split()
+                    info['attribute_names']=self.data.columns.values
                 else:
-                    self.data, info = load_ascii_output(self.filename, **kwargs)
-                    self['binary']=False
-        except MemoryError as e:    
-            raise BrokenReaderError('FAST Out File {}: Memory error encountered\n{}'.format(self.filename,e))
-        except Exception as e:    
-            raise WrongFormatError('FAST Out File {}: {}'.format(self.filename,e.args))
-        if self.data.shape[0]==0:
-            raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
+                    if isBinary(self.filename):
+                        self.data, info = load_binary_output(self.filename, **kwargs)
+                        self['binary']=True
+                    else:
+                        self.data, info = load_ascii_output(self.filename, **kwargs)
+                        self['binary']=False
+            except MemoryError as e:
+                raise BrokenReaderError('FAST Out File {}: Memory error encountered\n{}'.format(self.filename,e))
+            except Exception as e:
+                raise WrongFormatError('FAST Out File {}: {}'.format(self.filename,e.args))
+            if self.data.shape[0]==0:
+                raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
 
 
 
-        # --- Convert to DataFrame
-        if info['attribute_units'] is not None:
-            info['attribute_units'] = [re.sub(r'[()\[\]]','',u) for u in info['attribute_units']]
-            if len(info['attribute_names'])!=len(info['attribute_units']):
-                cols=info['attribute_names']
-                print('[WARN] not all columns have units! Skipping units')
-            else:
-                cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(info['attribute_names'], info['attribute_units'])]
-        else:
-            cols=info['attribute_names']
+        # --- Store header information
+        self['attribute_names'] = info.get('attribute_names', [])
+        self['attribute_units'] = info.get('attribute_units', [])
         self.description = info.get('description', '')
         self.description = ''.join(self.description) if isinstance(self.description,list) else self.description
-        if isinstance(self.data, pd.DataFrame):
-            self.data.columns = cols
-        else:
-            if len(cols)!=self.data.shape[1]:
-                raise BrokenFormatError('Inconstistent number of columns between headers ({}) and data ({}) for file {}'.format(len(cols), self.data.shape[1], self.filename))
-            self.data = pd.DataFrame(data=self.data, columns=cols)
+
+        # Store binary file metadata for streaming mode
+        if self.streaming and self['binary']:
+            self['_FileID'] = info.get('FileID')
+            self['_NumOutChans'] = info.get('NumOutChans')
+            self['_NT'] = info.get('NT')
+            self['_ColScl'] = info.get('ColScl')
+            self['_ColOff'] = info.get('ColOff')
+            if info['FileID'] == FileFmtID_WithTime:
+                self['_TimeScl'] = info.get('TimeScl')
+                self['_TimeOff'] = info.get('TimeOff')
+            else:
+                self['_TimeOut1'] = info.get('TimeOut1')
+                self['_TimeIncr'] = info.get('TimeIncr')
+
+        # --- Convert to DataFrame (only if data was loaded)
+        if self.data is not None:
+            if info['attribute_units'] is not None:
+                info['attribute_units'] = [re.sub(r'[()\[\]]','',u) for u in info['attribute_units']]
+                if len(info['attribute_names'])!=len(info['attribute_units']):
+                    cols=info['attribute_names']
+                    print('[WARN] not all columns have units! Skipping units')
+                else:
+                    cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(info['attribute_names'], info['attribute_units'])]
+            else:
+                cols=info['attribute_names']
+            if isinstance(self.data, pd.DataFrame):
+                self.data.columns = cols
+            else:
+                if len(cols)!=self.data.shape[1]:
+                    raise BrokenFormatError('Inconstistent number of columns between headers ({}) and data ({}) for file {}'.format(len(cols), self.data.shape[1], self.filename))
+                self.data = pd.DataFrame(data=self.data, columns=cols)
 
 
     def write(self, filename=None, binary=None, fileID=4): 
@@ -211,6 +280,107 @@ class FASTOutputFile(File):
                 return s.strip()
         units = [unit(c) for c in self.data.columns]
         return units
+
+    def _readAll(self):
+        """Read all data after header in streaming mode."""
+        import numpy as np
+
+        if self._fid is None:
+            raise RuntimeError("No open file handle. Use streaming=True with context manager.")
+
+        ext = os.path.splitext(self.filename.lower())[1]
+
+        # Read remaining data from open file handle
+        if self['binary']:
+            # Binary file - read from current position using stored metadata
+            try:
+                FileID = self['_FileID']
+                NumOutChans = self['_NumOutChans']
+                NT = self['_NT']
+                ColScl = self['_ColScl']
+                ColOff = self['_ColOff']
+
+                # Setup binary reading helpers
+                StructDict = {
+                    'uint8':   ('B', 1, np.uint8),
+                    'int16':   ('h', 2, np.int16),
+                    'int32':   ('i', 4, np.int32),
+                    'float32': ('f', 4, np.float32),
+                    'float64': ('d', 8, np.float64)
+                }
+                def freadNumpy(fid, n, dtype):
+                    fmt, nbytes, npdtype = StructDict[dtype]
+                    return np.fromfile(fid, count=n, dtype=npdtype)
+
+                nPts = NT * NumOutChans
+
+                # Read time data if present
+                if FileID == FileFmtID_WithTime:
+                    PackedTime = freadNumpy(self._fid, NT, 'int32')
+                    TimeScl = self['_TimeScl']
+                    TimeOff = self['_TimeOff']
+                    time = (np.array(PackedTime) - TimeOff) / TimeScl
+                else:
+                    TimeOut1 = self['_TimeOut1']
+                    TimeIncr = self['_TimeIncr']
+                    time = TimeOut1 + TimeIncr * np.arange(NT)
+
+                # Read channel data
+                if FileID == FileFmtID_NoCompressWithoutTime:
+                    PackedData = freadNumpy(self._fid, nPts, 'float64')
+                else:
+                    PackedData = freadNumpy(self._fid, nPts, 'int16')
+
+                data = np.array(PackedData).reshape(NT, NumOutChans)
+                del PackedData
+
+                # Scale the data
+                data = (data - ColOff) / ColScl
+                data = np.concatenate([time.reshape(NT, 1), data], 1)
+
+                # Convert to DataFrame with existing column info
+                if self['attribute_units'] is not None:
+                    units = [re.sub(r'[()\[\]]','',u) for u in self['attribute_units']]
+                    if len(self['attribute_names'])!=len(units):
+                        cols=self['attribute_names']
+                        print('[WARN] not all columns have units! Skipping units')
+                    else:
+                        cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(self['attribute_names'], units)]
+                else:
+                    cols=self['attribute_names']
+
+                self.data = pd.DataFrame(data=data, columns=cols)
+
+                if self.data.shape[0]==0:
+                    raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
+
+            except Exception as e:
+                raise BrokenReaderError('Error reading binary data in streaming mode: {}'.format(e))
+
+        else:
+            # ASCII file - read from current position
+            try:
+                # Read all remaining data
+                data = np.loadtxt(self._fid, comments=('This'))
+
+                # Convert to DataFrame with existing column info
+                if self['attribute_units'] is not None:
+                    units = [re.sub(r'[()\[\]]','',u) for u in self['attribute_units']]
+                    if len(self['attribute_names'])!=len(units):
+                        cols=self['attribute_names']
+                        print('[WARN] not all columns have units! Skipping units')
+                    else:
+                        cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(self['attribute_names'], units)]
+                else:
+                    cols=self['attribute_names']
+
+                self.data = pd.DataFrame(data=data, columns=cols)
+
+                if self.data.shape[0]==0:
+                    raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
+
+            except Exception as e:
+                raise BrokenReaderError('Error reading data in streaming mode: {}'.format(e))
 
     def toDataFrame(self):
         """ Returns object into one DataFrame, or a dictionary of DataFrames"""
@@ -368,6 +538,48 @@ def isBinary(filename):
 
 
 
+def load_ascii_output_header(filename, encoding='ascii', **kwargs):
+    """
+    Read only the header of an ASCII FAST output file and return open file handle.
+    Returns (fid, info) where fid is the open file handle positioned at start of data.
+    """
+    fid = open(filename, encoding=encoding, errors='ignore')
+    info = {}
+    info['name'] = os.path.splitext(os.path.basename(filename))[0]
+
+    # Header is whatever is before the keyword `time`
+    header = []
+    maxHeaderLines = 35
+    headerRead = False
+    for i in range(maxHeaderLines):
+        l = fid.readline()
+        if not l:
+            fid.close()
+            raise Exception('Error finding the end of FAST out file header. Keyword Time missing.')
+        # Check for utf-16
+        if l[:3] == '\x00 \x00':
+            fid.close()
+            print('[WARN] Attempt to re-read the file with encoding utf-16')
+            return load_ascii_output_header(filename=filename, encoding='utf-16')
+        first_word = (l+' dummy').lower().split()[0]
+        in_header = (first_word != 'time') and (first_word != 'alpha')
+        if in_header:
+            header.append(l)
+        else:
+            info['description'] = header
+            info['attribute_names'] = l.split()
+            info['attribute_units'] = [unit[1:-1] for unit in fid.readline().split()]
+            headerRead = True
+            break
+
+    if not headerRead:
+        fid.close()
+        raise WrongFormatError('Could not find the keyword "Time" or "Alpha" in the first {} lines of the file {}'.format(maxHeaderLines, filename))
+
+    # File handle is now positioned at the start of data
+    return fid, info
+
+
 def load_ascii_output(filename, method='numpy', encoding='ascii', **kwargs):
 
 
@@ -440,6 +652,86 @@ def load_ascii_output(filename, method='numpy', encoding='ascii', **kwargs):
             raise NotImplementedError()
 
     return data, info
+
+
+def load_binary_output_header(filename, **kwargs):
+    """
+    Read only the header of a binary FAST output file and return open file handle.
+    Returns (fid, info) where fid is the open file handle positioned at start of data.
+    """
+    StructDict = {
+            'uint8':   ('B', 1, np.uint8),
+            'int16':   ('h', 2, np.int16),
+            'int32':   ('i', 4, np.int32),
+            'float32': ('f', 4, np.float32),
+            'float64': ('d', 8, np.float64)
+    }
+
+    def freadStruct(fid, n, dtype):
+        fmt, nbytes, npdtype = StructDict[dtype]
+        return struct.unpack(fmt * n, fid.read(nbytes * n))
+
+    fid = open(filename, 'rb')
+    info = {}
+
+    #----------------------------
+    # get the header information
+    #----------------------------
+    FileID = freadStruct(fid, 1, 'int16')[0]  # FAST output file format, INT(2)
+
+    if FileID not in [FileFmtID_WithTime, FileFmtID_WithoutTime, FileFmtID_NoCompressWithoutTime, FileFmtID_ChanLen_In]:
+        fid.close()
+        raise Exception('FileID not supported {}. Is it a FAST binary file?'.format(FileID))
+
+    if FileID == FileFmtID_ChanLen_In:
+        LenName = freadStruct(fid, 1, 'int16')[0] # Number of characters in channel names and units
+    else:
+        LenName = 10                    # Default number of characters per channel name
+
+    NumOutChans = freadStruct(fid, 1, 'int32')[0]  # Number of output channels, INT(4)
+    NT = freadStruct(fid, 1, 'int32')[0]           # Number of time steps, INT(4)
+
+    if FileID == FileFmtID_WithTime:
+        TimeScl = freadStruct(fid, 1, 'float64')[0]  # The time slopes for scaling, REAL(8)
+        TimeOff = freadStruct(fid, 1, 'float64')[0]  # The time offsets for scaling, REAL(8)
+    else:
+        TimeOut1 = freadStruct(fid, 1, 'float64')[0]  # The first time in the time series, REAL(8)
+        TimeIncr = freadStruct(fid, 1, 'float64')[0]  # The time increment, REAL(8)
+
+    if FileID == FileFmtID_NoCompressWithoutTime:
+        ColScl = np.ones ((NumOutChans, 1)) # The channel slopes for scaling, REAL(4)
+        ColOff = np.zeros((NumOutChans, 1)) # The channel offsets for scaling, REAL(4)
+    else:
+        ColScl = freadStruct(fid, NumOutChans, 'float32')  # The channel slopes for scaling, REAL(4)
+        ColOff = freadStruct(fid, NumOutChans, 'float32')  # The channel offsets for scaling, REAL(4)
+
+    LenDesc      = freadStruct(fid, 1, 'int32')[0]     # The number of characters in the description string, INT(4)
+    DescStrASCII = freadStruct(fid, LenDesc, 'uint8')  # DescStr converted to ASCII
+    DescStr      = "".join(map(chr, DescStrASCII)).strip()
+
+    # ChanName and ChanUnit converted to numeric ASCII
+    ChanName = ["".join(map(chr, freadStruct(fid, LenName, 'uint8'))).strip() for _ in range(NumOutChans + 1)]
+    ChanUnit = ["".join(map(chr, freadStruct(fid, LenName, 'uint8'))).strip()[1:-1] for _ in range(NumOutChans + 1)]
+
+    # Store in info dict (including metadata needed for _readAll())
+    info['name'] = os.path.splitext(os.path.basename(filename))[0]
+    info['description'] = DescStr
+    info['attribute_names'] = ChanName
+    info['attribute_units'] = ChanUnit
+    info['FileID'] = FileID
+    info['NumOutChans'] = NumOutChans
+    info['NT'] = NT
+    info['ColScl'] = ColScl
+    info['ColOff'] = ColOff
+    if FileID == FileFmtID_WithTime:
+        info['TimeScl'] = TimeScl
+        info['TimeOff'] = TimeOff
+    else:
+        info['TimeOut1'] = TimeOut1
+        info['TimeIncr'] = TimeIncr
+
+    # File handle is now positioned at the start of data
+    return fid, info
 
 
 def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
