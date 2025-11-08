@@ -79,34 +79,17 @@ class FASTOutputFile(File):
     def formatName():
         return 'FAST output file'
 
-    def __enter__(self):
-        """Context manager entry."""
-        self._in_context = True
-        if self.filename:
-            self.read(streaming=self.streaming)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Context manager exit - close file handle if open."""
-        if self._fid is not None:
-            self._fid.close()
-            self._fid = None
-        self._in_context = False
-        return False  # Propagate exceptions
+    # Inherit __enter__, __exit__, and _enforce_context_if_needed from parent File class
 
     def __init__(self, filename=None, streaming=False, **kwargs):
         """ Class constructor. If a `filename` is given, the file is read. """
-        # Data
-        self.filename    = filename
+        # FASTOutputFile-specific attributes
         self.data        = None  # pandas.DataFrame
         self.description = ''    # string
-        self.streaming   = streaming
-        self._in_context = False
-        self._fid        = None
         self._data_start_pos = None
-        # Only read if not streaming (streaming requires context manager)
-        if filename and not streaming:
-            self.read(streaming=streaming, **kwargs)
+
+        # Call parent __init__ - handles streaming, filename, _fid, _in_context
+        File.__init__(self, filename=filename, streaming=streaming, **kwargs)
 
     def read(self, filename=None, streaming=None, **kwargs):
         """ Reads the file self.filename, or `filename` if provided """
@@ -292,51 +275,25 @@ class FASTOutputFile(File):
 
         # Read remaining data from open file handle
         if self['binary']:
-            # Binary file - read from current position using stored metadata
+            # Binary file - use shared data reading function
             try:
-                FileID = self['_FileID']
-                NumOutChans = self['_NumOutChans']
-                NT = self['_NT']
-                ColScl = self['_ColScl']
-                ColOff = self['_ColOff']
-
-                # Setup binary reading helpers
-                StructDict = {
-                    'uint8':   ('B', 1, np.uint8),
-                    'int16':   ('h', 2, np.int16),
-                    'int32':   ('i', 4, np.int32),
-                    'float32': ('f', 4, np.float32),
-                    'float64': ('d', 8, np.float64)
+                # Build info dict from stored metadata
+                info = {
+                    'FileID': self['_FileID'],
+                    'NumOutChans': self['_NumOutChans'],
+                    'NT': self['_NT'],
+                    'ColScl': self['_ColScl'],
+                    'ColOff': self['_ColOff']
                 }
-                def freadNumpy(fid, n, dtype):
-                    fmt, nbytes, npdtype = StructDict[dtype]
-                    return np.fromfile(fid, count=n, dtype=npdtype)
-
-                nPts = NT * NumOutChans
-
-                # Read time data if present
-                if FileID == FileFmtID_WithTime:
-                    PackedTime = freadNumpy(self._fid, NT, 'int32')
-                    TimeScl = self['_TimeScl']
-                    TimeOff = self['_TimeOff']
-                    time = (np.array(PackedTime) - TimeOff) / TimeScl
+                if self['_FileID'] == FileFmtID_WithTime:
+                    info['TimeScl'] = self['_TimeScl']
+                    info['TimeOff'] = self['_TimeOff']
                 else:
-                    TimeOut1 = self['_TimeOut1']
-                    TimeIncr = self['_TimeIncr']
-                    time = TimeOut1 + TimeIncr * np.arange(NT)
+                    info['TimeOut1'] = self['_TimeOut1']
+                    info['TimeIncr'] = self['_TimeIncr']
 
-                # Read channel data
-                if FileID == FileFmtID_NoCompressWithoutTime:
-                    PackedData = freadNumpy(self._fid, nPts, 'float64')
-                else:
-                    PackedData = freadNumpy(self._fid, nPts, 'int16')
-
-                data = np.array(PackedData).reshape(NT, NumOutChans)
-                del PackedData
-
-                # Scale the data
-                data = (data - ColOff) / ColScl
-                data = np.concatenate([time.reshape(NT, 1), data], 1)
+                # Read data using shared function
+                data = load_binary_output_data(self._fid, info, use_buffer=False, method='numpy')
 
                 # Convert to DataFrame with existing column info
                 if self['attribute_units'] is not None:
@@ -734,22 +691,45 @@ def load_binary_output_header(filename, **kwargs):
     return fid, info
 
 
-def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
+def load_binary_output_data(fid, info, use_buffer=False, method='mix'):
     """
-    03/09/15: Ported from ReadFASTbinary.m by Mads M Pedersen, DTU Wind
-    24/10/18: Low memory/buffered version by E. Branlard, NREL
-    18/01/19: New file format for extended channels, by E. Branlard, NREL
-    20/11/23: Improved performances using np.fromfile, by E. Branlard, NREL
+    Read binary data portion using header metadata.
+
+    Parameters
+    ----------
+    fid : file handle
+        Open binary file positioned at start of data
+    info : dict
+        Header metadata from load_binary_output_header()
+        Must contain: FileID, NumOutChans, NT, ColScl, ColOff, TimeScl/TimeOff or TimeOut1/TimeIncr
+    use_buffer : bool
+        Whether to use buffered reading
+    method : str
+        Reading method: 'numpy', 'struct', 'mix', or 'optim'
+
+    Returns
+    -------
+    data : np.ndarray
+        Data array with time in first column, shape (NT, NumOutChans+1)
     """
+    import numpy as np
+    import struct
+
+    # Extract metadata
+    FileID = info['FileID']
+    NumOutChans = info['NumOutChans']
+    NT = info['NT']
+    ColScl = info['ColScl']
+    ColOff = info['ColOff']
+
+    # Setup reading functions
     StructDict = {
-            'uint8':   ('B', 1, np.uint8), 
-            'int16':   ('h', 2, np.int16), 
-            'int32':   ('i', 4, np.int32), 
+            'uint8':   ('B', 1, np.uint8),
+            'int16':   ('h', 2, np.int16),
+            'int32':   ('i', 4, np.int32),
             'float32': ('f', 4, np.float32),
             'float64': ('d', 8, np.float64)
     }
-    def getFileSizeMB(filename):
-        return os.path.getsize(filename)/(1024.0**2)
 
     def freadStruct(fid, n, dtype):
         fmt, nbytes, npdtype = StructDict[dtype]
@@ -761,7 +741,7 @@ def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
 
     def freadNumpy(fid, n, dtype):
         fmt, nbytes, npdtype = StructDict[dtype]
-        return np.fromfile(fid, count=n, dtype=npdtype)      # Improved performances
+        return np.fromfile(fid, count=n, dtype=npdtype)
 
     if method=='numpy':
         fread      = freadNumpy
@@ -773,8 +753,6 @@ def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
         fread      = freadStruct
         freadLarge = freadNumpy
     elif method=='optim':
-        # Decide on method on the fly
-        #MB = getFileSizeMB(filename)
         use_buffer = False
         fread      = freadStruct
         freadLarge = freadNumpy
@@ -782,116 +760,71 @@ def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
         raise NotImplementedError
 
     def freadRowOrderTableBuffered(fid, n, type_in, nCols, nOff=0, type_out='float64'):
-        """ 
+        """
         Reads of row-ordered table from a binary file.
 
-        Read `n` data of type `type_in`, assumed to be a row ordered table of `nCols` columns.
-        Memory usage is optimized by allocating the data only once.
-        Buffered reading is done for improved performances (in particular for 32bit python)
-
-        `nOff` allows for additional column space at the begining of the storage table.
-        Typically, `nOff=1`, provides a column at the beginning to store the time vector.
-
-        @author E.Branlard, NREL
-
+        `nOff` allows for additional column space at the beginning of the array
+            for instance for time
         """
-        fmt, nbytes = StructDict[type_in][:2]
-        nLines          = int(n/nCols)
-        GoodBufferSize  = 4096*40
-        nLinesPerBuffer = int(GoodBufferSize/nCols)
-        BufferSize      = nCols * nLinesPerBuffer
-        nBuffer         = int(n/BufferSize)
-        # Allocation of data
-        data = np.zeros((nLines,nCols+nOff), dtype = type_out)
-        # Reading
+        ## Allocation of the output
+        if type_out=='float64':
+            data = np.zeros((int(n/nCols), nCols+nOff), dtype=np.float64)
+        else:
+            raise NotImplementedError('Unsupported type {}'.format(type_out))
+        ## Reading data from file
         try:
             nIntRead   = 0
-            nLinesRead = 0
-            while nIntRead<n:
-                nIntToRead = min(n-nIntRead, BufferSize)
-                nLinesToRead = int(nIntToRead/nCols)
-                Buffer = freadLarge(fid, nIntToRead, type_in)
-                Buffer = Buffer.reshape(-1,nCols)
-                data[ nLinesRead:(nLinesRead+nLinesToRead),  nOff:(nOff+nCols)  ] = Buffer
-                nLinesRead = nLinesRead + nLinesToRead
+            iChunk = 0
+            nChunkSize = min(n, 1024000)  # twice a 8*Mb chunk
+            while nIntRead < n:
+                nIntToRead = min(n - nIntRead, nChunkSize)
+                iRow       = int((nIntRead/nCols))
+                nRows      = int(nIntToRead/nCols)
+                Buffer     = freadLarge(fid, nIntToRead, type_in)
+                data[iRow:iRow+nRows, nOff:] = np.array(Buffer).reshape(-1, nCols)
                 nIntRead   = nIntRead   + nIntToRead
         except:
+            filename = getattr(fid, 'name', 'unknown')
             raise Exception('Read only %d of %d values in file: %s' % (nIntRead, n, filename))
         return data
 
-    with open(filename, 'rb') as fid:
-        #----------------------------        
-        # get the header information
-        #----------------------------
-        FileID = fread(fid, 1, 'int16')[0]  # FAST output file format, INT(2)
-
-        if FileID not in [FileFmtID_WithTime, FileFmtID_WithoutTime, FileFmtID_NoCompressWithoutTime, FileFmtID_ChanLen_In]:
-            raise Exception('FileID not supported {}. Is it a FAST binary file?'.format(FileID))
-
-        if FileID == FileFmtID_ChanLen_In: 
-            LenName = fread(fid, 1, 'int16')[0] # Number of characters in channel names and units
-        else:
-            LenName = 10                    # Default number of characters per channel name
-
-        NumOutChans = fread(fid, 1, 'int32')[0]  # Number of output channels, INT(4)
-        NT = fread(fid, 1, 'int32')[0]           # Number of time steps, INT(4)
-
-        if FileID == FileFmtID_WithTime:
-            TimeScl = fread(fid, 1, 'float64')[0]  # The time slopes for scaling, REAL(8)
-            TimeOff = fread(fid, 1, 'float64')[0]  # The time offsets for scaling, REAL(8)
-        else:
-            TimeOut1 = fread(fid, 1, 'float64')[0]  # The first time in the time series, REAL(8)
-            TimeIncr = fread(fid, 1, 'float64')[0]  # The time increment, REAL(8)
-
-        if FileID == FileFmtID_NoCompressWithoutTime:
-            ColScl = np.ones ((NumOutChans, 1)) # The channel slopes for scaling, REAL(4)
-            ColOff = np.zeros((NumOutChans, 1)) # The channel offsets for scaling, REAL(4)
-        else:
-            # NOTE: check why legacy is needed here (changes the results)
-            ColScl = fread(fid, NumOutChans, 'float32')  # The channel slopes for scaling, REAL(4)
-            ColOff = fread(fid, NumOutChans, 'float32')  # The channel offsets for scaling, REAL(4)
-
-        LenDesc      = fread(fid, 1, 'int32')[0]     # The number of characters in the description string, INT(4)
-        DescStrASCII = fread(fid, LenDesc, 'uint8')  # DescStr converted to ASCII
-        DescStr      = "".join(map(chr, DescStrASCII)).strip()
-
-        # ChanName and ChanUnit converted to numeric ASCII
-        ChanName = ["".join(map(chr, fread(fid, LenName, 'uint8'))).strip() for _ in range(NumOutChans + 1)]
-        ChanUnit = ["".join(map(chr, fread(fid, LenName, 'uint8'))).strip()[1:-1] for _ in range(NumOutChans + 1)]
-        # -------------------------
-        #  get the channel time series
-        # -------------------------
-        nPts = NT * NumOutChans  # number of data points in the file
-
-        if FileID == FileFmtID_WithTime:
-            PackedTime = fread(fid, NT, 'int32')  #read the time data
-            cnt = len(PackedTime)
-            if cnt < NT:
-                raise Exception('Could not read entire %s file: read %d of %d time values' % (filename, cnt, NT))
-
-        if use_buffer:
-            # Reading data using buffers, and allowing an offset for time column (nOff=1)
-            if FileID == FileFmtID_NoCompressWithoutTime:
-                data = freadRowOrderTableBuffered(fid, nPts, 'float64', NumOutChans, nOff=1, type_out='float64')
-            else:
-                data = freadRowOrderTableBuffered(fid, nPts, 'int16', NumOutChans, nOff=1, type_out='float64')
-        else:
-            # NOTE: unpacking huge data not possible on 32bit machines
-            if FileID == FileFmtID_NoCompressWithoutTime:
-                PackedData = freadLarge(fid, nPts, 'float64')  # read the channel data
-            else:
-                PackedData = freadLarge(fid, nPts, 'int16')    # read the channel data
-
-            cnt = len(PackedData)
-            if cnt < nPts:
-                raise Exception('Could not read entire %s file: read %d of %d values' % (filename, cnt, nPts))
-            data = np.array(PackedData).reshape(NT, NumOutChans)
-            del PackedData
+    # -------------------------
+    #  Read the channel time series
+    # -------------------------
+    nPts = NT * NumOutChans  # number of data points in the file
 
     if FileID == FileFmtID_WithTime:
-        time = (np.array(PackedTime) - TimeOff) / TimeScl
+        PackedTime = fread(fid, NT, 'int32')  #read the time data
+        cnt = len(PackedTime)
+        if cnt < NT:
+            filename = getattr(fid, 'name', 'unknown')
+            raise Exception('Could not read entire %s file: read %d of %d time values' % (filename, cnt, NT))
+
+    if use_buffer:
+        # Reading data using buffers, and allowing an offset for time column (nOff=1)
+        if FileID == FileFmtID_NoCompressWithoutTime:
+            data = freadRowOrderTableBuffered(fid, nPts, 'float64', NumOutChans, nOff=1, type_out='float64')
+        else:
+            data = freadRowOrderTableBuffered(fid, nPts, 'int16', NumOutChans, nOff=1, type_out='float64')
     else:
-        time = TimeOut1 + TimeIncr * np.arange(NT)
+        # NOTE: unpacking huge data not possible on 32bit machines
+        if FileID == FileFmtID_NoCompressWithoutTime:
+            PackedData = freadLarge(fid, nPts, 'float64')  # read the channel data
+        else:
+            PackedData = freadLarge(fid, nPts, 'int16')    # read the channel data
+
+        cnt = len(PackedData)
+        if cnt < nPts:
+            filename = getattr(fid, 'name', 'unknown')
+            raise Exception('Could not read entire %s file: read %d of %d values' % (filename, cnt, nPts))
+        data = np.array(PackedData).reshape(NT, NumOutChans)
+        del PackedData
+
+    # Create time vector
+    if FileID == FileFmtID_WithTime:
+        time = (np.array(PackedTime) - info['TimeOff']) / info['TimeScl']
+    else:
+        time = info['TimeOut1'] + info['TimeIncr'] * np.arange(NT)
 
     # -------------------------
     #  Scale the packed binary to real data
@@ -910,12 +843,60 @@ def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
         data = (data - ColOff) / ColScl
         data = np.concatenate([time.reshape(NT, 1), data], 1)
 
-    info = {'name': os.path.splitext(os.path.basename(filename))[0],
-            'description': DescStr,
-            'fileID': FileID,
-            'attribute_names': ChanName,
-            'attribute_units': ChanUnit}
-    return data, info
+    return data
+
+
+def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
+    """
+    Read OpenFAST binary output file.
+
+    This function now calls load_binary_output_header() and load_binary_output_data()
+    to avoid code duplication with the streaming implementation.
+
+    Parameters
+    ----------
+    filename : str
+        Path to binary file
+    use_buffer : bool
+        Whether to use buffered reading
+    method : str
+        Reading method: 'numpy', 'struct', 'mix', or 'optim'
+
+    Returns
+    -------
+    data : np.ndarray
+        Data array with time in first column
+    info : dict
+        File metadata
+
+    History
+    -------
+    03/09/15: Ported from ReadFASTbinary.m by Mads M Pedersen, DTU Wind
+    24/10/18: Low memory/buffered version by E. Branlard, NREL
+    18/01/19: New file format for extended channels, by E. Branlard, NREL
+    20/11/23: Improved performances using np.fromfile, by E. Branlard, NREL
+    11/08/25: Refactored to use shared header/data functions, by E. Branlard, NREL
+    """
+    # Read header and get file handle positioned at data start
+    fid, info = load_binary_output_header(filename)
+
+    try:
+        # Read data using header metadata
+        data = load_binary_output_data(fid, info, use_buffer=use_buffer, method=method)
+    finally:
+        # Always close file
+        fid.close()
+
+    # Return in format expected by legacy callers
+    legacy_info = {
+        'name': info['name'],
+        'description': info['description'],
+        'fileID': info['FileID'],
+        'attribute_names': info['attribute_names'],
+        'attribute_units': info['attribute_units']
+    }
+    return data, legacy_info
+
 
 
 def writeBinary(fileName, channels, chanNames, chanUnits, fileID=4, descStr=''):

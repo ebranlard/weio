@@ -36,6 +36,7 @@ class CSVFile(File):
 
     def __init__(self, filename=None, sep=None, colNames=None, commentChar=None, commentLines=None,\
                        colNamesLine=None, detectColumnNames=True, header=None, doRead=True, streaming=False, **kwargs):
+        # Initialize CSV-specific attributes
         colNames     = [] if colNames is None else colNames
         commentLines = [] if commentLines is None else commentLines
         self.sep          = sep
@@ -45,10 +46,6 @@ class CSVFile(File):
         self.commentLines = commentLines
         self.colNamesLine = colNamesLine
         self.detectColumnNames = detectColumnNames
-        self.streaming    = streaming
-        self.data         = None if streaming else []
-        self._in_context  = False
-        self._fid         = None
         if header is None:
             self.header=[]
         else:
@@ -61,17 +58,20 @@ class CSVFile(File):
             raise Exception('Provide either `commentChar` or `commentLines` for CSV file types')
         if (len(self.colNames)>0) and (self.colNamesLine is not None):
             raise Exception('Provide either `colNames` or `colNamesLine` for CSV file types')
+
+        # Call parent __init__ - handles streaming, filename, etc.
+        File.__init__(self, filename=None, streaming=streaming)
+
+        # Handle filename after parent init
         if filename:
             if streaming:
                 # Don't read immediately in streaming mode - wait for context manager
                 self.filename = filename
             else:
                 self.read(filename, doRead=doRead, **kwargs)
-        else:
-            self.filename = None
 
     def __enter__(self):
-        """Context manager entry."""
+        """Context manager entry - CSV needs special handling for detect()."""
         self._in_context = True
         if self.filename:
             # In streaming mode: detect headers, open file but don't read data
@@ -83,21 +83,7 @@ class CSVFile(File):
                 self.read(doRead=True)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Context manager exit - close file handle if open."""
-        if self._fid is not None:
-            self._fid.close()
-            self._fid = None
-        self._in_context = False
-        return False
-
-    def _enforce_context_if_needed(self):
-        """Raise if streaming and not in context manager."""
-        if self.streaming and not self._in_context:
-            raise RuntimeError(
-                "streaming=True requires using a context manager ('with' statement) "
-                "to ensure the file is closed. Use: `with CSVFile(...) as reader:`"
-            )
+    # Inherit __exit__ and _enforce_context_if_needed from parent File class
 
     def read(self, filename=None, doRead=True, streaming=None, **kwargs):
         if filename:

@@ -29,7 +29,8 @@ class File(OrderedDict):
         self.data = None                # Data storage (varies by format)
         self._in_context = False        # True only if in 'with' block
         self._fid = None                # File handle when streaming
-        if filename is not None:
+        if filename is not None and not streaming:
+            # Only read immediately in normal mode; streaming mode waits for __enter__
             self.read(streaming=streaming, **kwargs)
 
     def __enter__(self):
@@ -104,13 +105,13 @@ class File(OrderedDict):
             raise RuntimeError("readAll() requires context manager")
         self._readAll()
 
-    def readChunk(self, nlines=None, **kwargs):
+    def readChunk(self, **kwargs):
         """Read chunk of data (to be implemented by children)."""
         if not self.streaming:
             raise RuntimeError("readChunk() only valid in streaming mode")
         if not self._in_context:
             raise RuntimeError("readChunk() requires context manager")
-        return self._readChunk(nlines=nlines, **kwargs)
+        return self._readChunk(**kwargs)
 
     def toDataFrame(self):
         return self._toDataFrame()
@@ -184,7 +185,7 @@ class File(OrderedDict):
         """Override in child classes for streaming support."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support readAll()")
 
-    def _readChunk(self, nlines=None, **kwargs):
+    def _readChunk(self, **kwargs):
         """Override in child classes for streaming support."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support readChunk()")
 

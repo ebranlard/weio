@@ -122,15 +122,16 @@ class XXXFile(File):
         #     self['data'].append(line.strip())
         raise NotImplementedError(f"{self.__class__.__name__} does not support readAll()")
 
-    def _readChunk(self, nlines=None, **kwargs):
+    def _readChunk(self, **kwargs):
         """
         Read a chunk of data from current position in streaming mode.
         Only called when streaming=True and readChunk() is invoked.
 
         Parameters
         ----------
-        nlines : int
-            Number of lines to read. If None, use default chunk size.
+        **kwargs : dict
+            Format-specific parameters (e.g., nlines=1000, nrows=100, nbytes=1024)
+            Different file formats can implement different chunking strategies.
 
         Returns
         -------
@@ -141,8 +142,7 @@ class XXXFile(File):
         # if self._fid is None:
         #     raise RuntimeError("No open file handle")
         #
-        # if nlines is None:
-        #     nlines = 1000  # default chunk size
+        # nlines = kwargs.get('nlines', 1000)  # default chunk size
         #
         # chunk = []
         # for i in range(nlines):

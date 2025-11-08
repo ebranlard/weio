@@ -71,7 +71,7 @@ class HAWC2DatFile(File):
         # Read all channels
         self.data = self._res_file.ReadAll()
 
-    def _readChunk(self, nlines=None, **kwargs):
+    def _readChunk(self, **kwargs):
         """Read chunk of data - not implemented for HAWC2 files."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support readChunk()")
 
