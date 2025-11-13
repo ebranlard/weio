@@ -22,16 +22,8 @@ class HAWC2DatFile(File):
         self.bHawc=False
         self._res_file = None  # Store ReadHawc2 object for streaming
 
-        # Call parent __init__ but handle streaming case
-        File.__init__(self)
-        self.filename = filename
-        self.streaming = streaming
-        self.data = None if streaming else np.array([])
-        self._in_context = False
-        self._fid = None
-
-        if filename and not streaming:
-            self.read(**kwargs)
+        # Call parent __init__ - handles streaming, filename, _in_context, _fid
+        File.__init__(self, filename=filename, streaming=streaming, **kwargs)
 
     def _read(self, streaming=False, **kwargs):
         try:

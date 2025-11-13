@@ -163,10 +163,11 @@ class TestFASTOutputFileStreaming(unittest.TestCase):
     def test_streaming_metadata_available(self):
         """Test that all metadata is available in header-only mode"""
         with FASTOutputFile(self.binary_file, streaming=True) as f:
-            # Binary-specific metadata should be available
-            self.assertIn('_FileID', f)
-            self.assertIn('_NumOutChans', f)
-            self.assertIn('_NT', f)
+            # Binary-specific metadata should be available in info_binary dict
+            self.assertIn('info_binary', f)
+            self.assertIn('FileID', f['info_binary'])
+            self.assertIn('NumOutChans', f['info_binary'])
+            self.assertIn('NT', f['info_binary'])
 
             # Should be able to determine file properties without reading data
             num_channels = len(f['attribute_names'])

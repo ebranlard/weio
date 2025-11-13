@@ -182,35 +182,11 @@ class FASTOutputFile(File):
 
         # Store binary file metadata for streaming mode
         if self.streaming and self['binary']:
-            self['_FileID'] = info.get('FileID')
-            self['_NumOutChans'] = info.get('NumOutChans')
-            self['_NT'] = info.get('NT')
-            self['_ColScl'] = info.get('ColScl')
-            self['_ColOff'] = info.get('ColOff')
-            if info['FileID'] == FileFmtID_WithTime:
-                self['_TimeScl'] = info.get('TimeScl')
-                self['_TimeOff'] = info.get('TimeOff')
-            else:
-                self['_TimeOut1'] = info.get('TimeOut1')
-                self['_TimeIncr'] = info.get('TimeIncr')
+            self['info_binary'] = info
 
         # --- Convert to DataFrame (only if data was loaded)
         if self.data is not None:
-            if info['attribute_units'] is not None:
-                info['attribute_units'] = [re.sub(r'[()\[\]]','',u) for u in info['attribute_units']]
-                if len(info['attribute_names'])!=len(info['attribute_units']):
-                    cols=info['attribute_names']
-                    print('[WARN] not all columns have units! Skipping units')
-                else:
-                    cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(info['attribute_names'], info['attribute_units'])]
-            else:
-                cols=info['attribute_names']
-            if isinstance(self.data, pd.DataFrame):
-                self.data.columns = cols
-            else:
-                if len(cols)!=self.data.shape[1]:
-                    raise BrokenFormatError('Inconstistent number of columns between headers ({}) and data ({}) for file {}'.format(len(cols), self.data.shape[1], self.filename))
-                self.data = pd.DataFrame(data=self.data, columns=cols)
+            self.data = fast_output_data_2_dataframe(self.data, info['attribute_names'], info['attribute_units'], self.filename)
 
 
     def write(self, filename=None, binary=None, fileID=4): 
@@ -277,36 +253,11 @@ class FASTOutputFile(File):
         if self['binary']:
             # Binary file - use shared data reading function
             try:
-                # Build info dict from stored metadata
-                info = {
-                    'FileID': self['_FileID'],
-                    'NumOutChans': self['_NumOutChans'],
-                    'NT': self['_NT'],
-                    'ColScl': self['_ColScl'],
-                    'ColOff': self['_ColOff']
-                }
-                if self['_FileID'] == FileFmtID_WithTime:
-                    info['TimeScl'] = self['_TimeScl']
-                    info['TimeOff'] = self['_TimeOff']
-                else:
-                    info['TimeOut1'] = self['_TimeOut1']
-                    info['TimeIncr'] = self['_TimeIncr']
-
-                # Read data using shared function
-                data = load_binary_output_data(self._fid, info, use_buffer=False, method='numpy')
+                # Read data using shared function with stored info
+                data = load_binary_output_data(self._fid, self['info_binary'], use_buffer=False, method='numpy')
 
                 # Convert to DataFrame with existing column info
-                if self['attribute_units'] is not None:
-                    units = [re.sub(r'[()\[\]]','',u) for u in self['attribute_units']]
-                    if len(self['attribute_names'])!=len(units):
-                        cols=self['attribute_names']
-                        print('[WARN] not all columns have units! Skipping units')
-                    else:
-                        cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(self['attribute_names'], units)]
-                else:
-                    cols=self['attribute_names']
-
-                self.data = pd.DataFrame(data=data, columns=cols)
+                self.data = fast_output_data_2_dataframe(data, self['attribute_names'], self['attribute_units'], self.filename)
 
                 if self.data.shape[0]==0:
                     raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
@@ -321,17 +272,7 @@ class FASTOutputFile(File):
                 data = np.loadtxt(self._fid, comments=('This'))
 
                 # Convert to DataFrame with existing column info
-                if self['attribute_units'] is not None:
-                    units = [re.sub(r'[()\[\]]','',u) for u in self['attribute_units']]
-                    if len(self['attribute_names'])!=len(units):
-                        cols=self['attribute_names']
-                        print('[WARN] not all columns have units! Skipping units')
-                    else:
-                        cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(self['attribute_names'], units)]
-                else:
-                    cols=self['attribute_names']
-
-                self.data = pd.DataFrame(data=data, columns=cols)
+                self.data = fast_output_data_2_dataframe(data, self['attribute_names'], self['attribute_units'], self.filename)
 
                 if self.data.shape[0]==0:
                     raise EmptyFileError('This FAST output file contains no data: {}'.format(self.filename))
@@ -477,6 +418,47 @@ class FASTOutputFile(File):
 # --------------------------------------------------------------------------------
 # --- Helper low level functions 
 # --------------------------------------------------------------------------------
+def fast_output_data_2_dataframe(data, attribute_names, attribute_units, filename):
+    """
+    Convert FAST output data to DataFrame with proper column names.
+
+    Parameters
+    ----------
+    data : np.ndarray or pd.DataFrame
+        Data array or DataFrame
+    attribute_names : list
+        Channel names
+    attribute_units : list
+        Channel units
+    filename : str
+        Filename for error messages
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with properly formatted columns
+    """
+    # Build column names with units
+    if attribute_units is not None:
+        units = [re.sub(r'[()\[\]]','',u) for u in attribute_units]
+        if len(attribute_names)!=len(units):
+            cols=attribute_names
+            print('[WARN] not all columns have units! Skipping units')
+        else:
+            cols=[n+'_['+u.replace('sec','s')+']' for n,u in zip(attribute_names, units)]
+    else:
+        cols=attribute_names
+
+    # Convert to DataFrame if needed
+    if isinstance(data, pd.DataFrame):
+        data.columns = cols
+        return data
+    else:
+        if len(cols)!=data.shape[1]:
+            raise BrokenFormatError('Inconstistent number of columns between headers ({}) and data ({}) for file {}'.format(len(cols), data.shape[1], filename))
+        return pd.DataFrame(data=data, columns=cols)
+
+
 def isBinary(filename):
     with open(filename, 'r') as f:
         try:
@@ -763,25 +745,35 @@ def load_binary_output_data(fid, info, use_buffer=False, method='mix'):
         """
         Reads of row-ordered table from a binary file.
 
-        `nOff` allows for additional column space at the beginning of the array
-            for instance for time
+        Read `n` data of type `type_in`, assumed to be a row ordered table of `nCols` columns.
+        Memory usage is optimized by allocating the data only once.
+        Buffered reading is done for improved performances (in particular for 32bit python)
+
+        `nOff` allows for additional column space at the begining of the storage table.
+        Typically, `nOff=1`, provides a column at the beginning to store the time vector.
+
+        @author E.Branlard, NREL
+
         """
-        ## Allocation of the output
-        if type_out=='float64':
-            data = np.zeros((int(n/nCols), nCols+nOff), dtype=np.float64)
-        else:
-            raise NotImplementedError('Unsupported type {}'.format(type_out))
-        ## Reading data from file
+        fmt, nbytes = StructDict[type_in][:2]
+        nLines          = int(n/nCols)
+        GoodBufferSize  = 4096*40
+        nLinesPerBuffer = int(GoodBufferSize/nCols)
+        BufferSize      = nCols * nLinesPerBuffer
+        nBuffer         = int(n/BufferSize)
+        # Allocation of data
+        data = np.zeros((nLines,nCols+nOff), dtype = type_out)
+        # Reading
         try:
             nIntRead   = 0
-            iChunk = 0
-            nChunkSize = min(n, 1024000)  # twice a 8*Mb chunk
-            while nIntRead < n:
-                nIntToRead = min(n - nIntRead, nChunkSize)
-                iRow       = int((nIntRead/nCols))
-                nRows      = int(nIntToRead/nCols)
-                Buffer     = freadLarge(fid, nIntToRead, type_in)
-                data[iRow:iRow+nRows, nOff:] = np.array(Buffer).reshape(-1, nCols)
+            nLinesRead = 0
+            while nIntRead<n:
+                nIntToRead = min(n-nIntRead, BufferSize)
+                nLinesToRead = int(nIntToRead/nCols)
+                Buffer = freadLarge(fid, nIntToRead, type_in)
+                Buffer = Buffer.reshape(-1,nCols)
+                data[ nLinesRead:(nLinesRead+nLinesToRead),  nOff:(nOff+nCols)  ] = Buffer
+                nLinesRead = nLinesRead + nLinesToRead
                 nIntRead   = nIntRead   + nIntToRead
         except:
             filename = getattr(fid, 'name', 'unknown')

@@ -308,22 +308,6 @@ class CSVFile(File):
         except pd.errors.ParserError as e:
             raise WrongFormatError('CSV File {}: '.format(self.filename)+e.args[0])
 
-    def readAll(self):
-        """Read all remaining data after streaming header."""
-        if not self.streaming:
-            raise RuntimeError("readAll() only valid in streaming mode")
-        if not self._in_context:
-            raise RuntimeError("readAll() requires context manager")
-        self._readAll()
-
-    def readChunk(self, nlines=None, **kwargs):
-        """Read chunk of data (not implemented for CSV)."""
-        if not self.streaming:
-            raise RuntimeError("readChunk() only valid in streaming mode")
-        if not self._in_context:
-            raise RuntimeError("readChunk() requires context manager")
-        return self._readChunk(nlines=nlines, **kwargs)
-
     def _readAll(self):
         """Read all remaining CSV data in streaming mode."""
         if self._fid is None:
