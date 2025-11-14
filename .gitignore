@@ -7,3 +7,4 @@ dist
 *.pdf
 *.png
 _*
+.claude
