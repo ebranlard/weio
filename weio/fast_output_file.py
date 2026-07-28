@@ -895,6 +895,7 @@ def load_binary_output(filename, use_buffer=False, method='mix', **kwargs):
     return data, legacy_info
 
 
+
 def writeBinary(fileName, channels, chanNames, chanUnits, fileID=4, descStr=''):
     """
     Write an OpenFAST binary file.
